@@ -36,7 +36,6 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
       >
         <AnimatePresence mode="popLayout">
           {!isExpanded ? (
-            // Стек изглед
             <div 
               className="relative cursor-pointer"
               onClick={() => setIsExpanded(true)}
@@ -52,7 +51,7 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
                     opacity: 1 - idx * 0.2,
                   }}
                   className="absolute top-0 left-0 w-full"
-                ) as any}>
+                >
                   <ArgumentCard {...arg} type={type} isStacked />
                 </motion.div>
               ))}
@@ -63,7 +62,6 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
               </div>
             </div>
           ) : (
-            // Разгърнат изглед
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
