@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import Sidebar from '@/components/Sidebar';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Menu } from 'lucide-react';
 
 const TOPICS = [
   {
@@ -22,7 +21,6 @@ const TOPICS = [
       { author: "Анонимен", text: "Това ще принуди политиците да обръщат повече внимание на проблемите на бъдещите поколения." },
       { author: "Анонимен", text: "Съвременните младежи са по-информирани благодарение на дигиталните технологии." },
       { author: "Анонимен", text: "В страни като Австрия и Естония това вече работи успешно." },
-      { author: "Анонимен", text: "Младите хора носят свежа перспектива и иновативни идеи в политиката." },
     ],
     con: [
       { author: "Анонимен", text: "На 16 години мозъкът все още се развива и емоционалната зрялост не е напълно достигната." },
@@ -30,7 +28,6 @@ const TOPICS = [
       { author: "Анонимен", text: "Липсата на житейски опит прави преценката им за икономически въпроси несигурна." },
       { author: "Анонимен", text: "По-добре е да се фокусираме върху гражданското образование, преди да дадем право на глас." },
       { author: "Анонимен", text: "Статистиката показва, че дори 18-24 годишните имат най-ниска избирателна активност." },
-      { author: "Анонимен", text: "Политическите партии ще започнат да таргетират училищата по неподходящ начин." },
     ]
   },
   {
@@ -42,27 +39,10 @@ const TOPICS = [
     pro: [
       { author: "Анонимен", text: "ИИ може да персонализира обучението според темпото на всеки ученик." },
       { author: "Анонимен", text: "Това е инструмент, който подготвя учениците за бъдещия пазар на труда." },
-      { author: "Анонимен", text: "ИИ помага на учителите да автоматизират административните задачи." },
     ],
     con: [
       { author: "Анонимен", text: "Води до мързел и загуба на критично мислене у учениците." },
       { author: "Анонимен", text: "Риск от плагиатство и невъзможност за реална оценка на знанията." },
-      { author: "Анонимен", text: "Технологията често генерира невярна информация (халюцинации)." },
-    ]
-  },
-  {
-    id: 3,
-    title: "Универсален базов доход: Решение за ерата на автоматизацията?",
-    description: "Трябва ли държавата да осигурява гарантиран доход на всеки гражданин без условия?",
-    participants: 2100,
-    argumentsCount: 56,
-    pro: [
-      { author: "Анонимен", text: "Премахва крайната бедност и осигурява сигурност при загуба на работа." },
-      { author: "Анонимен", text: "Дава свобода на хората да се занимават с творчество и доброволчество." },
-    ],
-    con: [
-      { author: "Анонимен", text: "Твърде скъпо за бюджета и може да доведе до висока инфлация." },
-      { author: "Анонимен", text: "Намалява стимула за работа и продуктивност." },
     ]
   }
 ];
@@ -73,10 +53,9 @@ const Index = () => {
   const selectedTopic = TOPICS.find(t => t.id === selectedTopicId);
 
   return (
-    <div className="min-h-screen bg-[#FBFBFB] flex font-sans selection:bg-black selection:text-white">
-      <Sidebar />
-      
-      <main className="flex-1 ml-16 max-w-2xl border-r border-gray-100 min-h-screen bg-white shadow-sm overflow-hidden relative">
+    <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
+      {/* Main Content Column - Starts from the very left */}
+      <main className="flex-1 max-w-2xl border-r border-gray-100 min-h-screen bg-white relative">
         <AnimatePresence mode="wait">
           {!selectedTopicId ? (
             <motion.div 
@@ -84,13 +63,18 @@ const Index = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="px-10 py-16"
+              className="px-12 py-16"
             >
-              <header className="mb-12">
-                <h1 className="text-4xl font-black tracking-tighter mb-4">VOX DEBATES</h1>
-                <p className="text-sm text-gray-400 uppercase tracking-widest font-bold">
-                  Отворена платформа за анонимни дискусии
-                </p>
+              <header className="mb-12 flex justify-between items-start">
+                <div>
+                  <h1 className="text-4xl font-black tracking-tighter mb-4">VOX DEBATES</h1>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
+                    Отворена платформа за анонимни дискусии
+                  </p>
+                </div>
+                <button className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                  <Menu size={20} />
+                </button>
               </header>
 
               <div className="space-y-2">
@@ -109,7 +93,7 @@ const Index = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="px-10 py-16"
+              className="px-12 py-16"
             >
               <button 
                 onClick={() => setSelectedTopicId(null)}
@@ -137,7 +121,7 @@ const Index = () => {
                 </p>
               </header>
 
-              <div className="space-y-8">
+              <div className="space-y-12">
                 <CardStack 
                   title="Аргументи ЗА" 
                   type="pro" 
@@ -164,7 +148,8 @@ const Index = () => {
         </div>
       </main>
 
-      <div className="hidden lg:flex flex-1 bg-[#FBFBFB] items-center justify-center p-20 fixed right-0 top-0 h-full w-[calc(100%-42rem-4rem)]">
+      {/* Right Side - Context Space */}
+      <div className="hidden lg:flex flex-1 bg-[#FBFBFB] items-center justify-center p-20 fixed right-0 top-0 h-full w-[calc(100%-42rem)]">
         <div className="max-w-sm opacity-10 grayscale">
           <h2 className="text-[120px] font-black leading-none tracking-tighter text-gray-200 select-none">
             VOX

@@ -24,12 +24,12 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
     setVisibleCount(prev => prev + 5);
   };
 
-  // Определяме кои карти да показваме
+  // Показваме или първите 5 (за стека), или всички до visibleCount (за списъка)
   const displayedArgs = isExpanded ? args.slice(0, visibleCount) : args.slice(0, 5);
 
   return (
     <motion.div layout className="w-full max-w-md mb-12">
-      {/* Header */}
+      {/* Заглавие на секцията */}
       <motion.div layout className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <motion.div layout className={`w-1 h-4 ${accentColor}`} />
@@ -45,7 +45,7 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
         </motion.button>
       </motion.div>
 
-      {/* Stack/List Container */}
+      {/* Контейнер за картите */}
       <motion.div 
         layout
         className="relative flex flex-col"
@@ -72,12 +72,14 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
           onClick={() => !isExpanded && setIsExpanded(true)}
         >
           {displayedArgs.map((arg, idx) => {
-            // Изчисляваме стиловете за стека
             const isStackMode = !isExpanded;
+            
+            // Динамични стилове за анимацията
             const stackY = isHovered ? idx * 25 : idx * 12;
             const stackScale = 1 - idx * 0.04;
             const stackZ = 10 - idx;
-            const stackOpacity = idx === 0 ? 1 : (isHovered ? 1 - idx * 0.15 : 0.8 - idx * 0.2);
+            // В стек режим показваме само първите 5 с намаляваща видимост
+            const stackOpacity = idx === 0 ? 1 : (isHovered ? 1 - idx * 0.1 : 0.8 - idx * 0.2);
 
             return (
               <motion.div
@@ -94,8 +96,8 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
                 }}
                 transition={{
                   type: "spring",
-                  stiffness: 300,
-                  damping: 30,
+                  stiffness: 250,
+                  damping: 25,
                   mass: 1
                 }}
               >
@@ -108,7 +110,7 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
             );
           })}
 
-          {/* Overlay button for stack mode */}
+          {/* Бутон за разгръщане (само в стек режим) */}
           {!isExpanded && (
             <motion.div 
               layout
@@ -127,7 +129,7 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
           )}
         </motion.div>
 
-        {/* Load More Button */}
+        {/* Бутон за зареждане на още (само в разгърнат режим) */}
         {isExpanded && visibleCount < args.length && (
           <motion.button
             layout
