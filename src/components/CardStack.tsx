@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArgumentCard from './ArgumentCard';
-import { Plus, ChevronRight, RefreshCw } from 'lucide-react';
+import { Plus, ChevronRight, RefreshCw, ChevronUp } from 'lucide-react';
 
 interface CardStackProps {
   title: string;
@@ -24,93 +24,120 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
     setVisibleCount(prev => prev + 5);
   };
 
+  // Определяме кои карти да показваме
+  const displayedArgs = isExpanded ? args.slice(0, visibleCount) : args.slice(0, 5);
+
   return (
     <motion.div layout className="w-full max-w-md mb-12">
+      {/* Header */}
       <motion.div layout className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className={`w-1 h-4 ${accentColor}`} />
-          <h3 className={`text-[11px] font-black uppercase tracking-[0.25em] ${textColor}`}>
+          <motion.div layout className={`w-1 h-4 ${accentColor}`} />
+          <motion.h3 layout className={`text-[11px] font-black uppercase tracking-[0.25em] ${textColor}`}>
             {title}
-          </h3>
+          </motion.h3>
         </div>
-        <button className={`p-2 rounded-full text-white ${accentColor} hover:scale-110 transition-transform shadow-lg`}>
+        <motion.button 
+          layout
+          className={`p-2 rounded-full text-white ${accentColor} hover:scale-110 transition-transform shadow-lg`}
+        >
           <Plus size={14} />
-        </button>
+        </motion.button>
       </motion.div>
 
+      {/* Stack/List Container */}
       <motion.div 
         layout
-        className="relative"
+        className="relative flex flex-col"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {!isExpanded ? (
-          <motion.div 
-            layout
-            key="stack"
-            className="relative h-[240px] cursor-pointer"
-            onClick={() => setIsExpanded(true)}
-          >
-            {args.slice(0, 3).map((arg, idx) => (
-              <ArgumentCard 
-                key={`stack-${idx}`}
-                {...arg} 
-                type={type} 
-                isStacked 
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  zIndex: 10 - idx,
-                  transform: `translateY(${isHovered ? idx * 20 : idx * 10}px) scale(${1 - idx * 0.04})`,
-                }}
-              />
-            ))}
-            <div className="absolute bottom-0 left-0 w-full flex justify-center pb-4 z-20">
-              <motion.div 
+        <AnimatePresence mode="popLayout">
+          {isExpanded && (
+            <motion.button 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              onClick={() => setIsExpanded(false)}
+              className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6 hover:text-black transition-colors flex items-center gap-2 self-start"
+            >
+              <ChevronUp size={12} /> Свий списъка
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <motion.div 
+          layout 
+          className={`relative ${!isExpanded ? 'h-[280px] cursor-pointer' : 'space-y-4'}`}
+          onClick={() => !isExpanded && setIsExpanded(true)}
+        >
+          {displayedArgs.map((arg, idx) => {
+            // Изчисляваме стиловете за стека
+            const isStackMode = !isExpanded;
+            const stackY = isHovered ? idx * 25 : idx * 12;
+            const stackScale = 1 - idx * 0.04;
+            const stackZ = 10 - idx;
+            const stackOpacity = idx === 0 ? 1 : (isHovered ? 1 - idx * 0.15 : 0.8 - idx * 0.2);
+
+            return (
+              <motion.div
+                key={`${title}-${idx}`}
                 layout
-                className="bg-black text-white text-[9px] font-bold uppercase tracking-widest px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ 
+                  opacity: isStackMode ? stackOpacity : 1,
+                  y: isStackMode ? stackY : 0,
+                  scale: isStackMode ? stackScale : 1,
+                  zIndex: isStackMode ? stackZ : 1,
+                  position: isStackMode ? 'absolute' : 'relative',
+                  width: '100%',
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  mass: 1
+                }}
+              >
+                <ArgumentCard 
+                  {...arg} 
+                  type={type} 
+                  isStacked={isStackMode} 
+                />
+              </motion.div>
+            );
+          })}
+
+          {/* Overlay button for stack mode */}
+          {!isExpanded && (
+            <motion.div 
+              layout
+              className="absolute bottom-0 left-0 w-full flex justify-center pb-6 z-30 pointer-events-none"
+            >
+              <motion.div 
+                animate={{ 
+                  y: isHovered ? 10 : 0,
+                  opacity: isHovered ? 1 : 0.9
+                }}
+                className="bg-black text-white text-[9px] font-bold uppercase tracking-widest px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl pointer-events-auto"
               >
                 Разгърни {args.length} аргумента <ChevronRight size={10} />
               </motion.div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Load More Button */}
+        {isExpanded && visibleCount < args.length && (
+          <motion.button
             layout
-            key="expanded"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col"
+            onClick={loadMore}
+            className="mt-8 w-full py-4 border-2 border-dashed border-gray-100 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2"
           >
-            <button 
-              onClick={() => setIsExpanded(false)}
-              className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8 hover:text-black transition-colors flex items-center gap-2"
-            >
-              ← Свий списъка
-            </button>
-            
-            <div className="space-y-1">
-              {args.slice(0, visibleCount).map((arg, idx) => (
-                <ArgumentCard 
-                  key={`expanded-${idx}`}
-                  {...arg} 
-                  type={type} 
-                />
-              ))}
-            </div>
-
-            {visibleCount < args.length && (
-              <motion.button
-                layout
-                onClick={loadMore}
-                className="mt-6 w-full py-4 border-2 border-dashed border-gray-100 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2"
-              >
-                <RefreshCw size={12} /> Зареди още аргументи
-              </motion.button>
-            )}
-          </motion.div>
+            <RefreshCw size={12} /> Зареди още аргументи
+          </motion.button>
         )}
       </motion.div>
     </motion.div>
