@@ -484,45 +484,45 @@ const Index = () => {
                               <span className="text-sm font-bold text-black">{option.label}</span>
                               <span className="text-xs font-bold text-gray-500">{option.votes} гласа</span>
                             </div>
-                            <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
-                              <motion.div
-                                className="h-full bg-black"
-                                animate={{
-                                  width: `${percent}%`,
-                                  boxShadow: isOptionCelebrating
-                                    ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
-                                    : '0 0 0 rgba(0,0,0,0)',
-                                  scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
-                                }}
-                                transition={{
-                                  width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-                                  boxShadow: { duration: 0.55, ease: 'easeOut' },
-                                  scaleY: { duration: 0.35, ease: 'easeOut' },
-                                }}
-                              />
+                            <div className="relative pt-5">
                               <AnimatePresence>
                                 {isOptionCelebrating ? (
                                   <>
-                                    <motion.span
-                                      key={`poll-drop-${voteFx?.token}`}
-                                      initial={{ y: -18, opacity: 0, scale: 0.6 }}
-                                      animate={{ y: 0, opacity: 1, scale: 1 }}
-                                      exit={{ opacity: 0 }}
-                                      transition={{ duration: 0.28, ease: 'easeOut' }}
-                                      className="absolute right-6 -top-3 text-sm"
-                                    >
-                                      🗳️
-                                    </motion.span>
-                                    <motion.span
-                                      key={`poll-pop-${voteFx?.token}`}
-                                      initial={{ opacity: 0, scale: 0.4 }}
-                                      animate={{ opacity: [0, 0.7, 0], scale: [0.4, 1.8, 2.5] }}
-                                      transition={{ duration: 0.45, ease: 'easeOut' }}
-                                      className="absolute right-5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full border border-black/60"
+                                    <motion.div
+                                      key={`poll-paper-${voteFx?.token}`}
+                                      initial={{ y: -26, opacity: 0, rotate: -6, scale: 0.8 }}
+                                      animate={{ y: -1, opacity: 1, rotate: 0, scale: 1 }}
+                                      exit={{ y: 10, opacity: 0 }}
+                                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 h-5 w-4 rounded-[3px] bg-white border border-black/70 shadow-[0_6px_12px_rgba(0,0,0,0.18)] z-20"
+                                    />
+                                    <motion.div
+                                      key={`poll-pulse-${voteFx?.token}`}
+                                      initial={{ opacity: 0, scale: 0.6 }}
+                                      animate={{ opacity: [0, 0.45, 0], scale: [0.6, 1.7, 2.4] }}
+                                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[16px] h-3 w-3 rounded-full border border-black/60 z-10"
                                     />
                                   </>
                                 ) : null}
                               </AnimatePresence>
+                              <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
+                                <motion.div
+                                  className="h-full bg-black"
+                                  animate={{
+                                    width: `${percent}%`,
+                                    boxShadow: isOptionCelebrating
+                                      ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
+                                      : '0 0 0 rgba(0,0,0,0)',
+                                    scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
+                                  }}
+                                  transition={{
+                                    width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                                    boxShadow: { duration: 0.55, ease: 'easeOut' },
+                                    scaleY: { duration: 0.35, ease: 'easeOut' },
+                                  }}
+                                />
+                              </div>
                             </div>
                           </motion.button>
                         );
