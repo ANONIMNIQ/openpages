@@ -104,7 +104,7 @@ const ArgumentCard: React.FC<ArgumentCardProps> = ({
         <motion.p
           layout
           transition={{ layout: { duration: 0.35, ease: smoothEase } }}
-          className={`text-sm text-black font-medium leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}
+          className={`text-sm font-medium leading-relaxed ${isStacked ? 'text-gray-400' : 'text-black'} ${isExpanded ? '' : 'line-clamp-2'}`}
         >
           {text}
         </motion.p>
