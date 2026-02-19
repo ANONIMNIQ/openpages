@@ -11,6 +11,9 @@ create table if not exists public.topics (
   title text not null,
   description text not null,
   custom_tag text,
+  content_type text not null default 'debate' check (content_type in ('debate', 'poll', 'vs')),
+  content_data jsonb,
+  sort_order integer,
   published boolean not null default true,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now()
@@ -18,6 +21,12 @@ create table if not exists public.topics (
 
 alter table public.topics
   add column if not exists custom_tag text;
+alter table public.topics
+  add column if not exists content_type text not null default 'debate';
+alter table public.topics
+  add column if not exists content_data jsonb;
+alter table public.topics
+  add column if not exists sort_order integer;
 
 create table if not exists public.arguments (
   id uuid primary key default gen_random_uuid(),
@@ -29,6 +38,7 @@ create table if not exists public.arguments (
 );
 
 create index if not exists arguments_topic_id_idx on public.arguments(topic_id);
+create index if not exists topics_sort_order_idx on public.topics(sort_order);
 
 create table if not exists public.argument_comments (
   id uuid primary key default gen_random_uuid(),
@@ -39,6 +49,18 @@ create table if not exists public.argument_comments (
 );
 
 create index if not exists argument_comments_argument_id_idx on public.argument_comments(argument_id);
+
+create table if not exists public.content_votes (
+  id uuid primary key default gen_random_uuid(),
+  topic_id uuid not null references public.topics(id) on delete cascade,
+  option_id text not null,
+  voter_key text not null,
+  created_at timestamptz not null default now(),
+  unique(topic_id, voter_key)
+);
+
+create index if not exists content_votes_topic_id_idx on public.content_votes(topic_id);
+create index if not exists content_votes_option_id_idx on public.content_votes(option_id);
 
 create or replace function public.is_admin()
 returns boolean
@@ -60,6 +82,7 @@ alter table public.admin_users enable row level security;
 alter table public.topics enable row level security;
 alter table public.arguments enable row level security;
 alter table public.argument_comments enable row level security;
+alter table public.content_votes enable row level security;
 
 drop policy if exists "Admin users can read admin_users" on public.admin_users;
 create policy "Admin users can read admin_users"
@@ -164,6 +187,56 @@ create policy "Public can insert comments"
 drop policy if exists "Admins can delete comments" on public.argument_comments;
 create policy "Admins can delete comments"
   on public.argument_comments
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Public can read content votes" on public.content_votes;
+create policy "Public can read content votes"
+  on public.content_votes
+  for select
+  to anon, authenticated
+  using (
+    exists (
+      select 1
+      from public.topics t
+      where t.id = topic_id
+        and (t.published = true or public.is_admin())
+    )
+  );
+
+drop policy if exists "Public can vote on content" on public.content_votes;
+create policy "Public can vote on content"
+  on public.content_votes
+  for insert
+  to anon, authenticated
+  with check (
+    exists (
+      select 1
+      from public.topics t
+      where t.id = topic_id
+        and t.published = true
+    )
+  );
+
+drop policy if exists "Public can update own content vote" on public.content_votes;
+create policy "Public can update own content vote"
+  on public.content_votes
+  for update
+  to anon, authenticated
+  using (true)
+  with check (
+    exists (
+      select 1
+      from public.topics t
+      where t.id = topic_id
+        and t.published = true
+    )
+  );
+
+drop policy if exists "Admins can delete content votes" on public.content_votes;
+create policy "Admins can delete content votes"
+  on public.content_votes
   for delete
   to authenticated
   using (public.is_admin());

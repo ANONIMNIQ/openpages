@@ -9,6 +9,7 @@ interface TopicCardProps {
   description: string;
   tag?: string | null;
   argumentsCount: number;
+  countLabel?: string;
   dominantSide: 'pro' | 'con';
   dominantPercent: number;
   onClick: () => void;
@@ -19,6 +20,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   description,
   tag,
   argumentsCount,
+  countLabel = 'аргумента',
   dominantSide,
   dominantPercent,
   onClick,
@@ -69,7 +71,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
       
       <div className="flex items-center justify-between gap-6 mb-4">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <MessageSquare size={14} /> {argumentsCount} аргумента
+          <MessageSquare size={14} /> {argumentsCount} {countLabel}
         </div>
         <div className={`text-[10px] font-black uppercase tracking-widest ${accentText}`}>
           {accentLabel} {animatedPercent}%

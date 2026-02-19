@@ -6,20 +6,12 @@ import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil } from 'lucide-react';
-import { createPublicArgument, fetchPublishedTopicsWithArguments } from '@/lib/supabase-data';
+import { createPublicArgument, fetchPublishedTopicsWithArguments, voteOnContent, type PublishedTopic } from '@/lib/supabase-data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [topicsData, setTopicsData] = useState<Array<{
-    id: string;
-    title: string;
-    description: string;
-    tag?: string | null;
-    argumentsCount: number;
-    pro: Array<{ id?: string; author: string; text: string; comments?: Array<{ id: string; type: 'pro' | 'con'; text: string }> }>;
-    con: Array<{ id?: string; author: string; text: string; comments?: Array<{ id: string; type: 'pro' | 'con'; text: string }> }>;
-  }>>([]);
+  const [topicsData, setTopicsData] = useState<PublishedTopic[]>([]);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerType, setComposerType] = useState<'pro' | 'con'>('pro');
   const [commentText, setCommentText] = useState('');
@@ -33,6 +25,7 @@ const Index = () => {
   const [isBootBarComplete, setIsBootBarComplete] = useState(false);
   const [isListSkeletonHold, setIsListSkeletonHold] = useState(false);
   const [isDetailOpening, setIsDetailOpening] = useState(false);
+  const [isVoting, setIsVoting] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
 
@@ -52,6 +45,7 @@ const Index = () => {
   }));
 
   const handleOpenComposer = (type: 'pro' | 'con') => {
+    if (selectedTopic?.contentType !== 'debate') return;
     setComposerType(type);
     setComposerError(null);
     setIsComposerOpen(true);
@@ -114,7 +108,7 @@ const Index = () => {
 
   const handlePublishComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTopic) return;
+    if (!selectedTopic || selectedTopic.contentType !== 'debate') return;
 
     setComposerError(null);
     setIsPublishingArgument(true);
@@ -162,6 +156,23 @@ const Index = () => {
 
   const handleScrollMainTop = () => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleVote = async (optionId: string) => {
+    if (!selectedTopic || selectedTopic.contentType === 'debate' || isVoting) return;
+    setIsVoting(true);
+    try {
+      await voteOnContent({
+        topicId: selectedTopic.id,
+        optionId,
+      });
+      const refreshed = await fetchPublishedTopicsWithArguments();
+      if (refreshed) setTopicsData(refreshed);
+    } catch (error) {
+      console.warn('Vote failed', error);
+    } finally {
+      setIsVoting(false);
+    }
   };
 
   const detailStagger = {
@@ -304,12 +315,27 @@ const Index = () => {
                       Няма публикувани теми. Добави нова тема от <span className="font-bold text-gray-500">/admin</span>.
                     </div>
                   ) : visibleTopics.map(topic => {
-                    const proCount = topic.pro.length;
-                    const conCount = topic.con.length;
-                    const total = Math.max(proCount + conCount, 1);
-                    const proShare = Math.round((proCount / total) * 100);
-                    const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
-                    const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
+                    const defaultMetric = (() => {
+                      const proCount = topic.pro.length;
+                      const conCount = topic.con.length;
+                      const total = Math.max(proCount + conCount, 1);
+                      const proShare = Math.round((proCount / total) * 100);
+                      const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
+                      const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
+                      return { dominantSide, dominantPercent };
+                    })();
+                    const voteMetric = (() => {
+                      if (topic.voteOptions.length === 0) return null;
+                      const sorted = [...topic.voteOptions].sort((a, b) => b.votes - a.votes);
+                      const top = sorted[0];
+                      if (!top) return null;
+                      const dominantPercent = topic.totalVotes > 0 ? Math.round((top.votes / topic.totalVotes) * 100) : 0;
+                      return {
+                        dominantSide: topic.contentType === 'vs' ? (top.id === 'left' ? 'pro' : 'con') : 'pro' as 'pro' | 'con',
+                        dominantPercent,
+                      };
+                    })();
+                    const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
 
                     return (
                       <TopicCard
@@ -317,9 +343,10 @@ const Index = () => {
                         title={topic.title}
                         description={topic.description}
                         tag={topic.tag}
-                        argumentsCount={topic.argumentsCount}
-                        dominantSide={dominantSide}
-                        dominantPercent={dominantPercent}
+                        argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
+                        countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
+                        dominantSide={metric.dominantSide}
+                        dominantPercent={metric.dominantPercent}
                         onClick={() => handleOpenTopic(topic.id)}
                       />
                     );
@@ -391,30 +418,84 @@ const Index = () => {
                 </motion.header>
 
                 <motion.div variants={detailItem} className="space-y-12">
-                  <CardStack 
-                    title="Аргументи ЗА" 
-                    type="pro" 
-                    arguments={proArgumentsWithIds} 
-                    onCreateArgument={handleOpenComposer}
-                    isCreateActive={isComposerOpen && composerType === 'pro'}
-                    collapseAllSignal={collapseAllSignal}
-                    onCollapseAllRequest={handleCollapseAllStacks}
-                    onRequestScrollTop={handleScrollMainTop}
-                    globalFocusedStackType={activeCommentStackType}
-                    onFocusModeChange={setActiveCommentStackType}
-                  />
-                  <CardStack 
-                    title="Аргументи ПРОТИВ" 
-                    type="con" 
-                    arguments={conArgumentsWithIds} 
-                    onCreateArgument={handleOpenComposer}
-                    isCreateActive={isComposerOpen && composerType === 'con'}
-                    collapseAllSignal={collapseAllSignal}
-                    onCollapseAllRequest={handleCollapseAllStacks}
-                    onRequestScrollTop={handleScrollMainTop}
-                    globalFocusedStackType={activeCommentStackType}
-                    onFocusModeChange={setActiveCommentStackType}
-                  />
+                  {selectedTopic?.contentType === 'debate' ? (
+                    <>
+                      <CardStack 
+                        title="Аргументи ЗА" 
+                        type="pro" 
+                        arguments={proArgumentsWithIds} 
+                        onCreateArgument={handleOpenComposer}
+                        isCreateActive={isComposerOpen && composerType === 'pro'}
+                        collapseAllSignal={collapseAllSignal}
+                        onCollapseAllRequest={handleCollapseAllStacks}
+                        onRequestScrollTop={handleScrollMainTop}
+                        globalFocusedStackType={activeCommentStackType}
+                        onFocusModeChange={setActiveCommentStackType}
+                      />
+                      <CardStack 
+                        title="Аргументи ПРОТИВ" 
+                        type="con" 
+                        arguments={conArgumentsWithIds} 
+                        onCreateArgument={handleOpenComposer}
+                        isCreateActive={isComposerOpen && composerType === 'con'}
+                        collapseAllSignal={collapseAllSignal}
+                        onCollapseAllRequest={handleCollapseAllStacks}
+                        onRequestScrollTop={handleScrollMainTop}
+                        globalFocusedStackType={activeCommentStackType}
+                        onFocusModeChange={setActiveCommentStackType}
+                      />
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      {selectedTopic?.contentType === 'poll' ? selectedTopic.voteOptions.map((option) => {
+                        const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                        return (
+                          <button
+                            key={option.id}
+                            onClick={() => handleVote(option.id)}
+                            disabled={isVoting}
+                            className="w-full text-left rounded-xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow disabled:opacity-70"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-bold text-black">{option.label}</span>
+                              <span className="text-xs font-bold text-gray-500">{option.votes} гласа</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                              <div className="h-full bg-black transition-all duration-500" style={{ width: `${percent}%` }} />
+                            </div>
+                          </button>
+                        );
+                      }) : null}
+                      {selectedTopic?.contentType === 'vs' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {selectedTopic.voteOptions.map((option, idx) => {
+                            const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                            const tone = idx === 0 ? 'border-emerald-200' : 'border-rose-200';
+                            return (
+                              <button
+                                key={option.id}
+                                onClick={() => handleVote(option.id)}
+                                disabled={isVoting}
+                                className={`rounded-xl border bg-white p-4 text-left hover:shadow-md transition-shadow disabled:opacity-70 ${tone}`}
+                              >
+                                {option.image ? (
+                                  <img src={option.image} alt={option.label} className="w-full h-44 object-cover rounded-lg mb-3" />
+                                ) : (
+                                  <div className="w-full h-44 rounded-lg mb-3 bg-gray-100" />
+                                )}
+                                <p className="text-base font-black text-black mb-2">{option.label}</p>
+                                <p className="text-xs font-bold text-gray-500 mb-2">{option.votes} гласа</p>
+                                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                  <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                      <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">Избери само един отговор</p>
+                    </div>
+                  )}
                 </motion.div>
               </motion.div>
             </motion.div>
@@ -422,7 +503,7 @@ const Index = () => {
         </AnimatePresence>
 
         <AnimatePresence>
-          {isComposerOpen && selectedTopic && (
+          {isComposerOpen && selectedTopic && selectedTopic.contentType === 'debate' && (
             <>
               <motion.div
                 initial={{ opacity: 0 }}

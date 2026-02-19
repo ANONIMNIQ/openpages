@@ -1,4 +1,5 @@
 import { getSupabaseHeaders, getSupabaseKey, getSupabaseUrl, isSupabaseConfigured } from "./supabase-config";
+import type { ContentType } from "./supabase-data";
 
 interface AuthResponse {
   access_token: string;
@@ -21,6 +22,9 @@ export interface AdminTopic {
   title: string;
   description: string;
   custom_tag?: string | null;
+  content_type?: ContentType;
+  content_data?: Record<string, unknown> | null;
+  sort_order?: number | null;
   published: boolean;
   created_at?: string;
 }
@@ -105,13 +109,15 @@ export async function fetchAdminData(accessToken: string) {
   const headers = getSupabaseHeaders(accessToken);
 
   let topicsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,published,created_at&order=created_at.desc`,
+    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,created_at&order=sort_order.asc.nullslast,created_at.desc`,
     { headers }
   );
   if (!topicsResponse.ok) {
     const topicsError = await extractSupabaseError(topicsResponse);
-    const missingCustomTagColumn = topicsError.toLowerCase().includes("custom_tag");
-    if (missingCustomTagColumn) {
+    const missingExtendedColumns = ["custom_tag", "content_type", "content_data", "sort_order"].some((column) =>
+      topicsError.toLowerCase().includes(column)
+    );
+    if (missingExtendedColumns) {
       topicsResponse = await fetch(
         `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&order=created_at.desc`,
         { headers }
@@ -154,6 +160,8 @@ export async function createTopicWithArguments(input: {
   title: string;
   description: string;
   customTag?: string;
+  contentType?: ContentType;
+  contentData?: Record<string, unknown> | null;
   proArguments: string[];
   conArguments: string[];
 }) {
@@ -163,6 +171,8 @@ export async function createTopicWithArguments(input: {
   const baseTopicPayload = {
     title: input.title,
     description: input.description,
+    content_type: input.contentType ?? "debate",
+    content_data: input.contentData ?? null,
     published: true,
   };
   const customTagValue = input.customTag?.trim() ? input.customTag.trim() : null;
@@ -179,12 +189,14 @@ export async function createTopicWithArguments(input: {
     }),
   });
 
-  // Backward compatibility if production DB still misses custom_tag column.
+  // Backward compatibility if production DB still misses newer columns.
   if (!topicResponse.ok) {
     const insertError = await extractSupabaseError(topicResponse);
-    const missingCustomTagColumn = insertError.toLowerCase().includes("custom_tag");
+    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order"].some((column) =>
+      insertError.toLowerCase().includes(column)
+    );
 
-    if (missingCustomTagColumn) {
+    if (missingTopicColumns) {
       topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
         method: "POST",
         headers: {
@@ -211,7 +223,7 @@ export async function createTopicWithArguments(input: {
     ...input.conArguments.map((text) => ({ topic_id: topic.id, side: "con", text, author: "Анонимен" })),
   ];
 
-  if (payload.length > 0) {
+  if ((input.contentType ?? "debate") === "debate" && payload.length > 0) {
     const argsResponse = await fetch(`${supabaseUrl}/rest/v1/arguments`, {
       method: "POST",
       headers: getSupabaseHeaders(input.accessToken),
@@ -247,7 +259,15 @@ export async function deleteComment(accessToken: string, commentId: string) {
 export async function updateTopic(
   accessToken: string,
   topicId: string,
-  input: { title: string; description: string; customTag?: string; published: boolean }
+  input: {
+    title: string;
+    description: string;
+    customTag?: string;
+    contentType?: ContentType;
+    contentData?: Record<string, unknown> | null;
+    sortOrder?: number | null;
+    published: boolean;
+  }
 ) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
@@ -261,13 +281,18 @@ export async function updateTopic(
       title: input.title,
       description: input.description,
       custom_tag: input.customTag?.trim() ? input.customTag.trim() : null,
+      content_type: input.contentType ?? "debate",
+      content_data: input.contentData ?? null,
+      sort_order: input.sortOrder ?? null,
       published: input.published,
     }),
   });
   if (!response.ok) {
     const updateError = await extractSupabaseError(response);
-    const missingCustomTagColumn = updateError.toLowerCase().includes("custom_tag");
-    if (missingCustomTagColumn) {
+    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order"].some((column) =>
+      updateError.toLowerCase().includes(column)
+    );
+    if (missingTopicColumns) {
       response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
         method: "PATCH",
         headers: {
@@ -287,6 +312,28 @@ export async function updateTopic(
   if (!response.ok) {
     const retryError = await extractSupabaseError(response);
     throw new Error(`Неуспешно редактиране на тема: ${retryError}`);
+  }
+}
+
+export async function reorderTopics(accessToken: string, orderedTopicIds: string[]) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+
+  const updates = orderedTopicIds.map((topicId, index) =>
+    fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
+      method: "PATCH",
+      headers: getSupabaseHeaders(accessToken),
+      body: JSON.stringify({
+        sort_order: index,
+      }),
+    })
+  );
+
+  const responses = await Promise.all(updates);
+  const failed = responses.find((response) => !response.ok);
+  if (failed) {
+    const error = await extractSupabaseError(failed);
+    throw new Error(`Неуспешно пренареждане: ${error}`);
   }
 }
 
