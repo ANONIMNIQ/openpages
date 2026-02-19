@@ -617,15 +617,7 @@ const Index = () => {
                                         </button>
                                       ))}
                                     </div>
-                                    <div className="relative mx-auto h-28 w-28" style={{ perspective: '620px' }}>
-                                      <div
-                                        className="absolute inset-0 rounded-full opacity-90"
-                                        style={{
-                                          background: pieGradient,
-                                          transform: 'translateY(11px) rotateX(58deg) scaleY(0.86)',
-                                          filter: 'brightness(0.68) saturate(0.95)',
-                                        }}
-                                      />
+                                    <div className="relative mx-auto h-28 w-28">
                                       <button
                                         onClick={() => {
                                           const top = [...normalized].sort((a, b) => b.percent - a.percent)[0];
@@ -633,15 +625,13 @@ const Index = () => {
                                         }}
                                         disabled={isVoting}
                                         type="button"
-                                        className="relative h-28 w-28 rounded-full shadow-[0_20px_22px_rgba(0,0,0,0.16)] disabled:opacity-70"
+                                        className="relative h-28 w-28 rounded-full shadow-[0_10px_18px_rgba(0,0,0,0.18)] disabled:opacity-70"
                                         style={{
                                           background: pieGradient,
-                                          transform: 'rotateX(34deg) translateY(-2px)',
                                         }}
                                         aria-label="Гласувай от графиката"
                                       >
-                                        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 via-transparent to-white/20" />
-                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/16 via-transparent to-black/10" />
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 via-transparent to-black/12" />
                                       </button>
                                       <div className="mt-1 text-center text-[10px] font-black text-gray-500">
                                         {selectedTopic.totalVotes} гласа
