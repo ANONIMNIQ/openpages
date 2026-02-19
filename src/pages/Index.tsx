@@ -443,12 +443,14 @@ const Index = () => {
                       const sorted = [...topic.voteOptions].sort((a, b) => b.votes - a.votes);
                       const top = sorted[0];
                       if (!top) return null;
+                      const topIndex = topic.voteOptions.findIndex((option) => option.id === top.id);
+                      const fallbackPollColor = ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][Math.max(topIndex, 0) % 5];
                       const dominantPercent = topic.totalVotes > 0 ? Math.round((top.votes / topic.totalVotes) * 100) : 0;
                       return {
                         dominantSide: topic.contentType === 'vs' ? (top.id === 'left' ? 'pro' : 'con') : 'pro' as 'pro' | 'con',
                         dominantPercent,
                         dominantLabel: top.label,
-                        dominantColor: top.color ?? undefined,
+                        dominantColor: topic.contentType === 'poll' ? (top.color ?? fallbackPollColor) : undefined,
                       };
                     })();
                     const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
@@ -617,11 +619,11 @@ const Index = () => {
                                     </div>
                                     <div className="relative" style={{ perspective: '620px' }}>
                                       <div
-                                        className="absolute left-1/2 top-[18px] -translate-x-1/2 h-24 w-28 rounded-full opacity-85"
+                                        className="absolute inset-0 rounded-full opacity-90"
                                         style={{
                                           background: pieGradient,
-                                          transform: 'rotateX(66deg) scaleY(0.78)',
-                                          filter: 'brightness(0.7) saturate(0.95)',
+                                          transform: 'translateY(9px) rotateX(34deg)',
+                                          filter: 'brightness(0.68) saturate(0.95)',
                                         }}
                                       />
                                       <button
@@ -637,7 +639,7 @@ const Index = () => {
                                           transform: 'rotateX(34deg) translateY(-3px)',
                                         }}
                                         aria-label="Гласувай от графиката"
-                                      >
+                                        >
                                         <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 via-transparent to-white/20" />
                                         <div className="absolute inset-[24%] rounded-full bg-white/90 backdrop-blur-[1px]" />
                                       </button>
@@ -695,11 +697,11 @@ const Index = () => {
                                       {isOptionCelebrating ? (
                                         <motion.div
                                           key={`poll-paper-${voteFx?.token}-${option.id}`}
-                                          initial={{ y: -26, opacity: 0, rotate: -6, scale: 0.8 }}
-                                          animate={{ y: -1, opacity: 1, rotate: 0, scale: 1 }}
-                                          exit={{ y: 10, opacity: 0 }}
+                                          initial={{ y: -28, opacity: 0, rotate: -6, scale: 0.8 }}
+                                          animate={{ y: 9, opacity: 1, rotate: 0, scale: 1 }}
+                                          exit={{ y: 16, opacity: 0 }}
                                           transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-4px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-14px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
                                         >
                                           <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
                                             <path
