@@ -576,74 +576,53 @@ const Index = () => {
                         <div className="space-y-4">
                           <div className="relative rounded-2xl border border-gray-200 bg-white p-4">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Резултати</div>
-                            <div className="space-y-2.5">
-                              {selectedTopic.voteOptions.map((option, idx) => {
-                                const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
-                                const isOptionCelebrating =
-                                  voteFx?.type === 'poll' &&
-                                  voteFx.topicId === selectedTopic.id &&
-                                  voteFx.optionId === option.id;
-                                const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                return (
-                                  <div key={`poll-chart-${option.id}`} className="grid grid-cols-[minmax(0,1fr)_3.25rem] items-center gap-3">
-                                    <div className="min-w-0 space-y-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                                        <span className="text-xs font-semibold text-gray-700 truncate">{option.label}</span>
-                                      </div>
-                                      <div className="relative h-2.5 rounded-full bg-gray-100 overflow-hidden">
-                                        <AnimatePresence>
-                                          {isOptionCelebrating ? (
-                                            <motion.div
-                                              key={`poll-paper-${voteFx?.token}`}
-                                              initial={{ y: -20, opacity: 0, rotate: -8, scale: 0.8 }}
-                                              animate={{ y: 0, opacity: 1, rotate: 0, scale: 1 }}
-                                              exit={{ y: 12, opacity: 0 }}
-                                              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                              className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-22px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
-                                            >
-                                              <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
-                                                <path
-                                                  d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
-                                                  fill="none"
-                                                  stroke="currentColor"
-                                                  strokeWidth="2.3"
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                  className="text-black/90"
-                                                />
-                                              </svg>
-                                            </motion.div>
-                                          ) : null}
-                                        </AnimatePresence>
-                                        <motion.div
-                                          className="h-full"
-                                          style={{ backgroundColor: color }}
-                                          animate={{
-                                            width: `${percent}%`,
-                                            boxShadow: isOptionCelebrating
-                                              ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.2)', '0 0 0 rgba(0,0,0,0)']
-                                              : '0 0 0 rgba(0,0,0,0)',
-                                            scaleY: isOptionCelebrating ? [1, 1.35, 1] : 1,
-                                          }}
-                                          transition={{
-                                            width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-                                            boxShadow: { duration: 0.55, ease: 'easeOut' },
-                                            scaleY: { duration: 0.35, ease: 'easeOut' },
-                                          }}
-                                        />
-                                      </div>
+                            <div className="h-44 rounded-xl border border-gray-100 bg-[#fafafa] px-3 pt-3 pb-2">
+                              <div className="h-28 grid grid-cols-2 sm:grid-cols-3 gap-2 items-end">
+                                {selectedTopic.voteOptions.map((option, idx) => {
+                                  const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                                  const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                                  return (
+                                    <button
+                                      key={`poll-chart-${option.id}`}
+                                      onClick={() => handleVote(option.id)}
+                                      disabled={isVoting}
+                                      className="group min-w-0 h-full flex flex-col items-center justify-end gap-1.5 disabled:opacity-70"
+                                      type="button"
+                                    >
+                                      <div className="text-[10px] font-black text-gray-500">{percent}%</div>
+                                      <motion.div
+                                        className="w-full max-w-[70px] rounded-t-lg"
+                                        style={{ backgroundColor: color }}
+                                        initial={{ height: '8%' }}
+                                        animate={{ height: `${Math.max(percent, 8)}%` }}
+                                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                      />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {selectedTopic.voteOptions.map((option, idx) => {
+                                  const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                                  return (
+                                    <div key={`poll-label-${option.id}`} className="min-w-0 flex items-center justify-center gap-1.5">
+                                      <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                      <span className="text-[10px] font-semibold text-gray-600 truncate">{option.label}</span>
                                     </div>
-                                    <div className="text-right text-xs font-black text-gray-700">{percent}%</div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Гласувай</div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Гласувай с бутон</div>
                           <div className="grid grid-cols-1 gap-2">
                             {selectedTopic.voteOptions.map((option, idx) => {
+                              const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
                               const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                              const isOptionCelebrating =
+                                voteFx?.type === 'poll' &&
+                                voteFx.topicId === selectedTopic.id &&
+                                voteFx.optionId === option.id;
                               return (
                                 <motion.button
                                   key={option.id}
@@ -651,15 +630,59 @@ const Index = () => {
                                   disabled={isVoting}
                                   whileHover={{ y: -1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
                                   whileTap={{ scale: 0.995 }}
-                                  className="w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
+                                  className="relative w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
                                   style={{ borderColor: `${color}55` }}
                                 >
-                                  <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center justify-between gap-3 mb-2">
                                     <span className="inline-flex items-center gap-2 min-w-0">
                                       <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                                       <span className="text-sm font-bold text-black truncate">{option.label}</span>
                                     </span>
-                                    <span className="text-xs font-bold text-gray-500 shrink-0">{option.votes} гласа</span>
+                                    <span className="text-xs font-bold text-gray-500 shrink-0">{option.votes} гласа · {percent}%</span>
+                                  </div>
+                                  <div className="relative pt-3">
+                                    <AnimatePresence>
+                                      {isOptionCelebrating ? (
+                                        <motion.div
+                                          key={`poll-paper-${voteFx?.token}-${option.id}`}
+                                          initial={{ y: -26, opacity: 0, rotate: -6, scale: 0.8 }}
+                                          animate={{ y: -1, opacity: 1, rotate: 0, scale: 1 }}
+                                          exit={{ y: 10, opacity: 0 }}
+                                          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-4px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                        >
+                                          <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                            <path
+                                              d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              strokeWidth="2.3"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              className="text-black/90"
+                                            />
+                                          </svg>
+                                        </motion.div>
+                                      ) : null}
+                                    </AnimatePresence>
+                                    <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
+                                      <motion.div
+                                        className="h-full"
+                                        style={{ backgroundColor: color }}
+                                        animate={{
+                                          width: `${percent}%`,
+                                          boxShadow: isOptionCelebrating
+                                            ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
+                                            : '0 0 0 rgba(0,0,0,0)',
+                                          scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
+                                        }}
+                                        transition={{
+                                          width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                                          boxShadow: { duration: 0.55, ease: 'easeOut' },
+                                          scaleY: { duration: 0.35, ease: 'easeOut' },
+                                        }}
+                                      />
+                                    </div>
                                   </div>
                                 </motion.button>
                               );
