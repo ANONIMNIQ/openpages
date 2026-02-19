@@ -57,6 +57,7 @@ const CardStack: React.FC<CardStackProps> = ({
   const [commentDraft, setCommentDraft] = useState('');
   const [commentType, setCommentType] = useState<'pro' | 'con'>(type);
   const [commentsByCard, setCommentsByCard] = useState<Record<string, CommentItem[]>>({});
+  const [commentsVisibleCountByCard, setCommentsVisibleCountByCard] = useState<Record<string, number>>({});
   const [isCollapsing, setIsCollapsing] = useState(false);
   const lastHandledCollapseSignalRef = useRef<number | undefined>(collapseAllSignal);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -92,6 +93,19 @@ const CardStack: React.FC<CardStackProps> = ({
         const cardId = resolveCardId(title, idx, arg.id);
         if (!(cardId in next)) {
           next[cardId] = arg.comments ? [...arg.comments] : [];
+        }
+      });
+      return next;
+    });
+  }, [args, title]);
+
+  useEffect(() => {
+    setCommentsVisibleCountByCard((prev) => {
+      const next = { ...prev };
+      args.forEach((arg, idx) => {
+        const cardId = resolveCardId(title, idx, arg.id);
+        if (!(cardId in next)) {
+          next[cardId] = 5;
         }
       });
       return next;
@@ -161,6 +175,10 @@ const CardStack: React.FC<CardStackProps> = ({
 
   const handleCommentFocus = useCallback((cardId: string) => {
     setFocusedCardId(cardId);
+    setCommentsVisibleCountByCard((prev) => ({
+      ...prev,
+      [cardId]: 5,
+    }));
     setOpenCardId(cardId);
     setIsExpanded(true);
     setCommentType(type);
@@ -217,6 +235,13 @@ const CardStack: React.FC<CardStackProps> = ({
       cardRefs.current[targetCardId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 180);
   }, [focusedCardId, onFocusModeChange]);
+
+  const loadMoreComments = useCallback((cardId: string) => {
+    setCommentsVisibleCountByCard((prev) => ({
+      ...prev,
+      [cardId]: (prev[cardId] ?? 5) + 5,
+    }));
+  }, []);
 
   useEffect(() => {
     if (collapseAllSignal === undefined) return;
@@ -456,14 +481,30 @@ const CardStack: React.FC<CardStackProps> = ({
 
                       <div className="mt-5 pt-4 border-t border-gray-100 space-y-3">
                         {(commentsByCard[focusedCardId] ?? []).length > 0 ? (
-                          (commentsByCard[focusedCardId] ?? []).map((comment) => (
+                          <>
+                            {(commentsByCard[focusedCardId] ?? [])
+                              .slice(0, commentsVisibleCountByCard[focusedCardId] ?? 5)
+                              .map((comment) => (
                             <div key={comment.id} className="rounded-lg border border-gray-100 bg-[#fcfcfc] px-3 py-2.5">
                               <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${comment.type === 'pro' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {comment.type === 'pro' ? 'За' : 'Против'}
                               </p>
                               <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
                             </div>
-                          ))
+                            ))}
+                            {(commentsByCard[focusedCardId] ?? []).length > (commentsVisibleCountByCard[focusedCardId] ?? 5) ? (
+                              <div className="pt-2 flex justify-center">
+                                <button
+                                  onClick={() => loadMoreComments(focusedCardId)}
+                                  className="h-9 px-4 rounded-full border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:border-black hover:text-black transition-colors"
+                                >
+                                  Зареди още коментари
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-center text-gray-400">Няма повече коментари.</p>
+                            )}
+                          </>
                         ) : (
                           <p className="text-sm text-gray-400">Все още няма коментари към този аргумент.</p>
                         )}
@@ -513,6 +554,9 @@ const CardStack: React.FC<CardStackProps> = ({
             <RefreshCw size={12} /> Зареди още аргументи
           </motion.button>
         )}
+        {isExpanded && visibleCount >= args.length && args.length > 0 && !isCommentFocusMode ? (
+          <p className="mt-4 text-[11px] text-center text-gray-400">Показани са всички аргументи.</p>
+        ) : null}
       </motion.div>
     </motion.div>
   );

@@ -29,12 +29,15 @@ const Index = () => {
   const [isCollapsingStacks, setIsCollapsingStacks] = useState(false);
   const [activeCommentStackType, setActiveCommentStackType] = useState<'pro' | 'con' | null>(null);
   const [isTopicsLoading, setIsTopicsLoading] = useState(true);
+  const [topicsVisibleCount, setTopicsVisibleCount] = useState(5);
   const [isBootBarComplete, setIsBootBarComplete] = useState(false);
   const [isDetailOpening, setIsDetailOpening] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
+  const visibleTopics = topicsData.slice(0, topicsVisibleCount);
+  const hasMoreTopics = topicsData.length > topicsVisibleCount;
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showBootLoader = !selectedTopicId && !isBootBarComplete;
   const proArgumentsWithIds = (selectedTopic?.pro ?? []).map((arg, idx) => ({
@@ -80,6 +83,7 @@ const Index = () => {
 
   const handleBackToList = () => {
     resetTopicViewState();
+    setTopicsVisibleCount(5);
     setIsDetailOpening(false);
     if (detailOpenTimeoutRef.current !== null) {
       window.clearTimeout(detailOpenTimeoutRef.current);
@@ -183,6 +187,7 @@ const Index = () => {
         const remoteTopics = await fetchPublishedTopicsWithArguments();
         if (!canceled && remoteTopics) {
           setTopicsData(remoteTopics);
+          setTopicsVisibleCount(5);
         }
       } catch (error) {
         console.warn('Failed to load topics from Supabase.', error);
@@ -285,7 +290,7 @@ const Index = () => {
                     <div className="py-12 text-sm text-gray-400">
                       Няма публикувани теми. Добави нова тема от <span className="font-bold text-gray-500">/admin</span>.
                     </div>
-                  ) : topicsData.map(topic => {
+                  ) : visibleTopics.map(topic => {
                     const proCount = topic.pro.length;
                     const conCount = topic.con.length;
                     const total = Math.max(proCount + conCount, 1);
@@ -306,6 +311,16 @@ const Index = () => {
                       />
                     );
                   })}
+                  {!isTopicsLoading && hasMoreTopics ? (
+                    <div className="pt-5 flex justify-center">
+                      <button
+                        onClick={() => setTopicsVisibleCount((prev) => prev + 5)}
+                        className="h-10 px-5 rounded-full border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:border-black hover:text-black transition-colors"
+                      >
+                        Зареди още теми
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </motion.div>
             )
