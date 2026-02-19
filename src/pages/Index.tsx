@@ -494,15 +494,10 @@ const Index = () => {
                                       animate={{ y: -1, opacity: 1, rotate: 0, scale: 1 }}
                                       exit={{ y: 10, opacity: 0 }}
                                       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-0 h-5 w-4 rounded-[3px] bg-white border border-black/70 shadow-[0_6px_12px_rgba(0,0,0,0.18)] z-20"
-                                    />
-                                    <motion.div
-                                      key={`poll-pulse-${voteFx?.token}`}
-                                      initial={{ opacity: 0, scale: 0.6 }}
-                                      animate={{ opacity: [0, 0.45, 0], scale: [0.6, 1.7, 2.4] }}
-                                      transition={{ duration: 0.5, ease: 'easeOut' }}
-                                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[16px] h-3 w-3 rounded-full border border-black/60 z-10"
-                                    />
+                                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-4px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                    >
+                                      <span className="text-[13px] leading-none font-black text-black/85">V</span>
+                                    </motion.div>
                                   </>
                                 ) : null}
                               </AnimatePresence>
