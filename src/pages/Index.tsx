@@ -593,9 +593,9 @@ const Index = () => {
                               });
                               const totalPercent = enriched.reduce((sum, option) => sum + option.percent, 0);
                               const normalized = totalPercent > 0 ? enriched : enriched.map((option) => ({ ...option, percent: 100 / Math.max(enriched.length, 1) }));
-                              const cx = 82;
-                              const cy = 82;
-                              const radius = 72;
+                              const cx = 100;
+                              const cy = 100;
+                              const radius = 86;
                               let startAngle = -Math.PI / 2;
                               const slices = normalized.map((option) => {
                                 const sliceAngle = (Math.PI * 2 * option.percent) / 100;
@@ -625,14 +625,15 @@ const Index = () => {
                                   <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3 items-center">
                                     <div className="mx-auto">
                                       <motion.svg
-                                        viewBox="0 0 164 164"
-                                        className="h-36 w-36 drop-shadow-[0_10px_14px_rgba(0,0,0,0.18)]"
+                                        key={`${selectedTopic.id}-${selectedTopic.totalVotes}`}
+                                        viewBox="0 0 200 200"
+                                        className="h-40 w-40 drop-shadow-[0_10px_14px_rgba(0,0,0,0.18)]"
                                         initial={{ opacity: 0, scale: 0.9, rotate: -8 }}
                                         animate={{ opacity: 1, scale: 1, rotate: 0 }}
                                         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                                         aria-label="Резултати от анкетата"
                                       >
-                                        {slices.map((slice) => {
+                                        {slices.map((slice, sliceIdx) => {
                                           const isExploded = explodedPollOptionId === slice.id;
                                           const explodeX = isExploded ? Math.cos(slice.midAngle) * 9 : 0;
                                           const explodeY = isExploded ? Math.sin(slice.midAngle) * 9 : 0;
@@ -646,8 +647,9 @@ const Index = () => {
                                                 fill={slice.color}
                                                 stroke="#ffffff"
                                                 strokeWidth="2"
-                                                animate={{ x: explodeX, y: explodeY }}
-                                                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                                initial={{ opacity: 0, scale: 0.86 }}
+                                                animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                                transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                               />
                                             );
                                           }
@@ -658,8 +660,9 @@ const Index = () => {
                                               fill={slice.color}
                                               stroke="#ffffff"
                                               strokeWidth="2"
-                                              animate={{ x: explodeX, y: explodeY }}
-                                              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                              initial={{ opacity: 0, scale: 0.86 }}
+                                              animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                              transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                             />
                                           );
                                         })}
@@ -672,11 +675,13 @@ const Index = () => {
                                       {normalized.map((option) => (
                                         <button
                                           key={`legend-${option.id}`}
-                                          onClick={() =>
-                                            setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id))
-                                          }
+                                          onClick={() => {
+                                            setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
+                                            void handleVote(option.id);
+                                          }}
+                                          disabled={isVoting}
                                           type="button"
-                                          className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 ${
+                                          className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 disabled:opacity-70 ${
                                             explodedPollOptionId === option.id ? 'border-black/30 bg-white' : 'border-gray-200 bg-white/60 hover:bg-white'
                                           }`}
                                         >
