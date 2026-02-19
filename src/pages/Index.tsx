@@ -5,7 +5,7 @@ import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { ShieldCheck, ArrowLeft, Menu, X } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Menu, X, Pencil } from 'lucide-react';
 
 const TOPICS = [
   {
@@ -143,7 +143,17 @@ const Index = () => {
             >
               <header className="mb-12 flex justify-between items-start">
                 <div>
-                  <h1 className="text-4xl font-black tracking-tighter mb-4">Open pages</h1>
+                  <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
+                    <motion.span
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
+                      animate={{ scale: [1, 1.08, 1] }}
+                      transition={{ duration: 1.2, times: [0, 0.5, 1], repeat: Infinity, repeatDelay: 3.5 }}
+                      aria-label="Open pages logo"
+                    >
+                      <Pencil size={16} />
+                    </motion.span>
+                    <span className="inline-block leading-none -translate-y-[2px]">pen pages</span>
+                  </h1>
                   <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
                     Отворена платформа за анонимни дискусии
                   </p>
