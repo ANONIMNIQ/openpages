@@ -601,15 +601,19 @@ const Index = () => {
                                 const sliceAngle = (Math.PI * 2 * option.percent) / 100;
                                 const endAngle = startAngle + sliceAngle;
                                 const midAngle = startAngle + sliceAngle / 2;
+                                const isFullSlice = option.percent >= 99.999;
                                 const x1 = cx + radius * Math.cos(startAngle);
                                 const y1 = cy + radius * Math.sin(startAngle);
                                 const x2 = cx + radius * Math.cos(endAngle);
                                 const y2 = cy + radius * Math.sin(endAngle);
                                 const largeArc = sliceAngle > Math.PI ? 1 : 0;
-                                const path = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                const path = isFullSlice
+                                  ? ""
+                                  : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
                                 const result = {
                                   ...option,
                                   path,
+                                  isFullSlice,
                                   midAngle,
                                 };
                                 startAngle = endAngle;
@@ -632,6 +636,21 @@ const Index = () => {
                                           const isExploded = explodedPollOptionId === slice.id;
                                           const explodeX = isExploded ? Math.cos(slice.midAngle) * 9 : 0;
                                           const explodeY = isExploded ? Math.sin(slice.midAngle) * 9 : 0;
+                                          if (slice.isFullSlice) {
+                                            return (
+                                              <motion.circle
+                                                key={`slice-full-${slice.id}`}
+                                                cx={cx}
+                                                cy={cy}
+                                                r={radius}
+                                                fill={slice.color}
+                                                stroke="#ffffff"
+                                                strokeWidth="2"
+                                                animate={{ x: explodeX, y: explodeY }}
+                                                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                              />
+                                            );
+                                          }
                                           return (
                                             <motion.path
                                               key={`slice-${slice.id}`}
