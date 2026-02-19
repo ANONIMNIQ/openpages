@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil } from 'lucide-react';
+import { fetchPublishedTopicsWithArguments } from '@/lib/supabase-data';
 
 const TOPICS = [
   {
@@ -68,7 +69,8 @@ const TOPICS = [
 ];
 
 const Index = () => {
-  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | number | null>(null);
+  const [topicsData, setTopicsData] = useState(TOPICS);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerType, setComposerType] = useState<'pro' | 'con'>('pro');
   const [commentText, setCommentText] = useState('');
@@ -77,7 +79,15 @@ const Index = () => {
   const [activeCommentStackType, setActiveCommentStackType] = useState<'pro' | 'con' | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
 
-  const selectedTopic = TOPICS.find(t => t.id === selectedTopicId);
+  const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
+  const proArgumentsWithIds = (selectedTopic?.pro ?? []).map((arg, idx) => ({
+    ...arg,
+    id: arg.id ?? `topic-${selectedTopic?.id}-pro-${idx}`,
+  }));
+  const conArgumentsWithIds = (selectedTopic?.con ?? []).map((arg, idx) => ({
+    ...arg,
+    id: arg.id ?? `topic-${selectedTopic?.id}-con-${idx}`,
+  }));
 
   const handleOpenComposer = (type: 'pro' | 'con') => {
     setComposerType(type);
@@ -128,6 +138,25 @@ const Index = () => {
     show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
   };
 
+  useEffect(() => {
+    let canceled = false;
+    const load = async () => {
+      try {
+        const remoteTopics = await fetchPublishedTopicsWithArguments();
+        if (!canceled && remoteTopics && remoteTopics.length > 0) {
+          setTopicsData(remoteTopics);
+        }
+      } catch (error) {
+        console.warn('Failed to load topics from Supabase, using local fallback.', error);
+      }
+    };
+
+    void load();
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
       {/* Main Content Column - Starts from the very left */}
@@ -164,7 +193,7 @@ const Index = () => {
               </header>
 
               <div className="space-y-2">
-                {TOPICS.map(topic => {
+                {topicsData.map(topic => {
                   const proCount = topic.pro.length;
                   const conCount = topic.con.length;
                   const total = Math.max(proCount + conCount, 1);
@@ -226,7 +255,7 @@ const Index = () => {
                   <CardStack 
                     title="Аргументи ЗА" 
                     type="pro" 
-                    arguments={selectedTopic?.pro || []} 
+                    arguments={proArgumentsWithIds} 
                     onCreateArgument={handleOpenComposer}
                     isCreateActive={isComposerOpen && composerType === 'pro'}
                     collapseAllSignal={collapseAllSignal}
@@ -238,7 +267,7 @@ const Index = () => {
                   <CardStack 
                     title="Аргументи ПРОТИВ" 
                     type="con" 
-                    arguments={selectedTopic?.con || []} 
+                    arguments={conArgumentsWithIds} 
                     onCreateArgument={handleOpenComposer}
                     isCreateActive={isComposerOpen && composerType === 'con'}
                     collapseAllSignal={collapseAllSignal}

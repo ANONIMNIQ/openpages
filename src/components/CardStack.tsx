@@ -4,14 +4,18 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArgumentCard from './ArgumentCard';
 import { Pencil, ChevronRight, RefreshCw, ChevronUp, X, ArrowLeft } from 'lucide-react';
+import { createComment, fetchCommentsByArgumentIds } from '@/lib/supabase-comments';
+import { isSupabaseConfigured } from '@/lib/supabase-config';
 
 interface CommentItem {
   id: string;
   text: string;
   type: 'pro' | 'con';
+  created_at?: string;
 }
 
 interface StackArgument {
+  id?: string;
   author: string;
   text: string;
   comments?: CommentItem[];
@@ -82,13 +86,51 @@ const CardStack: React.FC<CardStackProps> = ({
     setCommentsByCard((prev) => {
       const next = { ...prev };
       args.forEach((arg, idx) => {
-        const cardId = `${title}-${idx}`;
+        const cardId = arg.id ?? `${title}-${idx}`;
         if (!(cardId in next)) {
           next[cardId] = arg.comments ? [...arg.comments] : [];
         }
       });
       return next;
     });
+  }, [args, title]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const argumentIds = args.map((arg, idx) => arg.id ?? `${title}-${idx}`);
+    let isCancelled = false;
+
+    const loadComments = async () => {
+      try {
+        const remoteByArgument = await fetchCommentsByArgumentIds(argumentIds);
+        if (isCancelled) return;
+
+        setCommentsByCard((prev) => {
+          const next = { ...prev };
+
+          argumentIds.forEach((argumentId) => {
+            const remote = remoteByArgument[argumentId] ?? [];
+            const local = next[argumentId] ?? [];
+            const merged = [...remote, ...local];
+            const deduped = merged.filter(
+              (item, index, arr) =>
+                arr.findIndex((candidate) => candidate.id === item.id) === index
+            );
+            next[argumentId] = deduped;
+          });
+
+          return next;
+        });
+      } catch (error) {
+        console.warn("Supabase comments load failed:", error);
+      }
+    };
+
+    void loadComments();
+    return () => {
+      isCancelled = true;
+    };
   }, [args, title]);
 
   const handleCardToggle = useCallback((cardId: string) => {
@@ -127,8 +169,9 @@ const CardStack: React.FC<CardStackProps> = ({
     e.preventDefault();
     if (!focusedCardId || !commentDraft.trim()) return;
 
+    const localId = `local-${Date.now()}`;
     const newComment: CommentItem = {
-      id: `local-${Date.now()}`,
+      id: localId,
       text: commentDraft.trim(),
       type: commentType,
     };
@@ -138,6 +181,24 @@ const CardStack: React.FC<CardStackProps> = ({
       [focusedCardId]: [newComment, ...(prev[focusedCardId] ?? [])],
     }));
     setCommentDraft('');
+
+    void createComment({
+      argumentId: focusedCardId,
+      type: commentType,
+      text: newComment.text,
+    })
+      .then((savedComment) => {
+        if (!savedComment) return;
+        setCommentsByCard((prev) => ({
+          ...prev,
+          [focusedCardId]: (prev[focusedCardId] ?? []).map((item) =>
+            item.id === localId ? savedComment : item
+          ),
+        }));
+      })
+      .catch((error) => {
+        console.warn("Supabase comment create failed:", error);
+      });
   }, [commentDraft, commentType, focusedCardId]);
 
   const handleCloseCommentFocus = useCallback((e?: React.MouseEvent) => {
