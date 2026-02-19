@@ -5,11 +5,17 @@ import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { ShieldCheck, ArrowLeft, Menu, X, Pencil } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2 } from 'lucide-react';
 import { createPublicArgument, fetchPublishedTopicsWithArguments, voteOnContent, type PublishedTopic } from '@/lib/supabase-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
+import { showError, showSuccess } from '@/utils/toast';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { topicRef } = useParams<{ topicRef?: string }>();
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [topicsData, setTopicsData] = useState<PublishedTopic[]>([]);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -29,7 +35,6 @@ const Index = () => {
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
-  const hasSyncedInitialTopicRef = useRef(false);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const visibleTopics = topicsData.slice(0, topicsVisibleCount);
@@ -77,9 +82,10 @@ const Index = () => {
       setIsDetailOpening(false);
       detailOpenTimeoutRef.current = null;
     }, 620);
-    const url = new URL(window.location.href);
-    url.searchParams.set('topic', topicId);
-    window.history.pushState({}, '', url);
+    const topic = topicsData.find((item) => item.id === topicId);
+    if (topic) {
+      navigate(buildTopicPath(topic.id, topic.title));
+    }
   };
 
   const handleBackToList = () => {
@@ -91,9 +97,7 @@ const Index = () => {
       detailOpenTimeoutRef.current = null;
     }
     setSelectedTopicId(null);
-    const url = new URL(window.location.href);
-    url.searchParams.delete('topic');
-    window.history.pushState({}, '', url);
+    navigate('/');
   };
 
   const handleCollapseAllStacks = () => {
@@ -164,6 +168,26 @@ const Index = () => {
 
   const handleScrollMainTop = () => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleShareTopic = async () => {
+    if (!selectedTopic) return;
+    const shareUrl = `${window.location.origin}${buildTopicPath(selectedTopic.id, selectedTopic.title)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: selectedTopic.title,
+          text: selectedTopic.description,
+          url: shareUrl,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      showSuccess('Линкът е копиран');
+    } catch (error) {
+      console.warn('Share failed', error);
+      showError('Неуспешно споделяне');
+    }
   };
 
   const handleVote = async (optionId: string) => {
@@ -249,46 +273,43 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    if (hasSyncedInitialTopicRef.current) return;
     if (isTopicsLoading) return;
-    const url = new URL(window.location.href);
-    const topicId = url.searchParams.get('topic');
-    if (!topicId) {
-      hasSyncedInitialTopicRef.current = true;
-      return;
-    }
-    const exists = topicsData.some((topic) => topic.id === topicId);
-    if (exists) {
-      resetTopicViewState();
-      setIsDetailOpening(false);
-      setSelectedTopicId(topicId);
-    } else {
-      url.searchParams.delete('topic');
-      window.history.replaceState({}, '', url);
-    }
-    hasSyncedInitialTopicRef.current = true;
-  }, [isTopicsLoading, topicsData]);
-
-  useEffect(() => {
-    const onPopState = () => {
-      const url = new URL(window.location.href);
-      const topicId = url.searchParams.get('topic');
-      if (!topicId) {
-        resetTopicViewState();
-        setIsDetailOpening(false);
-        setSelectedTopicId(null);
+    const topicIdFromPath = parseTopicIdFromRef(topicRef);
+    if (topicIdFromPath) {
+      const existingTopic = topicsData.find((topic) => topic.id === topicIdFromPath);
+      if (!existingTopic) {
+        navigate('/', { replace: true });
         return;
       }
-      const exists = topicsData.some((topic) => topic.id === topicId);
-      if (!exists) return;
       resetTopicViewState();
       setIsDetailOpening(false);
-      setSelectedTopicId(topicId);
-    };
+      setSelectedTopicId(topicIdFromPath);
 
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [topicsData]);
+      const expectedPath = buildTopicPath(existingTopic.id, existingTopic.title);
+      if (location.pathname !== expectedPath) {
+        navigate(expectedPath, { replace: true });
+      }
+      return;
+    }
+
+    const queryTopicId = new URLSearchParams(location.search).get('topic');
+    if (queryTopicId) {
+      const existingTopic = topicsData.find((topic) => topic.id === queryTopicId);
+      if (existingTopic) {
+        resetTopicViewState();
+        setIsDetailOpening(false);
+        setSelectedTopicId(existingTopic.id);
+        navigate(buildTopicPath(existingTopic.id, existingTopic.title), { replace: true });
+        return;
+      }
+      navigate('/', { replace: true });
+      return;
+    }
+
+    resetTopicViewState();
+    setIsDetailOpening(false);
+    setSelectedTopicId(null);
+  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate]);
 
   useEffect(() => {
     return () => {
@@ -480,6 +501,14 @@ const Index = () => {
                       <p className="text-sm text-gray-500 leading-relaxed max-w-md">
                         {selectedTopic?.description}
                       </p>
+                      <button
+                        onClick={handleShareTopic}
+                        className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                        type="button"
+                      >
+                        <Share2 size={14} />
+                        Сподели
+                      </button>
                     </>
                   )}
                 </motion.header>

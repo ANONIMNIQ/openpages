@@ -35,6 +35,71 @@ const isHtmlRoute = (pathname: string) => {
   return !/\.[a-zA-Z0-9]+$/.test(pathname);
 };
 
+const parseTopicIdFromRef = (topicRef: string) => {
+  const dividerIndex = topicRef.indexOf("--");
+  if (dividerIndex === -1) return topicRef;
+  return topicRef.slice(0, dividerIndex);
+};
+
+const extractTopicId = (url: URL) => {
+  const pathMatch = url.pathname.match(/^\/t\/([^/]+)$/);
+  if (pathMatch?.[1]) {
+    return parseTopicIdFromRef(decodeURIComponent(pathMatch[1]));
+  }
+  return url.searchParams.get("topic");
+};
+
+const transliterateBgToLatin = (value: string) => {
+  const map: Record<string, string> = {
+    а: "a",
+    б: "b",
+    в: "v",
+    г: "g",
+    д: "d",
+    е: "e",
+    ж: "zh",
+    з: "z",
+    и: "i",
+    й: "y",
+    к: "k",
+    л: "l",
+    м: "m",
+    н: "n",
+    о: "o",
+    п: "p",
+    р: "r",
+    с: "s",
+    т: "t",
+    у: "u",
+    ф: "f",
+    х: "h",
+    ц: "ts",
+    ч: "ch",
+    ш: "sh",
+    щ: "sht",
+    ъ: "a",
+    ь: "y",
+    ю: "yu",
+    я: "ya",
+  };
+
+  return value
+    .toLowerCase()
+    .split("")
+    .map((ch) => map[ch] ?? ch)
+    .join("");
+};
+
+const slugify = (title: string) =>
+  transliterateBgToLatin(title)
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/_/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 96);
+
 const getSupabaseConfig = (env: Env) => {
   const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
   const key = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -74,7 +139,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   let ogTag = "OPEN PAGES";
   let ogUrl = url.toString();
 
-  const topicId = url.searchParams.get("topic");
+  const topicId = extractTopicId(url);
   if (topicId) {
     const topic = await fetchTopic(env, topicId);
     if (topic) {
@@ -84,8 +149,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         topic.content_type === "poll"
           ? "АНКЕТА"
           : topic.content_type === "vs"
-            ? "VS"
+          ? "VS"
             : clamp(topic.custom_tag || "ТЕЗА", 28).toUpperCase();
+      const slug = slugify(topic.title);
+      ogUrl = slug ? `${url.origin}/t/${topic.id}--${slug}` : `${url.origin}/t/${topic.id}`;
     }
   }
 
