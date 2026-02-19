@@ -641,7 +641,7 @@ const Index = () => {
                                         aria-label="Гласувай от графиката"
                                       >
                                         <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 via-transparent to-white/20" />
-                                        <div className="absolute inset-[24%] rounded-full bg-white/90 backdrop-blur-[1px]" />
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/16 via-transparent to-black/10" />
                                       </button>
                                       <div className="mt-1 text-center text-[10px] font-black text-gray-500">
                                         {selectedTopic.totalVotes} гласа
@@ -693,29 +693,36 @@ const Index = () => {
                                     <span className="text-xs font-bold text-gray-500 shrink-0">{option.votes} гласа · {percent}%</span>
                                   </div>
                                   <div className="relative pt-3">
-                                    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[8px] h-[3px] w-16 rounded-full bg-black/20 z-10" />
                                     <AnimatePresence>
                                       {isOptionCelebrating ? (
-                                        <motion.div
-                                          key={`poll-paper-${voteFx?.token}-${option.id}`}
-                                          initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
-                                          animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
-                                          exit={{ y: 8, opacity: 0 }}
-                                          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
-                                        >
-                                          <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
-                                            <path
-                                              d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2.3"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              className="text-black/90"
-                                            />
-                                          </svg>
-                                        </motion.div>
+                                        <>
+                                          <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[8px] h-[3px] w-16 rounded-full bg-black/20 z-10"
+                                          />
+                                          <motion.div
+                                            key={`poll-paper-${voteFx?.token}-${option.id}`}
+                                            initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
+                                            animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
+                                            exit={{ y: 8, opacity: 0 }}
+                                            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                                            className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                          >
+                                            <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                              <path
+                                                d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2.3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="text-black/90"
+                                              />
+                                            </svg>
+                                          </motion.div>
+                                        </>
                                       ) : null}
                                     </AnimatePresence>
                                     <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
