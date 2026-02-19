@@ -496,7 +496,17 @@ const Index = () => {
                                       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                                       className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-4px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
                                     >
-                                      <span className="text-[13px] leading-none font-black text-black/85">V</span>
+                                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                        <path
+                                          d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2.3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          className="text-black/90"
+                                        />
+                                      </svg>
                                     </motion.div>
                                   </>
                                 ) : null}
