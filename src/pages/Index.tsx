@@ -224,18 +224,20 @@ const Index = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="w-full h-full flex items-center"
+                className="relative w-full h-full overflow-hidden bg-white"
               >
-                <div className="w-full px-8 md:px-12">
-                  <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-                    <motion.div
-                      initial={{ width: '0%' }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-                      className="h-full bg-black"
-                    />
-                  </div>
-                </div>
+                <motion.div
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-y-0 left-0 bg-black/[0.04]"
+                />
+                <motion.div
+                  initial={{ left: '-18%' }}
+                  animate={{ left: '100%' }}
+                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-y-0 w-[18%] bg-gradient-to-r from-transparent via-black/[0.08] to-transparent"
+                />
               </motion.div>
             ) : (
               <motion.div
