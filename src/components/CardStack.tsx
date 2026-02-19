@@ -35,6 +35,13 @@ interface CardStackProps {
 }
 
 const resolveCardId = (title: string, idx: number, argumentId?: string) => argumentId ?? `${title}-${idx}`;
+const toTimestamp = (value?: string) => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+const sortByNewest = <T extends { created_at?: string }>(rows: T[]) =>
+  [...rows].sort((a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at));
 
 const CardStack: React.FC<CardStackProps> = ({
   title,
@@ -92,7 +99,7 @@ const CardStack: React.FC<CardStackProps> = ({
       args.forEach((arg, idx) => {
         const cardId = resolveCardId(title, idx, arg.id);
         if (!(cardId in next)) {
-          next[cardId] = arg.comments ? [...arg.comments] : [];
+          next[cardId] = arg.comments ? sortByNewest(arg.comments) : [];
         }
       });
       return next;
@@ -134,7 +141,7 @@ const CardStack: React.FC<CardStackProps> = ({
               (item, index, arr) =>
                 arr.findIndex((candidate) => candidate.id === item.id) === index
             );
-            next[argumentId] = deduped;
+            next[argumentId] = sortByNewest(deduped);
           });
 
           return next;
@@ -199,7 +206,7 @@ const CardStack: React.FC<CardStackProps> = ({
 
     setCommentsByCard((prev) => ({
       ...prev,
-      [focusedCardId]: [newComment, ...(prev[focusedCardId] ?? [])],
+      [focusedCardId]: sortByNewest([newComment, ...(prev[focusedCardId] ?? [])]),
     }));
     setCommentDraft('');
 
@@ -212,9 +219,9 @@ const CardStack: React.FC<CardStackProps> = ({
         if (!savedComment) return;
         setCommentsByCard((prev) => ({
           ...prev,
-          [focusedCardId]: (prev[focusedCardId] ?? []).map((item) =>
+          [focusedCardId]: sortByNewest((prev[focusedCardId] ?? []).map((item) =>
             item.id === localId ? savedComment : item
-          ),
+          )),
         }));
       })
       .catch((error) => {

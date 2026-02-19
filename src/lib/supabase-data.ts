@@ -124,7 +124,7 @@ export async function fetchPublishedTopicsWithArguments() {
   if (!supabaseUrl) return null;
 
   let topicsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
+    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,created_at&published=eq.true&order=created_at.desc`,
     { headers: getSupabaseHeaders() }
   );
   if (!topicsResponse.ok) {
@@ -145,7 +145,7 @@ export async function fetchPublishedTopicsWithArguments() {
   const topics = (await topicsResponse.json()) as DbTopic[];
 
   const argumentsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.asc`,
+    `${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`,
     { headers: getSupabaseHeaders() }
   );
   if (!argumentsResponse.ok) throw new Error(`Failed to load arguments (${argumentsResponse.status})`);
