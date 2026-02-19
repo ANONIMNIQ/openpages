@@ -29,6 +29,7 @@ const Index = () => {
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
+  const hasSyncedInitialTopicRef = useRef(false);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const visibleTopics = topicsData.slice(0, topicsVisibleCount);
@@ -76,6 +77,9 @@ const Index = () => {
       setIsDetailOpening(false);
       detailOpenTimeoutRef.current = null;
     }, 620);
+    const url = new URL(window.location.href);
+    url.searchParams.set('topic', topicId);
+    window.history.pushState({}, '', url);
   };
 
   const handleBackToList = () => {
@@ -87,6 +91,9 @@ const Index = () => {
       detailOpenTimeoutRef.current = null;
     }
     setSelectedTopicId(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('topic');
+    window.history.pushState({}, '', url);
   };
 
   const handleCollapseAllStacks = () => {
@@ -240,6 +247,48 @@ const Index = () => {
       canceled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (hasSyncedInitialTopicRef.current) return;
+    if (isTopicsLoading) return;
+    const url = new URL(window.location.href);
+    const topicId = url.searchParams.get('topic');
+    if (!topicId) {
+      hasSyncedInitialTopicRef.current = true;
+      return;
+    }
+    const exists = topicsData.some((topic) => topic.id === topicId);
+    if (exists) {
+      resetTopicViewState();
+      setIsDetailOpening(false);
+      setSelectedTopicId(topicId);
+    } else {
+      url.searchParams.delete('topic');
+      window.history.replaceState({}, '', url);
+    }
+    hasSyncedInitialTopicRef.current = true;
+  }, [isTopicsLoading, topicsData]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const url = new URL(window.location.href);
+      const topicId = url.searchParams.get('topic');
+      if (!topicId) {
+        resetTopicViewState();
+        setIsDetailOpening(false);
+        setSelectedTopicId(null);
+        return;
+      }
+      const exists = topicsData.some((topic) => topic.id === topicId);
+      if (!exists) return;
+      resetTopicViewState();
+      setIsDetailOpening(false);
+      setSelectedTopicId(topicId);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [topicsData]);
 
   useEffect(() => {
     return () => {
