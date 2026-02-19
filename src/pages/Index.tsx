@@ -600,23 +600,30 @@ const Index = () => {
 
                               return (
                                 <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
-                                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                                    <div className="space-y-1.5">
+                                  <div className="grid grid-cols-[minmax(0,96px)_auto_minmax(0,96px)] sm:grid-cols-[minmax(0,132px)_auto_minmax(0,132px)] items-center gap-2">
+                                    <div className="space-y-1.5 overflow-hidden">
                                       {leftLegend.map((option) => (
                                         <button
                                           key={`poll-left-${option.id}`}
                                           onClick={() => handleVote(option.id)}
                                           disabled={isVoting}
                                           type="button"
-                                          className="w-full min-w-0 text-left flex items-center gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
+                                          className="w-full min-w-0 max-w-full overflow-hidden text-left flex items-center gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
                                         >
                                           <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
                                           <span className="truncate">{option.label}</span>
-                                          <span className="text-gray-400">→</span>
                                         </button>
                                       ))}
                                     </div>
-                                    <div className="relative" style={{ perspective: '560px' }}>
+                                    <div className="relative" style={{ perspective: '620px' }}>
+                                      <div
+                                        className="absolute left-1/2 top-[18px] -translate-x-1/2 h-24 w-28 rounded-full opacity-85"
+                                        style={{
+                                          background: pieGradient,
+                                          transform: 'rotateX(66deg) scaleY(0.78)',
+                                          filter: 'brightness(0.7) saturate(0.95)',
+                                        }}
+                                      />
                                       <button
                                         onClick={() => {
                                           const top = [...normalized].sort((a, b) => b.percent - a.percent)[0];
@@ -624,30 +631,29 @@ const Index = () => {
                                         }}
                                         disabled={isVoting}
                                         type="button"
-                                        className="relative h-28 w-28 rounded-full shadow-[0_18px_18px_rgba(0,0,0,0.14)] disabled:opacity-70"
+                                        className="relative h-28 w-28 rounded-full shadow-[0_20px_22px_rgba(0,0,0,0.16)] disabled:opacity-70"
                                         style={{
                                           background: pieGradient,
-                                          transform: 'rotateX(26deg)',
+                                          transform: 'rotateX(34deg) translateY(-3px)',
                                         }}
                                         aria-label="Гласувай от графиката"
                                       >
-                                        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/15 via-transparent to-white/20" />
-                                        <div className="absolute inset-[26%] rounded-full bg-white/88 backdrop-blur-[1px]" />
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 via-transparent to-white/20" />
+                                        <div className="absolute inset-[24%] rounded-full bg-white/90 backdrop-blur-[1px]" />
                                       </button>
                                       <div className="mt-1 text-center text-[10px] font-black text-gray-500">
                                         {selectedTopic.totalVotes} гласа
                                       </div>
                                     </div>
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-1.5 overflow-hidden">
                                       {rightLegend.map((option) => (
                                         <button
                                           key={`poll-right-${option.id}`}
                                           onClick={() => handleVote(option.id)}
                                           disabled={isVoting}
                                           type="button"
-                                          className="w-full min-w-0 text-right flex items-center justify-end gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
+                                          className="w-full min-w-0 max-w-full overflow-hidden text-right flex items-center justify-end gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
                                         >
-                                          <span className="text-gray-400">←</span>
                                           <span className="truncate">{option.label}</span>
                                           <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
                                         </button>
