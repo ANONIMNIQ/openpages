@@ -14,6 +14,7 @@ const Index = () => {
     id: string;
     title: string;
     description: string;
+    tag?: string | null;
     argumentsCount: number;
     pro: Array<{ id?: string; author: string; text: string; comments?: Array<{ id: string; type: 'pro' | 'con'; text: string }> }>;
     con: Array<{ id?: string; author: string; text: string; comments?: Array<{ id: string; type: 'pro' | 'con'; text: string }> }>;
@@ -203,6 +204,7 @@ const Index = () => {
                       key={topic.id}
                       title={topic.title}
                       description={topic.description}
+                      tag={topic.tag}
                       argumentsCount={topic.argumentsCount}
                       dominantSide={dominantSide}
                       dominantPercent={dominantPercent}
@@ -231,9 +233,11 @@ const Index = () => {
 
                 <motion.header variants={detailItem} className="mb-16">
                   <div className="flex items-center gap-3 mb-8">
-                    <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                      Дебат на деня
-                    </span>
+                    {selectedTopic?.tag ? (
+                      <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                        {selectedTopic.tag}
+                      </span>
+                    ) : null}
                     <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
                       <ShieldCheck size={12} /> 100% Анонимно
                     </div>
@@ -294,7 +298,7 @@ const Index = () => {
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="fixed left-0 right-auto top-[22rem] md:top-[24rem] bottom-0 w-full max-w-2xl z-50 rounded-t-2xl bg-white border-t border-gray-200 shadow-[0_-20px_50px_rgba(0,0,0,0.08)]"
+                className="fixed left-0 right-auto top-0 lg:top-[24rem] bottom-0 w-full max-w-2xl z-50 rounded-none lg:rounded-t-2xl bg-white border-t border-gray-200 shadow-[0_-20px_50px_rgba(0,0,0,0.08)]"
               >
                 <div className="h-full overflow-y-auto p-6 md:p-8 flex flex-col">
                   <div className="flex items-center justify-between mb-6 shrink-0">
@@ -342,7 +346,7 @@ const Index = () => {
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder="Напиши аргумента си анонимно..."
-                        className="w-full h-full min-h-[14rem] resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition"
+                        className="w-full h-full min-h-[14rem] resize-none rounded-xl border border-gray-200 px-4 py-3 text-base md:text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition"
                         required
                       />
                     </div>
