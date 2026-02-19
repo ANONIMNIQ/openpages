@@ -578,43 +578,85 @@ const Index = () => {
                         <div className="space-y-4">
                           <div className="relative rounded-2xl border border-gray-200 bg-white p-4">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Резултати</div>
-                            <div className="h-44 rounded-xl border border-gray-100 bg-[#fafafa] px-3 pt-3 pb-2">
-                              <div className="h-28 grid grid-cols-2 sm:grid-cols-3 gap-2 items-end">
-                                {selectedTopic.voteOptions.map((option, idx) => {
-                                  const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
-                                  const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                  return (
-                                    <button
-                                      key={`poll-chart-${option.id}`}
-                                      onClick={() => handleVote(option.id)}
-                                      disabled={isVoting}
-                                      className="group min-w-0 h-full flex flex-col items-center justify-end gap-1.5 disabled:opacity-70"
-                                      type="button"
-                                    >
-                                      <div className="text-[10px] font-black text-gray-500">{percent}%</div>
-                                      <motion.div
-                                        className="w-full max-w-[70px] rounded-t-lg"
-                                        style={{ backgroundColor: color }}
-                                        initial={{ height: '8%' }}
-                                        animate={{ height: `${Math.max(percent, 8)}%` }}
-                                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                                      />
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {selectedTopic.voteOptions.map((option, idx) => {
-                                  const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                  return (
-                                    <div key={`poll-label-${option.id}`} className="min-w-0 flex items-center justify-center gap-1.5">
-                                      <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                                      <span className="text-[10px] font-semibold text-gray-600 truncate">{option.label}</span>
+                            {(() => {
+                              const enriched = selectedTopic.voteOptions.map((option, idx) => {
+                                const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                                const percent = selectedTopic.totalVotes > 0 ? (option.votes / selectedTopic.totalVotes) * 100 : 0;
+                                return { ...option, color, percent };
+                              });
+                              const totalPercent = enriched.reduce((sum, option) => sum + option.percent, 0);
+                              const normalized = totalPercent > 0 ? enriched : enriched.map((option) => ({ ...option, percent: 100 / Math.max(enriched.length, 1) }));
+                              let start = 0;
+                              const stops = normalized.map((option) => {
+                                const from = start;
+                                const to = start + option.percent;
+                                start = to;
+                                return `${option.color} ${from}% ${to}%`;
+                              });
+                              const pieGradient = `conic-gradient(${stops.join(', ')})`;
+                              const mid = Math.ceil(normalized.length / 2);
+                              const leftLegend = normalized.slice(0, mid);
+                              const rightLegend = normalized.slice(mid);
+
+                              return (
+                                <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
+                                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                    <div className="space-y-1.5">
+                                      {leftLegend.map((option) => (
+                                        <button
+                                          key={`poll-left-${option.id}`}
+                                          onClick={() => handleVote(option.id)}
+                                          disabled={isVoting}
+                                          type="button"
+                                          className="w-full min-w-0 text-left flex items-center gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
+                                        >
+                                          <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
+                                          <span className="truncate">{option.label}</span>
+                                          <span className="text-gray-400">→</span>
+                                        </button>
+                                      ))}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                                    <div className="relative" style={{ perspective: '560px' }}>
+                                      <button
+                                        onClick={() => {
+                                          const top = [...normalized].sort((a, b) => b.percent - a.percent)[0];
+                                          if (top) void handleVote(top.id);
+                                        }}
+                                        disabled={isVoting}
+                                        type="button"
+                                        className="relative h-28 w-28 rounded-full shadow-[0_18px_18px_rgba(0,0,0,0.14)] disabled:opacity-70"
+                                        style={{
+                                          background: pieGradient,
+                                          transform: 'rotateX(26deg)',
+                                        }}
+                                        aria-label="Гласувай от графиката"
+                                      >
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/15 via-transparent to-white/20" />
+                                        <div className="absolute inset-[26%] rounded-full bg-white/88 backdrop-blur-[1px]" />
+                                      </button>
+                                      <div className="mt-1 text-center text-[10px] font-black text-gray-500">
+                                        {selectedTopic.totalVotes} гласа
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      {rightLegend.map((option) => (
+                                        <button
+                                          key={`poll-right-${option.id}`}
+                                          onClick={() => handleVote(option.id)}
+                                          disabled={isVoting}
+                                          type="button"
+                                          className="w-full min-w-0 text-right flex items-center justify-end gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
+                                        >
+                                          <span className="text-gray-400">←</span>
+                                          <span className="truncate">{option.label}</span>
+                                          <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Гласувай с бутон</div>
                           <div className="grid grid-cols-1 gap-2">
