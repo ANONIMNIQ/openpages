@@ -215,7 +215,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
       {/* Main Content Column - Starts from the very left */}
-      <main ref={mainRef} className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${mainOverflowClass} bg-white relative`}>
+      <main ref={mainRef} className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${mainOverflowClass} ${showBootLoader ? 'bg-gray-100' : 'bg-white'} relative`}>
         <AnimatePresence mode="wait">
           {!selectedTopicId ? (
             showBootLoader ? (
@@ -224,19 +224,19 @@ const Index = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="relative w-full h-full overflow-hidden bg-white"
+                className="relative w-full h-full overflow-hidden bg-gray-100"
               >
                 <motion.div
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-y-0 left-0 bg-black/[0.04]"
+                  className="absolute inset-y-0 left-0 bg-white"
                 />
                 <motion.div
                   initial={{ left: '-18%' }}
                   animate={{ left: '100%' }}
                   transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-y-0 w-[18%] bg-gradient-to-r from-transparent via-black/[0.08] to-transparent"
+                  className="absolute inset-y-0 w-[18%] bg-gradient-to-r from-transparent via-white/80 to-transparent"
                 />
               </motion.div>
             ) : (
