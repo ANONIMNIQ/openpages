@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil } from 'lucide-react';
 import { createPublicArgument, fetchPublishedTopicsWithArguments } from '@/lib/supabase-data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
@@ -27,9 +28,15 @@ const Index = () => {
   const [collapseAllSignal, setCollapseAllSignal] = useState(0);
   const [isCollapsingStacks, setIsCollapsingStacks] = useState(false);
   const [activeCommentStackType, setActiveCommentStackType] = useState<'pro' | 'con' | null>(null);
+  const [isTopicsLoading, setIsTopicsLoading] = useState(true);
+  const [isBootBarComplete, setIsBootBarComplete] = useState(false);
+  const [isDetailOpening, setIsDetailOpening] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
+  const detailOpenTimeoutRef = useRef<number | null>(null);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
+  const isDetailContentLoading = isDetailOpening || !selectedTopic;
+  const showBootLoader = !selectedTopicId && !isBootBarComplete;
   const proArgumentsWithIds = (selectedTopic?.pro ?? []).map((arg, idx) => ({
     ...arg,
     id: arg.id ?? `topic-${selectedTopic?.id}-pro-${idx}`,
@@ -60,11 +67,24 @@ const Index = () => {
 
   const handleOpenTopic = (topicId: string) => {
     resetTopicViewState();
+    if (detailOpenTimeoutRef.current !== null) {
+      window.clearTimeout(detailOpenTimeoutRef.current);
+    }
+    setIsDetailOpening(true);
     setSelectedTopicId(topicId);
+    detailOpenTimeoutRef.current = window.setTimeout(() => {
+      setIsDetailOpening(false);
+      detailOpenTimeoutRef.current = null;
+    }, 380);
   };
 
   const handleBackToList = () => {
     resetTopicViewState();
+    setIsDetailOpening(false);
+    if (detailOpenTimeoutRef.current !== null) {
+      window.clearTimeout(detailOpenTimeoutRef.current);
+      detailOpenTimeoutRef.current = null;
+    }
     setSelectedTopicId(null);
   };
 
@@ -150,6 +170,13 @@ const Index = () => {
   };
 
   useEffect(() => {
+    const introTimeoutId = window.setTimeout(() => setIsBootBarComplete(true), 1100);
+    return () => {
+      window.clearTimeout(introTimeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
     let canceled = false;
     const load = async () => {
       try {
@@ -159,6 +186,10 @@ const Index = () => {
         }
       } catch (error) {
         console.warn('Failed to load topics from Supabase.', error);
+      } finally {
+        if (!canceled) {
+          setIsTopicsLoading(false);
+        }
       }
     };
 
@@ -168,69 +199,116 @@ const Index = () => {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (detailOpenTimeoutRef.current !== null) {
+        window.clearTimeout(detailOpenTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
       {/* Main Content Column - Starts from the very left */}
       <main ref={mainRef} className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${mainOverflowClass} bg-white relative`}>
         <AnimatePresence mode="wait">
           {!selectedTopicId ? (
-            <motion.div 
-              key="list"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
-            >
-              <header className="mb-12 flex justify-between items-start">
-                <div>
-                  <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
-                    <motion.span
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
-                      animate={{ scale: [1, 1.08, 1] }}
-                      transition={{ duration: 1.2, times: [0, 0.5, 1], repeat: Infinity, repeatDelay: 3.5 }}
-                      aria-label="Open pages logo"
-                    >
-                      <Pencil size={16} />
-                    </motion.span>
-                    <span className="inline-block leading-none -translate-y-[2px]">pen pages</span>
-                  </h1>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
-                    Отворена платформа за анонимни дискусии
-                  </p>
-                </div>
-                <button className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-                  <Menu size={20} />
-                </button>
-              </header>
-
-              <div className="space-y-2">
-                {topicsData.length === 0 ? (
-                  <div className="py-12 text-sm text-gray-400">
-                    Няма публикувани теми. Добави нова тема от <span className="font-bold text-gray-500">/admin</span>.
-                  </div>
-                ) : topicsData.map(topic => {
-                  const proCount = topic.pro.length;
-                  const conCount = topic.con.length;
-                  const total = Math.max(proCount + conCount, 1);
-                  const proShare = Math.round((proCount / total) * 100);
-                  const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
-                  const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
-
-                  return (
-                    <TopicCard 
-                      key={topic.id}
-                      title={topic.title}
-                      description={topic.description}
-                      tag={topic.tag}
-                      argumentsCount={topic.argumentsCount}
-                      dominantSide={dominantSide}
-                      dominantPercent={dominantPercent}
-                      onClick={() => handleOpenTopic(topic.id)}
+            showBootLoader ? (
+              <motion.div
+                key="list-loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full flex items-center"
+              >
+                <div className="w-full px-8 md:px-12">
+                  <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                    <motion.div
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                      className="h-full bg-black"
                     />
-                  );
-                })}
-              </div>
-            </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
+              >
+                <header className="mb-12 flex justify-between items-start">
+                  <div>
+                    <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
+                      <motion.span
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
+                        animate={{ scale: [1, 1.08, 1] }}
+                        transition={{ duration: 1.2, times: [0, 0.5, 1], repeat: Infinity, repeatDelay: 3.5 }}
+                        aria-label="Open pages logo"
+                      >
+                        <Pencil size={16} />
+                      </motion.span>
+                      <span className="inline-block leading-none -translate-y-[2px]">pen pages</span>
+                    </h1>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
+                      Отворена платформа за анонимни дискусии
+                    </p>
+                  </div>
+                  <button className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                    <Menu size={20} />
+                  </button>
+                </header>
+
+                <div className="space-y-2">
+                  {isTopicsLoading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <div key={`topic-skeleton-${idx}`} className="border-b border-gray-100 py-10 pr-6 rounded-xl px-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Skeleton className="h-5 w-28 rounded-sm" />
+                          <Skeleton className="h-[1px] w-10" />
+                        </div>
+                        <Skeleton className="h-8 w-[82%] mb-3" />
+                        <Skeleton className="h-8 w-[70%] mb-5" />
+                        <Skeleton className="h-4 w-[88%] mb-2" />
+                        <Skeleton className="h-4 w-[62%] mb-6" />
+                        <div className="flex items-center justify-between mb-4">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-4 w-16" />
+                        </div>
+                        <Skeleton className="h-1.5 w-full rounded-full" />
+                      </div>
+                    ))
+                  ) : topicsData.length === 0 ? (
+                    <div className="py-12 text-sm text-gray-400">
+                      Няма публикувани теми. Добави нова тема от <span className="font-bold text-gray-500">/admin</span>.
+                    </div>
+                  ) : topicsData.map(topic => {
+                    const proCount = topic.pro.length;
+                    const conCount = topic.con.length;
+                    const total = Math.max(proCount + conCount, 1);
+                    const proShare = Math.round((proCount / total) * 100);
+                    const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
+                    const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
+
+                    return (
+                      <TopicCard
+                        key={topic.id}
+                        title={topic.title}
+                        description={topic.description}
+                        tag={topic.tag}
+                        argumentsCount={topic.argumentsCount}
+                        dominantSide={dominantSide}
+                        dominantPercent={dominantPercent}
+                        onClick={() => handleOpenTopic(topic.id)}
+                      />
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )
           ) : (
             <motion.div 
               key="detail"
@@ -249,24 +327,39 @@ const Index = () => {
                 </motion.button>
 
                 <motion.header variants={detailItem} className="mb-16">
-                  <div className="flex items-center gap-3 mb-8">
-                    {selectedTopic?.tag ? (
-                      <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                        {selectedTopic.tag}
-                      </span>
-                    ) : null}
-                    <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
-                      <ShieldCheck size={12} /> 100% Анонимно
+                  {isDetailContentLoading ? (
+                    <div>
+                      <div className="flex items-center gap-3 mb-8">
+                        <Skeleton className="h-5 w-24 rounded-sm" />
+                        <Skeleton className="h-4 w-28" />
+                      </div>
+                      <Skeleton className="h-10 w-[86%] mb-3" />
+                      <Skeleton className="h-10 w-[64%] mb-6" />
+                      <Skeleton className="h-4 w-[82%] mb-2" />
+                      <Skeleton className="h-4 w-[70%]" />
                     </div>
-                  </div>
-                  
-                  <h1 className="text-3xl font-black text-black leading-[1.1] tracking-tight mb-6">
-                    {selectedTopic?.title}
-                  </h1>
-                  
-                  <p className="text-sm text-gray-500 leading-relaxed max-w-md">
-                    {selectedTopic?.description}
-                  </p>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 mb-8">
+                        {selectedTopic?.tag ? (
+                          <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                            {selectedTopic.tag}
+                          </span>
+                        ) : null}
+                        <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
+                          <ShieldCheck size={12} /> 100% Анонимно
+                        </div>
+                      </div>
+                      
+                      <h1 className="text-3xl font-black text-black leading-[1.1] tracking-tight mb-6">
+                        {selectedTopic?.title}
+                      </h1>
+                      
+                      <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+                        {selectedTopic?.description}
+                      </p>
+                    </>
+                  )}
                 </motion.header>
 
                 <motion.div variants={detailItem} className="space-y-12">
