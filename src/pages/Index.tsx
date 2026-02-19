@@ -448,6 +448,7 @@ const Index = () => {
                         dominantSide: topic.contentType === 'vs' ? (top.id === 'left' ? 'pro' : 'con') : 'pro' as 'pro' | 'con',
                         dominantPercent,
                         dominantLabel: top.label,
+                        dominantColor: top.color ?? undefined,
                       };
                     })();
                     const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
@@ -464,6 +465,7 @@ const Index = () => {
                         dominantSide={metric.dominantSide}
                         dominantPercent={metric.dominantPercent}
                         dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
+                        dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
                         onClick={() => handleOpenTopic(topic.id)}
                       />
                     );

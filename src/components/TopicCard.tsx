@@ -15,6 +15,7 @@ interface TopicCardProps {
   dominantSide: 'pro' | 'con';
   dominantPercent: number;
   dominantLabel?: string;
+  dominantColor?: string;
   onClick: () => void;
 }
 
@@ -28,6 +29,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   dominantSide,
   dominantPercent,
   dominantLabel,
+  dominantColor,
   onClick,
 }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
@@ -35,6 +37,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const accentText = dominantSide === 'pro' ? 'text-emerald-700' : 'text-rose-700';
   const accentLabel = dominantSide === 'pro' ? 'ЗА' : 'ПРОТИВ';
   const accentBar = dominantSide === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
+  const resolvedBarStyle = contentType === 'poll' && dominantColor ? { backgroundColor: dominantColor } : undefined;
   const CounterIcon = contentType === 'vs' ? Swords : contentType === 'poll' ? BarChart3 : MessageSquare;
 
   useEffect(() => {
@@ -86,7 +89,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
       <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
         <motion.div
-          className={`h-full ${accentBar}`}
+          className={`h-full ${resolvedBarStyle ? '' : accentBar}`}
+          style={resolvedBarStyle}
           initial={{ width: 0 }}
           animate={{ width: `${dominantPercent}%` }}
           transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
