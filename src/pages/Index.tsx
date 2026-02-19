@@ -577,23 +577,31 @@ const Index = () => {
                                 <AnimatePresence>
                                   {isOptionCelebrating ? (
                                     <div className="pointer-events-none absolute inset-0 overflow-visible">
-                                      {['👍', '❤️', '🔥', '👏', '💥', '🎉', '💚', '✨'].map((emoji, emojiIdx) => (
+                                      {Array.from({ length: 34 }).map((_, emojiIdx) => {
+                                        const palette = ['❤️', '❤️', '❤️', '👍', '👍', '🔥', '👏', '💥', '🎉', '💚', '✨'];
+                                        const emoji = palette[emojiIdx % palette.length];
+                                        const spread = 36 + (emojiIdx % 10) * 18;
+                                        const direction = emojiIdx % 2 === 0 ? 1 : -1;
+                                        const x = direction * spread;
+                                        const y = -70 - (emojiIdx % 7) * 24;
+                                        return (
                                         <motion.span
                                           key={`${emoji}-${emojiIdx}-${voteFx?.token}`}
                                           initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }}
                                           animate={{
                                             opacity: [0, 1, 0],
-                                            x: (emojiIdx - 3.5) * 16,
-                                            y: -80 - (emojiIdx % 3) * 24,
-                                            scale: [0.5, 1.1, 0.95],
-                                            rotate: (emojiIdx % 2 === 0 ? 1 : -1) * 28,
+                                            x,
+                                            y,
+                                            scale: [0.45, 1.25, 0.95],
+                                            rotate: (emojiIdx % 2 === 0 ? 1 : -1) * (24 + (emojiIdx % 5) * 8),
                                           }}
-                                          transition={{ duration: 0.8, delay: emojiIdx * 0.02, ease: 'easeOut' }}
-                                          className="absolute left-1/2 top-1/2 text-xl"
+                                          transition={{ duration: 0.95, delay: emojiIdx * 0.012, ease: 'easeOut' }}
+                                          className="absolute left-1/2 top-[58%] text-2xl"
                                         >
                                           {emoji}
                                         </motion.span>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   ) : null}
                                 </AnimatePresence>
