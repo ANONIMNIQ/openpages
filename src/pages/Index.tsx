@@ -51,6 +51,23 @@ const Index = () => {
     setComposerError(null);
   };
 
+  const resetTopicViewState = () => {
+    setActiveCommentStackType(null);
+    setIsCollapsingStacks(false);
+    setIsComposerOpen(false);
+    setComposerError(null);
+  };
+
+  const handleOpenTopic = (topicId: string) => {
+    resetTopicViewState();
+    setSelectedTopicId(topicId);
+  };
+
+  const handleBackToList = () => {
+    resetTopicViewState();
+    setSelectedTopicId(null);
+  };
+
   const handleCollapseAllStacks = () => {
     if (isCollapsingStacks) return;
 
@@ -208,7 +225,7 @@ const Index = () => {
                       argumentsCount={topic.argumentsCount}
                       dominantSide={dominantSide}
                       dominantPercent={dominantPercent}
-                      onClick={() => setSelectedTopicId(topic.id)}
+                      onClick={() => handleOpenTopic(topic.id)}
                     />
                   );
                 })}
@@ -225,7 +242,7 @@ const Index = () => {
               <motion.div variants={detailStagger} initial="hidden" animate="show">
                 <motion.button
                   variants={detailItem}
-                  onClick={() => setSelectedTopicId(null)}
+                  onClick={handleBackToList}
                   className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12"
                 >
                   <ArrowLeft size={14} /> Обратно към списъка
