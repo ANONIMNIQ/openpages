@@ -114,6 +114,20 @@ create policy "Admins can insert arguments"
   to authenticated
   with check (public.is_admin());
 
+drop policy if exists "Public can insert arguments" on public.arguments;
+create policy "Public can insert arguments"
+  on public.arguments
+  for insert
+  to anon, authenticated
+  with check (
+    exists (
+      select 1
+      from public.topics t
+      where t.id = topic_id
+        and t.published = true
+    )
+  );
+
 drop policy if exists "Admins can update arguments" on public.arguments;
 create policy "Admins can update arguments"
   on public.arguments

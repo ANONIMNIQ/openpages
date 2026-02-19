@@ -56,3 +56,34 @@ export async function fetchPublishedTopicsWithArguments() {
     };
   });
 }
+
+export async function createPublicArgument(input: {
+  topicId: string;
+  side: "pro" | "con";
+  text: string;
+}) {
+  if (!isSupabaseConfigured()) return null;
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) return null;
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/arguments`, {
+    method: "POST",
+    headers: {
+      ...getSupabaseHeaders(),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      topic_id: input.topicId,
+      side: input.side,
+      text: input.text,
+      author: "Анонимен",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create argument (${response.status})`);
+  }
+
+  const rows = (await response.json()) as DbArgument[];
+  return rows[0] ?? null;
+}

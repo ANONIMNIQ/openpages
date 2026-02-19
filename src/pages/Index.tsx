@@ -6,7 +6,7 @@ import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil } from 'lucide-react';
-import { fetchPublishedTopicsWithArguments } from '@/lib/supabase-data';
+import { createPublicArgument, fetchPublishedTopicsWithArguments } from '@/lib/supabase-data';
 
 const Index = () => {
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
@@ -21,6 +21,8 @@ const Index = () => {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerType, setComposerType] = useState<'pro' | 'con'>('pro');
   const [commentText, setCommentText] = useState('');
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const [isPublishingArgument, setIsPublishingArgument] = useState(false);
   const [collapseAllSignal, setCollapseAllSignal] = useState(0);
   const [isCollapsingStacks, setIsCollapsingStacks] = useState(false);
   const [activeCommentStackType, setActiveCommentStackType] = useState<'pro' | 'con' | null>(null);
@@ -38,12 +40,14 @@ const Index = () => {
 
   const handleOpenComposer = (type: 'pro' | 'con') => {
     setComposerType(type);
+    setComposerError(null);
     setIsComposerOpen(true);
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCloseComposer = () => {
     setIsComposerOpen(false);
+    setComposerError(null);
   };
 
   const handleCollapseAllStacks = () => {
@@ -64,10 +68,52 @@ const Index = () => {
 
   const mainOverflowClass = isCollapsingStacks ? 'overflow-y-scroll' : 'overflow-y-auto';
 
-  const handlePublishComment = (e: React.FormEvent) => {
+  const handlePublishComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCommentText('');
-    setIsComposerOpen(false);
+    if (!selectedTopic) return;
+
+    setComposerError(null);
+    setIsPublishingArgument(true);
+    try {
+      const trimmedText = commentText.trim();
+      if (!trimmedText) return;
+
+      const createdArgument = await createPublicArgument({
+        topicId: selectedTopic.id,
+        side: composerType,
+        text: trimmedText,
+      });
+
+      if (createdArgument) {
+        setTopicsData((prev) =>
+          prev.map((topic) => {
+            if (topic.id !== selectedTopic.id) return topic;
+            const newArgument = {
+              id: createdArgument.id,
+              author: createdArgument.author,
+              text: createdArgument.text,
+            };
+            return {
+              ...topic,
+              argumentsCount: topic.argumentsCount + 1,
+              pro: composerType === 'pro' ? [...topic.pro, newArgument] : topic.pro,
+              con: composerType === 'con' ? [...topic.con, newArgument] : topic.con,
+            };
+          })
+        );
+      } else {
+        const refreshed = await fetchPublishedTopicsWithArguments();
+        if (refreshed) setTopicsData(refreshed);
+      }
+
+      setCommentText('');
+      setIsComposerOpen(false);
+    } catch (error) {
+      setComposerError('Неуспешно публикуване. Опитай отново.');
+      console.warn('Create argument failed', error);
+    } finally {
+      setIsPublishingArgument(false);
+    }
   };
 
   const handleScrollMainTop = () => {
@@ -303,12 +349,16 @@ const Index = () => {
 
                     <button
                       type="submit"
+                      disabled={isPublishingArgument}
                       className={`h-11 px-6 rounded-full text-white text-[11px] font-black uppercase tracking-[0.2em] transition-colors shrink-0 self-center ${
                         composerType === 'pro' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
-                      }`}
+                      } ${isPublishingArgument ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                      Публикувай
+                      {isPublishingArgument ? 'Публикуване...' : 'Публикувай'}
                     </button>
+                    {composerError ? (
+                      <p className="text-sm text-rose-600 text-center">{composerError}</p>
+                    ) : null}
                   </form>
                 </div>
               </motion.div>
