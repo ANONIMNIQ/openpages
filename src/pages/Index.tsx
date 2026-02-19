@@ -333,6 +333,7 @@ const Index = () => {
                       return {
                         dominantSide: topic.contentType === 'vs' ? (top.id === 'left' ? 'pro' : 'con') : 'pro' as 'pro' | 'con',
                         dominantPercent,
+                        dominantLabel: top.label,
                       };
                     })();
                     const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
@@ -345,8 +346,10 @@ const Index = () => {
                         tag={topic.tag}
                         argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
                         countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
+                        contentType={topic.contentType}
                         dominantSide={metric.dominantSide}
                         dominantPercent={metric.dominantPercent}
+                        dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
                         onClick={() => handleOpenTopic(topic.id)}
                       />
                     );
@@ -476,15 +479,15 @@ const Index = () => {
                                 key={option.id}
                                 onClick={() => handleVote(option.id)}
                                 disabled={isVoting}
-                                className={`rounded-xl border bg-white p-4 text-left hover:shadow-md transition-shadow disabled:opacity-70 ${tone}`}
+                                className={`rounded-xl border bg-white p-5 text-left hover:shadow-md transition-shadow disabled:opacity-70 min-h-[30rem] ${tone}`}
                               >
                                 {option.image ? (
-                                  <img src={option.image} alt={option.label} className="w-full h-44 object-cover rounded-lg mb-3" />
+                                  <img src={option.image} alt={option.label} className="w-full h-72 md:h-80 object-cover object-top rounded-lg mb-4" />
                                 ) : (
-                                  <div className="w-full h-44 rounded-lg mb-3 bg-gray-100" />
+                                  <div className="w-full h-72 md:h-80 rounded-lg mb-4 bg-gray-100" />
                                 )}
-                                <p className="text-base font-black text-black mb-2">{option.label}</p>
-                                <p className="text-xs font-bold text-gray-500 mb-2">{option.votes} гласа</p>
+                                <p className="text-lg font-black text-black mb-2">{option.label}</p>
+                                <p className="text-xs font-bold text-gray-500 mb-3">{option.votes} гласа</p>
                                 <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                                   <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
                                 </div>

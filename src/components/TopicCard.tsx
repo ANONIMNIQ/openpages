@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { animate, motion, useMotionValue } from 'framer-motion';
-import { MessageSquare } from 'lucide-react';
+import { BarChart3, MessageSquare, Swords } from 'lucide-react';
+import type { ContentType } from '@/lib/supabase-data';
 
 interface TopicCardProps {
   title: string;
@@ -10,8 +11,10 @@ interface TopicCardProps {
   tag?: string | null;
   argumentsCount: number;
   countLabel?: string;
+  contentType?: ContentType;
   dominantSide: 'pro' | 'con';
   dominantPercent: number;
+  dominantLabel?: string;
   onClick: () => void;
 }
 
@@ -21,8 +24,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
   tag,
   argumentsCount,
   countLabel = 'аргумента',
+  contentType = 'debate',
   dominantSide,
   dominantPercent,
+  dominantLabel,
   onClick,
 }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
@@ -30,6 +35,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const accentText = dominantSide === 'pro' ? 'text-emerald-700' : 'text-rose-700';
   const accentLabel = dominantSide === 'pro' ? 'ЗА' : 'ПРОТИВ';
   const accentBar = dominantSide === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
+  const CounterIcon = contentType === 'vs' ? Swords : contentType === 'poll' ? BarChart3 : MessageSquare;
 
   useEffect(() => {
     percentMotion.set(0);
@@ -71,10 +77,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
       
       <div className="flex items-center justify-between gap-6 mb-4">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <MessageSquare size={14} /> {argumentsCount} {countLabel}
+          <CounterIcon size={14} /> {argumentsCount} {countLabel}
         </div>
         <div className={`text-[10px] font-black uppercase tracking-widest ${accentText}`}>
-          {accentLabel} {animatedPercent}%
+          {(dominantLabel ?? accentLabel)} {animatedPercent}%
         </div>
       </div>
 
