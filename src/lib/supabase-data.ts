@@ -32,6 +32,7 @@ export interface TopicVoteOption {
   id: string;
   label: string;
   image?: string | null;
+  color?: string | null;
   votes: number;
 }
 
@@ -80,6 +81,7 @@ const toVoteOptions = (topic: DbTopic, votesByOption: Record<string, number>) =>
         id,
         label,
         image: null,
+        color: option.color ? String(option.color) : null,
         votes: votesByOption[id] ?? 0,
       } satisfies TopicVoteOption;
     });
@@ -95,12 +97,14 @@ const toVoteOptions = (topic: DbTopic, votesByOption: Record<string, number>) =>
         id: leftId,
         label: String(left.name ?? "Ляв избор"),
         image: left.image ? String(left.image) : null,
+        color: null,
         votes: votesByOption[leftId] ?? 0,
       },
       {
         id: rightId,
         label: String(right.name ?? "Десен избор"),
         image: right.image ? String(right.image) : null,
+        color: null,
         votes: votesByOption[rightId] ?? 0,
       },
     ] satisfies TopicVoteOption[];

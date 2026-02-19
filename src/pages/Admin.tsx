@@ -22,17 +22,25 @@ type VsData = {
 };
 
 type PollData = {
-  options: Array<{ id: string; label: string }>;
+  options: Array<{ id: string; label: string; color?: string | null }>;
 };
 
 const optionId = (idx: number) => `opt-${idx + 1}`;
-
-const parsePollData = (raw: string): PollData => ({
-  options: raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((label, idx) => ({ id: optionId(idx), label })),
+const defaultPollColors = ["#111827", "#16a34a", "#e11d48", "#2563eb", "#d97706", "#7c3aed", "#0891b2", "#0f766e"];
+type PollOptionInput = { id: string; label: string; color: string };
+const nextPollOption = (idx: number): PollOptionInput => ({
+  id: `opt-${Date.now()}-${idx + 1}`,
+  label: "",
+  color: defaultPollColors[idx % defaultPollColors.length],
+});
+const toPollData = (options: PollOptionInput[]): PollData => ({
+  options: options
+    .map((option, idx) => ({
+      id: option.id || optionId(idx),
+      label: option.label.trim(),
+      color: option.color || defaultPollColors[idx % defaultPollColors.length],
+    }))
+    .filter((option) => option.label.length > 0),
 });
 
 const asVsData = (raw: unknown): VsData => {
@@ -58,6 +66,7 @@ const asPollData = (raw: unknown): PollData => {
     options: options.map((option, idx) => ({
       id: option.id ?? optionId(idx),
       label: option.label ?? "",
+      color: option.color ?? defaultPollColors[idx % defaultPollColors.length],
     })),
   };
 };
@@ -90,7 +99,7 @@ const Admin = () => {
   const [customTag, setCustomTag] = useState("");
   const [proText, setProText] = useState("");
   const [conText, setConText] = useState("");
-  const [pollOptionsText, setPollOptionsText] = useState("");
+  const [pollOptions, setPollOptions] = useState<PollOptionInput[]>([nextPollOption(0), nextPollOption(1)]);
   const [vsLeftName, setVsLeftName] = useState("");
   const [vsRightName, setVsRightName] = useState("");
   const [vsLeftImage, setVsLeftImage] = useState("");
@@ -105,7 +114,7 @@ const Admin = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editContentType, setEditContentType] = useState<ContentType>("debate");
   const [editCustomTag, setEditCustomTag] = useState("");
-  const [editPollOptionsText, setEditPollOptionsText] = useState("");
+  const [editPollOptions, setEditPollOptions] = useState<PollOptionInput[]>([nextPollOption(0), nextPollOption(1)]);
   const [editVsLeftName, setEditVsLeftName] = useState("");
   const [editVsRightName, setEditVsRightName] = useState("");
   const [editVsLeftImage, setEditVsLeftImage] = useState("");
@@ -156,7 +165,7 @@ const Admin = () => {
     setCustomTag("");
     setProText("");
     setConText("");
-    setPollOptionsText("");
+    setPollOptions([nextPollOption(0), nextPollOption(1)]);
     setVsLeftName("");
     setVsRightName("");
     setVsLeftImage("");
@@ -164,7 +173,7 @@ const Admin = () => {
   };
 
   const getCreateContentData = () => {
-    if (contentType === "poll") return parsePollData(pollOptionsText);
+    if (contentType === "poll") return toPollData(pollOptions);
     if (contentType === "vs") {
       return {
         left: { id: "left", name: vsLeftName.trim(), image: vsLeftImage || null },
@@ -175,7 +184,7 @@ const Admin = () => {
   };
 
   const getEditContentData = () => {
-    if (editContentType === "poll") return parsePollData(editPollOptionsText);
+    if (editContentType === "poll") return toPollData(editPollOptions);
     if (editContentType === "vs") {
       return {
         left: { id: "left", name: editVsLeftName.trim(), image: editVsLeftImage || null },
@@ -224,7 +233,7 @@ const Admin = () => {
       const conArguments = conText.split("\n").map((line) => line.trim()).filter(Boolean);
       const payloadContentData = getCreateContentData();
 
-      if (contentType === "poll" && parsePollData(pollOptionsText).options.length < 2) {
+      if (contentType === "poll" && toPollData(pollOptions).options.length < 2) {
         throw new Error("Анкетата трябва да има поне 2 опции.");
       }
       if (contentType === "vs" && (!vsLeftName.trim() || !vsRightName.trim())) {
@@ -295,7 +304,15 @@ const Admin = () => {
 
     if (type === "poll") {
       const poll = asPollData(topic.content_data);
-      setEditPollOptionsText(poll.options.map((option) => option.label).join("\n"));
+      setEditPollOptions(
+        poll.options.length > 0
+          ? poll.options.map((option, idx) => ({
+              id: option.id ?? optionId(idx),
+              label: option.label ?? "",
+              color: option.color ?? defaultPollColors[idx % defaultPollColors.length],
+            }))
+          : [nextPollOption(0), nextPollOption(1)]
+      );
       setEditVsLeftName("");
       setEditVsRightName("");
       setEditVsLeftImage("");
@@ -306,9 +323,9 @@ const Admin = () => {
       setEditVsRightName(vs.right.name);
       setEditVsLeftImage(vs.left.image ?? "");
       setEditVsRightImage(vs.right.image ?? "");
-      setEditPollOptionsText("");
+      setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
     } else {
-      setEditPollOptionsText("");
+      setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
       setEditVsLeftName("");
       setEditVsRightName("");
       setEditVsLeftImage("");
@@ -322,7 +339,7 @@ const Admin = () => {
     setEditDescription("");
     setEditContentType("debate");
     setEditCustomTag("");
-    setEditPollOptionsText("");
+    setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
     setEditVsLeftName("");
     setEditVsRightName("");
     setEditVsLeftImage("");
@@ -336,6 +353,12 @@ const Admin = () => {
     setMessage("");
     setLoading(true);
     try {
+      if (editContentType === "poll" && toPollData(editPollOptions).options.length < 2) {
+        throw new Error("Анкетата трябва да има поне 2 опции.");
+      }
+      if (editContentType === "vs" && (!editVsLeftName.trim() || !editVsRightName.trim())) {
+        throw new Error("VS блокът изисква и двете имена.");
+      }
       const targetTopic = topics.find((topic) => topic.id === topicId);
       await updateTopic(session.accessToken, topicId, {
         title: editTitle,
@@ -506,12 +529,52 @@ const Admin = () => {
                       />
                     ) : null}
                     {editContentType === "poll" ? (
-                      <textarea
-                        value={editPollOptionsText}
-                        onChange={(e) => setEditPollOptionsText(e.target.value)}
-                        placeholder="Опции за анкета (по една на ред)"
-                        className="w-full min-h-24 rounded-lg border border-gray-200 px-3 py-2"
-                      />
+                      <div className="space-y-2">
+                        {editPollOptions.map((option, idx) => (
+                          <div key={option.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
+                            <input
+                              value={option.label}
+                              onChange={(e) =>
+                                setEditPollOptions((prev) =>
+                                  prev.map((item) => (item.id === option.id ? { ...item, label: e.target.value } : item))
+                                )
+                              }
+                              placeholder={`Опция ${idx + 1}`}
+                              className="h-10 rounded-lg border border-gray-200 px-3"
+                            />
+                            <input
+                              type="color"
+                              value={option.color}
+                              onChange={(e) =>
+                                setEditPollOptions((prev) =>
+                                  prev.map((item) => (item.id === option.id ? { ...item, color: e.target.value } : item))
+                                )
+                              }
+                              className="h-10 w-12 rounded-lg border border-gray-200 p-1 bg-white"
+                              aria-label={`Цвят за опция ${idx + 1}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditPollOptions((prev) =>
+                                  prev.length <= 2 ? prev : prev.filter((item) => item.id !== option.id)
+                                )
+                              }
+                              className="h-10 px-3 rounded-lg border border-rose-200 text-rose-700 text-xs font-bold disabled:opacity-50"
+                              disabled={editPollOptions.length <= 2}
+                            >
+                              Махни
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setEditPollOptions((prev) => [...prev, nextPollOption(prev.length)])}
+                          className="h-9 px-4 rounded-full border border-gray-200 text-xs font-bold"
+                        >
+                          Добави опция
+                        </button>
+                      </div>
                     ) : null}
                     {editContentType === "vs" ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -566,13 +629,51 @@ const Admin = () => {
             ) : null}
 
             {contentType === "poll" ? (
-              <textarea
-                value={pollOptionsText}
-                onChange={(e) => setPollOptionsText(e.target.value)}
-                placeholder="Опции за анкета (по една на ред)"
-                className="w-full min-h-24 rounded-xl border border-gray-200 px-4 py-3"
-                required
-              />
+              <div className="space-y-2">
+                {pollOptions.map((option, idx) => (
+                  <div key={option.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
+                    <input
+                      value={option.label}
+                      onChange={(e) =>
+                        setPollOptions((prev) =>
+                          prev.map((item) => (item.id === option.id ? { ...item, label: e.target.value } : item))
+                        )
+                      }
+                      placeholder={`Опция ${idx + 1}`}
+                      className="h-11 rounded-xl border border-gray-200 px-4"
+                      required={idx < 2}
+                    />
+                    <input
+                      type="color"
+                      value={option.color}
+                      onChange={(e) =>
+                        setPollOptions((prev) =>
+                          prev.map((item) => (item.id === option.id ? { ...item, color: e.target.value } : item))
+                        )
+                      }
+                      className="h-11 w-14 rounded-xl border border-gray-200 p-1 bg-white"
+                      aria-label={`Цвят за опция ${idx + 1}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPollOptions((prev) => (prev.length <= 2 ? prev : prev.filter((item) => item.id !== option.id)))
+                      }
+                      className="h-11 px-3 rounded-xl border border-rose-200 text-rose-700 text-xs font-bold disabled:opacity-50"
+                      disabled={pollOptions.length <= 2}
+                    >
+                      Махни
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPollOptions((prev) => [...prev, nextPollOption(prev.length)])}
+                  className="h-10 px-5 rounded-full border border-gray-200 text-sm font-bold"
+                >
+                  Добави нов отговор
+                </button>
+              </div>
             ) : null}
 
             {contentType === "vs" ? (
