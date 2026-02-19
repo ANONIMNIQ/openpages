@@ -49,6 +49,14 @@ const Admin = () => {
       }, {}),
     [topics]
   );
+  const argumentMap = useMemo(
+    () =>
+      argumentsList.reduce<Record<string, AdminArgument>>((acc, argument) => {
+        acc[argument.id] = argument;
+        return acc;
+      }, {}),
+    [argumentsList]
+  );
 
   useEffect(() => {
     if (!session) return;
@@ -401,6 +409,12 @@ const Admin = () => {
             {comments.map((comment) => (
               <div key={comment.id} className="border border-gray-100 rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-1">{comment.type === "pro" ? "ЗА" : "ПРОТИВ"}</p>
+                {argumentMap[comment.argument_id] ? (
+                  <p className="text-xs text-gray-500 mb-2">
+                    {topicMap[argumentMap[comment.argument_id].topic_id]?.title ?? "Unknown topic"} ·{" "}
+                    {argumentMap[comment.argument_id].side === "pro" ? "Аргумент ЗА" : "Аргумент ПРОТИВ"}
+                  </p>
+                ) : null}
                 <p className="text-sm text-gray-800 mb-3">{comment.text}</p>
                 <button
                   onClick={() => onDeleteComment(comment.id)}

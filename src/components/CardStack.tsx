@@ -34,6 +34,8 @@ interface CardStackProps {
   onFocusModeChange?: (stackType: 'pro' | 'con' | null) => void;
 }
 
+const resolveCardId = (title: string, idx: number, argumentId?: string) => argumentId ?? `${title}-${idx}`;
+
 const CardStack: React.FC<CardStackProps> = ({
   title,
   type,
@@ -74,10 +76,10 @@ const CardStack: React.FC<CardStackProps> = ({
   };
 
   const displayedArgs = isExpanded ? args.slice(0, visibleCount) : args.slice(0, 5);
-  const hasExpandedVisibleCards = openCardId !== null && displayedArgs.some((_, idx) => `${title}-${idx}` === openCardId);
+  const hasExpandedVisibleCards = openCardId !== null && displayedArgs.some((arg, idx) => resolveCardId(title, idx, arg.id) === openCardId);
   const isCommentFocusMode = focusedCardId !== null;
   const isOtherStackFocused = globalFocusedStackType !== null && globalFocusedStackType !== type;
-  const displayedEntries = displayedArgs.map((arg, idx) => ({ arg, idx, cardId: `${title}-${idx}` }));
+  const displayedEntries = displayedArgs.map((arg, idx) => ({ arg, idx, cardId: resolveCardId(title, idx, arg.id) }));
   const orderedDisplayedEntries = isCommentFocusMode && focusedCardId
     ? [...displayedEntries].sort((a, b) => (a.cardId === focusedCardId ? -1 : b.cardId === focusedCardId ? 1 : 0))
     : displayedEntries;
@@ -86,7 +88,7 @@ const CardStack: React.FC<CardStackProps> = ({
     setCommentsByCard((prev) => {
       const next = { ...prev };
       args.forEach((arg, idx) => {
-        const cardId = arg.id ?? `${title}-${idx}`;
+        const cardId = resolveCardId(title, idx, arg.id);
         if (!(cardId in next)) {
           next[cardId] = arg.comments ? [...arg.comments] : [];
         }
@@ -98,7 +100,7 @@ const CardStack: React.FC<CardStackProps> = ({
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
-    const argumentIds = args.map((arg, idx) => arg.id ?? `${title}-${idx}`);
+    const argumentIds = args.map((arg, idx) => resolveCardId(title, idx, arg.id));
     let isCancelled = false;
 
     const loadComments = async () => {
@@ -233,7 +235,7 @@ const CardStack: React.FC<CardStackProps> = ({
         marginBottom: isOtherStackFocused ? 0 : 48,
       }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className={`w-full max-w-md overflow-hidden ${isOtherStackFocused ? 'pointer-events-none' : ''}`}
+      className={`w-full max-w-md overflow-visible ${isOtherStackFocused ? 'pointer-events-none' : ''}`}
     >
       <AnimatePresence initial={false}>
         {!isCommentFocusMode && (
