@@ -26,6 +26,7 @@ const Index = () => {
   const [isListSkeletonHold, setIsListSkeletonHold] = useState(false);
   const [isDetailOpening, setIsDetailOpening] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
+  const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
 
@@ -168,12 +169,26 @@ const Index = () => {
       });
       const refreshed = await fetchPublishedTopicsWithArguments();
       if (refreshed) setTopicsData(refreshed);
+      setVoteFx({
+        topicId: selectedTopic.id,
+        optionId,
+        type: selectedTopic.contentType,
+        token: Date.now(),
+      });
     } catch (error) {
       console.warn('Vote failed', error);
     } finally {
       setIsVoting(false);
     }
   };
+
+  useEffect(() => {
+    if (!voteFx) return;
+    const timeoutId = window.setTimeout(() => setVoteFx(null), 1350);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [voteFx]);
 
   const detailStagger = {
     hidden: {},
@@ -452,21 +467,64 @@ const Index = () => {
                     <div className="space-y-4">
                       {selectedTopic?.contentType === 'poll' ? selectedTopic.voteOptions.map((option) => {
                         const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                        const isOptionCelebrating =
+                          voteFx?.type === 'poll' &&
+                          voteFx.topicId === selectedTopic.id &&
+                          voteFx.optionId === option.id;
                         return (
-                          <button
+                          <motion.button
                             key={option.id}
                             onClick={() => handleVote(option.id)}
                             disabled={isVoting}
-                            className="w-full text-left rounded-xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow disabled:opacity-70"
+                            whileHover={{ y: -2, boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}
+                            whileTap={{ scale: 0.995 }}
+                            className="relative w-full text-left rounded-xl border border-gray-200 bg-white p-5 transition-shadow disabled:opacity-70"
                           >
                             <div className="flex items-center justify-between mb-3">
                               <span className="text-sm font-bold text-black">{option.label}</span>
                               <span className="text-xs font-bold text-gray-500">{option.votes} гласа</span>
                             </div>
-                            <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                              <div className="h-full bg-black transition-all duration-500" style={{ width: `${percent}%` }} />
+                            <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
+                              <motion.div
+                                className="h-full bg-black"
+                                animate={{
+                                  width: `${percent}%`,
+                                  boxShadow: isOptionCelebrating
+                                    ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
+                                    : '0 0 0 rgba(0,0,0,0)',
+                                  scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
+                                }}
+                                transition={{
+                                  width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                                  boxShadow: { duration: 0.55, ease: 'easeOut' },
+                                  scaleY: { duration: 0.35, ease: 'easeOut' },
+                                }}
+                              />
+                              <AnimatePresence>
+                                {isOptionCelebrating ? (
+                                  <>
+                                    <motion.span
+                                      key={`poll-drop-${voteFx?.token}`}
+                                      initial={{ y: -18, opacity: 0, scale: 0.6 }}
+                                      animate={{ y: 0, opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ duration: 0.28, ease: 'easeOut' }}
+                                      className="absolute right-6 -top-3 text-sm"
+                                    >
+                                      🗳️
+                                    </motion.span>
+                                    <motion.span
+                                      key={`poll-pop-${voteFx?.token}`}
+                                      initial={{ opacity: 0, scale: 0.4 }}
+                                      animate={{ opacity: [0, 0.7, 0], scale: [0.4, 1.8, 2.5] }}
+                                      transition={{ duration: 0.45, ease: 'easeOut' }}
+                                      className="absolute right-5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full border border-black/60"
+                                    />
+                                  </>
+                                ) : null}
+                              </AnimatePresence>
                             </div>
-                          </button>
+                          </motion.button>
                         );
                       }) : null}
                       {selectedTopic?.contentType === 'vs' ? (
@@ -474,12 +532,37 @@ const Index = () => {
                           {selectedTopic.voteOptions.map((option, idx) => {
                             const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
                             const tone = idx === 0 ? 'border-emerald-200' : 'border-rose-200';
+                            const isOptionCelebrating =
+                              voteFx?.type === 'vs' &&
+                              voteFx.topicId === selectedTopic.id &&
+                              voteFx.optionId === option.id;
                             return (
-                              <button
+                              <motion.button
                                 key={option.id}
                                 onClick={() => handleVote(option.id)}
                                 disabled={isVoting}
-                                className={`rounded-xl border bg-white p-5 text-left hover:shadow-md transition-shadow disabled:opacity-70 min-h-[30rem] ${tone}`}
+                                whileHover={{
+                                  y: -3,
+                                  rotateY: idx === 0 ? -4 : 4,
+                                  boxShadow: '0 16px 38px rgba(0,0,0,0.14)',
+                                }}
+                                whileTap={{ scale: 0.992 }}
+                                animate={
+                                  isOptionCelebrating
+                                    ? {
+                                        rotateX: [0, -5, 0],
+                                        rotateY: idx === 0 ? [0, -10, 0] : [0, 10, 0],
+                                        boxShadow: [
+                                          '0 10px 28px rgba(0,0,0,0.12)',
+                                          '0 24px 54px rgba(0,0,0,0.28)',
+                                          '0 10px 28px rgba(0,0,0,0.12)',
+                                        ],
+                                      }
+                                    : { rotateX: 0, rotateY: 0, boxShadow: '0 10px 28px rgba(0,0,0,0.12)' }
+                                }
+                                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                                style={{ transformStyle: 'preserve-3d' }}
+                                className={`relative rounded-xl border bg-white p-5 text-left transition-shadow disabled:opacity-70 min-h-[30rem] ${tone}`}
                               >
                                 {option.image ? (
                                   <img src={option.image} alt={option.label} className="w-full h-72 md:h-80 object-cover object-top rounded-lg mb-4" />
@@ -491,7 +574,30 @@ const Index = () => {
                                 <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                                   <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
                                 </div>
-                              </button>
+                                <AnimatePresence>
+                                  {isOptionCelebrating ? (
+                                    <div className="pointer-events-none absolute inset-0 overflow-visible">
+                                      {['👍', '❤️', '🔥', '👏', '💥', '🎉', '💚', '✨'].map((emoji, emojiIdx) => (
+                                        <motion.span
+                                          key={`${emoji}-${emojiIdx}-${voteFx?.token}`}
+                                          initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }}
+                                          animate={{
+                                            opacity: [0, 1, 0],
+                                            x: (emojiIdx - 3.5) * 16,
+                                            y: -80 - (emojiIdx % 3) * 24,
+                                            scale: [0.5, 1.1, 0.95],
+                                            rotate: (emojiIdx % 2 === 0 ? 1 : -1) * 28,
+                                          }}
+                                          transition={{ duration: 0.8, delay: emojiIdx * 0.02, ease: 'easeOut' }}
+                                          className="absolute left-1/2 top-1/2 text-xl"
+                                        >
+                                          {emoji}
+                                        </motion.span>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                </AnimatePresence>
+                              </motion.button>
                             );
                           })}
                         </div>
