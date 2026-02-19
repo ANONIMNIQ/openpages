@@ -7,6 +7,7 @@ import { MessageSquare } from 'lucide-react';
 interface TopicCardProps {
   title: string;
   description: string;
+  tag?: string | null;
   argumentsCount: number;
   dominantSide: 'pro' | 'con';
   dominantPercent: number;
@@ -16,6 +17,7 @@ interface TopicCardProps {
 const TopicCard: React.FC<TopicCardProps> = ({
   title,
   description,
+  tag,
   argumentsCount,
   dominantSide,
   dominantPercent,
@@ -48,12 +50,14 @@ const TopicCard: React.FC<TopicCardProps> = ({
       onClick={onClick}
       className="group cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4"
     >
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">
-          Активен дебат
-        </span>
-        <div className="h-[1px] w-8 bg-gray-100 group-hover:w-12 group-hover:bg-black transition-all" />
-      </div>
+      {tag ? (
+        <div className="flex items-center gap-3 mb-4">
+          <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+            {tag}
+          </span>
+          <div className="h-[1px] w-8 bg-gray-100 group-hover:w-12 group-hover:bg-black transition-all" />
+        </div>
+      ) : null}
       
       <h2 className="text-2xl font-black leading-tight mb-4 group-hover:text-gray-800 transition-colors">
         {title}

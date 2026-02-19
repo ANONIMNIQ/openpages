@@ -10,10 +10,14 @@ create table if not exists public.topics (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text not null,
+  custom_tag text,
   published boolean not null default true,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now()
 );
+
+alter table public.topics
+  add column if not exists custom_tag text;
 
 create table if not exists public.arguments (
   id uuid primary key default gen_random_uuid(),

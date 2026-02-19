@@ -4,6 +4,7 @@ export interface DbTopic {
   id: string;
   title: string;
   description: string;
+  custom_tag?: string | null;
   published: boolean;
   created_at?: string;
 }
@@ -23,7 +24,7 @@ export async function fetchPublishedTopicsWithArguments() {
   if (!supabaseUrl) return null;
 
   const topicsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&published=eq.true&order=created_at.desc`,
+    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,published,created_at&published=eq.true&order=created_at.desc`,
     { headers: getSupabaseHeaders() }
   );
   if (!topicsResponse.ok) throw new Error(`Failed to load topics (${topicsResponse.status})`);
@@ -50,6 +51,7 @@ export async function fetchPublishedTopicsWithArguments() {
       id: topic.id,
       title: topic.title,
       description: topic.description,
+      tag: topic.custom_tag ?? null,
       argumentsCount: topicArgs.length,
       pro,
       con,

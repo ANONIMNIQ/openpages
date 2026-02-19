@@ -28,6 +28,7 @@ const Admin = () => {
   const [password, setPassword] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [customTag, setCustomTag] = useState("");
   const [proText, setProText] = useState("");
   const [conText, setConText] = useState("");
   const [topics, setTopics] = useState<AdminTopic[]>([]);
@@ -36,6 +37,7 @@ const Admin = () => {
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editCustomTag, setEditCustomTag] = useState("");
   const [editPublished, setEditPublished] = useState(true);
   const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -120,12 +122,14 @@ const Admin = () => {
         accessToken: session.accessToken,
         title,
         description,
+        customTag,
         proArguments,
         conArguments,
       });
 
       setTitle("");
       setDescription("");
+      setCustomTag("");
       setProText("");
       setConText("");
       await loadAdminData(session.accessToken);
@@ -173,6 +177,7 @@ const Admin = () => {
     setEditingTopicId(topic.id);
     setEditTitle(topic.title);
     setEditDescription(topic.description);
+    setEditCustomTag(topic.custom_tag ?? "");
     setEditPublished(topic.published);
   };
 
@@ -180,6 +185,7 @@ const Admin = () => {
     setEditingTopicId(null);
     setEditTitle("");
     setEditDescription("");
+    setEditCustomTag("");
     setEditPublished(true);
   };
 
@@ -192,6 +198,7 @@ const Admin = () => {
       await updateTopic(session.accessToken, topicId, {
         title: editTitle,
         description: editDescription,
+        customTag: editCustomTag,
         published: editPublished,
       });
       await loadAdminData(session.accessToken);
@@ -290,6 +297,12 @@ const Admin = () => {
                       onChange={(e) => setEditDescription(e.target.value)}
                       className="w-full min-h-20 rounded-lg border border-gray-200 px-3 py-2"
                     />
+                    <input
+                      value={editCustomTag}
+                      onChange={(e) => setEditCustomTag(e.target.value)}
+                      placeholder="Къстъм таг (по избор)"
+                      className="w-full h-10 rounded-lg border border-gray-200 px-3"
+                    />
                     <label className="flex items-center gap-2 text-sm text-gray-700">
                       <input
                         type="checkbox"
@@ -318,6 +331,11 @@ const Admin = () => {
                 ) : (
                   <>
                     <p className="text-xs text-gray-500 mb-1">{topic.published ? "Публикувана" : "Чернова"}</p>
+                    {topic.custom_tag ? (
+                      <p className="text-xs text-gray-500 mb-1">
+                        Таг: <span className="font-semibold text-gray-700">{topic.custom_tag}</span>
+                      </p>
+                    ) : null}
                     <p className="text-sm font-bold text-gray-900 mb-1">{topic.title}</p>
                     <p className="text-sm text-gray-700 mb-3">{topic.description}</p>
                     <div className="flex items-center gap-2">
@@ -359,6 +377,12 @@ const Admin = () => {
               placeholder="Описание"
               className="w-full min-h-24 rounded-xl border border-gray-200 px-4 py-3"
               required
+            />
+            <input
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
+              placeholder="Къстъм таг (по избор)"
+              className="w-full h-11 rounded-xl border border-gray-200 px-4"
             />
             <textarea
               value={proText}

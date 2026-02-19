@@ -20,6 +20,7 @@ export interface AdminTopic {
   id: string;
   title: string;
   description: string;
+  custom_tag?: string | null;
   published: boolean;
   created_at?: string;
 }
@@ -94,7 +95,7 @@ export async function fetchAdminData(accessToken: string) {
   if (!supabaseUrl) throw new Error("Supabase is not configured");
 
   const [topicsResponse, argumentsResponse, commentsResponse] = await Promise.all([
-    fetch(`${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&order=created_at.desc`, {
+    fetch(`${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,published,created_at&order=created_at.desc`, {
       headers: getSupabaseHeaders(accessToken),
     }),
     fetch(`${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`, {
@@ -123,6 +124,7 @@ export async function createTopicWithArguments(input: {
   accessToken: string;
   title: string;
   description: string;
+  customTag?: string;
   proArguments: string[];
   conArguments: string[];
 }) {
@@ -138,6 +140,7 @@ export async function createTopicWithArguments(input: {
     body: JSON.stringify({
       title: input.title,
       description: input.description,
+      custom_tag: input.customTag?.trim() ? input.customTag.trim() : null,
       published: true,
     }),
   });
@@ -184,7 +187,7 @@ export async function deleteComment(accessToken: string, commentId: string) {
 export async function updateTopic(
   accessToken: string,
   topicId: string,
-  input: { title: string; description: string; published: boolean }
+  input: { title: string; description: string; customTag?: string; published: boolean }
 ) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
@@ -197,6 +200,7 @@ export async function updateTopic(
     body: JSON.stringify({
       title: input.title,
       description: input.description,
+      custom_tag: input.customTag?.trim() ? input.customTag.trim() : null,
       published: input.published,
     }),
   });
