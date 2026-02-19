@@ -173,19 +173,48 @@ const Index = () => {
   const handleShareTopic = async () => {
     if (!selectedTopic) return;
     const shareUrl = `${window.location.origin}${buildTopicPath(selectedTopic.id, selectedTopic.title)}`;
+
+    const fallbackCopy = async () => {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        return true;
+      }
+
+      const input = document.createElement('textarea');
+      input.value = shareUrl;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.pointerEvents = 'none';
+      document.body.appendChild(input);
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+      const copied = document.execCommand('copy');
+      document.body.removeChild(input);
+      return copied;
+    };
+
     try {
-      if (navigator.share) {
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ url: shareUrl }))) {
         await navigator.share({
           title: selectedTopic.title,
           text: selectedTopic.description,
           url: shareUrl,
         });
+        showSuccess('Линкът е споделен');
         return;
       }
-      await navigator.clipboard.writeText(shareUrl);
-      showSuccess('Линкът е копиран');
+      const copied = await fallbackCopy();
+      if (copied) {
+        showSuccess('Линкът е копиран');
+        return;
+      }
+      showError('Копирането е блокирано от браузъра');
     } catch (error) {
       console.warn('Share failed', error);
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
       showError('Неуспешно споделяне');
     }
   };
