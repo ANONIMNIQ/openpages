@@ -38,6 +38,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const accentLabel = dominantSide === 'pro' ? 'ЗА' : 'ПРОТИВ';
   const accentBar = dominantSide === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
   const resolvedBarStyle = contentType === 'poll' && dominantColor ? { backgroundColor: dominantColor } : undefined;
+  const resolvedMetricStyle = contentType === 'poll' && dominantColor ? { color: dominantColor } : undefined;
   const CounterIcon = contentType === 'vs' ? Swords : contentType === 'poll' ? BarChart3 : MessageSquare;
 
   useEffect(() => {
@@ -82,7 +83,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <CounterIcon size={14} /> {argumentsCount} {countLabel}
         </div>
-        <div className={`text-[10px] font-black uppercase tracking-widest ${accentText}`}>
+        <div className={`text-[10px] font-black uppercase tracking-widest ${resolvedMetricStyle ? '' : accentText}`} style={resolvedMetricStyle}>
           {(dominantLabel ?? accentLabel)} {animatedPercent}%
         </div>
       </div>

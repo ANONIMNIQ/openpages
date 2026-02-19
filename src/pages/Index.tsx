@@ -33,6 +33,7 @@ const Index = () => {
   const [isDetailOpening, setIsDetailOpening] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
+  const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
 
@@ -249,6 +250,10 @@ const Index = () => {
       window.clearTimeout(timeoutId);
     };
   }, [voteFx]);
+
+  useEffect(() => {
+    setExplodedPollOptionId(null);
+  }, [selectedTopicId]);
 
   const detailStagger = {
     hidden: {},
@@ -588,66 +593,77 @@ const Index = () => {
                               });
                               const totalPercent = enriched.reduce((sum, option) => sum + option.percent, 0);
                               const normalized = totalPercent > 0 ? enriched : enriched.map((option) => ({ ...option, percent: 100 / Math.max(enriched.length, 1) }));
-                              let start = 0;
-                              const stops = normalized.map((option) => {
-                                const from = start;
-                                const to = start + option.percent;
-                                start = to;
-                                return `${option.color} ${from}% ${to}%`;
+                              const cx = 82;
+                              const cy = 82;
+                              const radius = 72;
+                              let startAngle = -Math.PI / 2;
+                              const slices = normalized.map((option) => {
+                                const sliceAngle = (Math.PI * 2 * option.percent) / 100;
+                                const endAngle = startAngle + sliceAngle;
+                                const midAngle = startAngle + sliceAngle / 2;
+                                const x1 = cx + radius * Math.cos(startAngle);
+                                const y1 = cy + radius * Math.sin(startAngle);
+                                const x2 = cx + radius * Math.cos(endAngle);
+                                const y2 = cy + radius * Math.sin(endAngle);
+                                const largeArc = sliceAngle > Math.PI ? 1 : 0;
+                                const path = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                const result = {
+                                  ...option,
+                                  path,
+                                  midAngle,
+                                };
+                                startAngle = endAngle;
+                                return result;
                               });
-                              const pieGradient = `conic-gradient(${stops.join(', ')})`;
-                              const mid = Math.ceil(normalized.length / 2);
-                              const leftLegend = normalized.slice(0, mid);
-                              const rightLegend = normalized.slice(mid);
 
                               return (
                                 <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
-                                  <div className="grid grid-cols-[minmax(0,96px)_auto_minmax(0,96px)] sm:grid-cols-[minmax(0,132px)_auto_minmax(0,132px)] items-center gap-2">
-                                    <div className="space-y-1.5 overflow-hidden">
-                                      {leftLegend.map((option) => (
-                                        <button
-                                          key={`poll-left-${option.id}`}
-                                          onClick={() => handleVote(option.id)}
-                                          disabled={isVoting}
-                                          type="button"
-                                          className="w-full min-w-0 max-w-full overflow-hidden text-left flex items-center gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
-                                        >
-                                          <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
-                                          <span className="truncate">{option.label}</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                    <div className="relative mx-auto h-28 w-28">
-                                      <button
-                                        onClick={() => {
-                                          const top = [...normalized].sort((a, b) => b.percent - a.percent)[0];
-                                          if (top) void handleVote(top.id);
-                                        }}
-                                        disabled={isVoting}
-                                        type="button"
-                                        className="relative h-28 w-28 rounded-full shadow-[0_10px_18px_rgba(0,0,0,0.18)] disabled:opacity-70"
-                                        style={{
-                                          background: pieGradient,
-                                        }}
-                                        aria-label="Гласувай от графиката"
+                                  <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3 items-center">
+                                    <div className="mx-auto">
+                                      <motion.svg
+                                        viewBox="0 0 164 164"
+                                        className="h-36 w-36 drop-shadow-[0_10px_14px_rgba(0,0,0,0.18)]"
+                                        initial={{ opacity: 0, scale: 0.9, rotate: -8 }}
+                                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                                        aria-label="Резултати от анкетата"
                                       >
-                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 via-transparent to-black/12" />
-                                      </button>
+                                        {slices.map((slice) => {
+                                          const isExploded = explodedPollOptionId === slice.id;
+                                          const explodeX = isExploded ? Math.cos(slice.midAngle) * 9 : 0;
+                                          const explodeY = isExploded ? Math.sin(slice.midAngle) * 9 : 0;
+                                          return (
+                                            <motion.path
+                                              key={`slice-${slice.id}`}
+                                              d={slice.path}
+                                              fill={slice.color}
+                                              stroke="#ffffff"
+                                              strokeWidth="2"
+                                              animate={{ x: explodeX, y: explodeY }}
+                                              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                            />
+                                          );
+                                        })}
+                                      </motion.svg>
                                       <div className="mt-1 text-center text-[10px] font-black text-gray-500">
                                         {selectedTopic.totalVotes} гласа
                                       </div>
                                     </div>
-                                    <div className="space-y-1.5 overflow-hidden">
-                                      {rightLegend.map((option) => (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                      {normalized.map((option) => (
                                         <button
-                                          key={`poll-right-${option.id}`}
-                                          onClick={() => handleVote(option.id)}
-                                          disabled={isVoting}
+                                          key={`legend-${option.id}`}
+                                          onClick={() =>
+                                            setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id))
+                                          }
                                           type="button"
-                                          className="w-full min-w-0 max-w-full overflow-hidden text-right flex items-center justify-end gap-1.5 text-[10px] font-semibold text-gray-600 hover:text-black transition-colors disabled:opacity-70"
+                                          className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 ${
+                                            explodedPollOptionId === option.id ? 'border-black/30 bg-white' : 'border-gray-200 bg-white/60 hover:bg-white'
+                                          }`}
                                         >
-                                          <span className="truncate">{option.label}</span>
                                           <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
+                                          <span className="truncate">{option.label}</span>
+                                          <span className="ml-auto text-gray-500 shrink-0">{Math.round(option.percent)}%</span>
                                         </button>
                                       ))}
                                     </div>
@@ -686,12 +702,6 @@ const Index = () => {
                                     <AnimatePresence>
                                       {isOptionCelebrating ? (
                                         <>
-                                          <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[8px] h-[3px] w-16 rounded-full bg-black/20 z-10"
-                                          />
                                           <motion.div
                                             key={`poll-paper-${voteFx?.token}-${option.id}`}
                                             initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
