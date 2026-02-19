@@ -102,24 +102,44 @@ export async function checkIsAdminUser(userId: string, accessToken: string) {
 export async function fetchAdminData(accessToken: string) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
+  const headers = getSupabaseHeaders(accessToken);
 
-  const [topicsResponse, argumentsResponse, commentsResponse] = await Promise.all([
-    fetch(`${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,published,created_at&order=created_at.desc`, {
-      headers: getSupabaseHeaders(accessToken),
-    }),
+  let topicsResponse = await fetch(
+    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,published,created_at&order=created_at.desc`,
+    { headers }
+  );
+  if (!topicsResponse.ok) {
+    const topicsError = await extractSupabaseError(topicsResponse);
+    const missingCustomTagColumn = topicsError.toLowerCase().includes("custom_tag");
+    if (missingCustomTagColumn) {
+      topicsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&order=created_at.desc`,
+        { headers }
+      );
+    } else {
+      throw new Error(`Неуспешно зареждане на темите: ${topicsError}`);
+    }
+  }
+
+  const [argumentsResponse, commentsResponse] = await Promise.all([
     fetch(`${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`, {
-      headers: getSupabaseHeaders(accessToken),
+      headers,
     }),
-    fetch(
-      `${supabaseUrl}/rest/v1/argument_comments?select=id,argument_id,type,text,created_at&order=created_at.desc`,
-      {
-        headers: getSupabaseHeaders(accessToken),
-      }
-    ),
+    fetch(`${supabaseUrl}/rest/v1/argument_comments?select=id,argument_id,type,text,created_at&order=created_at.desc`, {
+      headers,
+    }),
   ]);
-
-  if (!topicsResponse.ok || !argumentsResponse.ok || !commentsResponse.ok) {
-    throw new Error("Неуспешно зареждане на админ данните.");
+  if (!topicsResponse.ok) {
+    const topicsRetryError = await extractSupabaseError(topicsResponse);
+    throw new Error(`Неуспешно зареждане на темите: ${topicsRetryError}`);
+  }
+  if (!argumentsResponse.ok) {
+    const argumentsError = await extractSupabaseError(argumentsResponse);
+    throw new Error(`Неуспешно зареждане на аргументите: ${argumentsError}`);
+  }
+  if (!commentsResponse.ok) {
+    const commentsError = await extractSupabaseError(commentsResponse);
+    throw new Error(`Неуспешно зареждане на коментарите: ${commentsError}`);
   }
 
   return {
