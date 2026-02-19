@@ -31,6 +31,7 @@ const Index = () => {
   const [isTopicsLoading, setIsTopicsLoading] = useState(true);
   const [topicsVisibleCount, setTopicsVisibleCount] = useState(5);
   const [isBootBarComplete, setIsBootBarComplete] = useState(false);
+  const [isListSkeletonHold, setIsListSkeletonHold] = useState(false);
   const [isDetailOpening, setIsDetailOpening] = useState(false);
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
@@ -38,8 +39,9 @@ const Index = () => {
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const visibleTopics = topicsData.slice(0, topicsVisibleCount);
   const hasMoreTopics = topicsData.length > topicsVisibleCount;
-  const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showBootLoader = !selectedTopicId && !isBootBarComplete;
+  const isDetailContentLoading = isDetailOpening || !selectedTopic;
+  const showListSkeleton = !showBootLoader && (isTopicsLoading || isListSkeletonHold);
   const proArgumentsWithIds = (selectedTopic?.pro ?? []).map((arg, idx) => ({
     ...arg,
     id: arg.id ?? `topic-${selectedTopic?.id}-pro-${idx}`,
@@ -78,7 +80,7 @@ const Index = () => {
     detailOpenTimeoutRef.current = window.setTimeout(() => {
       setIsDetailOpening(false);
       detailOpenTimeoutRef.current = null;
-    }, 380);
+    }, 620);
   };
 
   const handleBackToList = () => {
@@ -181,6 +183,15 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    if (!isBootBarComplete) return;
+    setIsListSkeletonHold(true);
+    const timeoutId = window.setTimeout(() => setIsListSkeletonHold(false), 520);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isBootBarComplete]);
+
+  useEffect(() => {
     let canceled = false;
     const load = async () => {
       try {
@@ -252,8 +263,8 @@ const Index = () => {
                     <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
                       <motion.span
                         className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
-                        animate={{ scale: [1, 1.08, 1] }}
-                        transition={{ duration: 1.2, times: [0, 0.5, 1], repeat: Infinity, repeatDelay: 3.5 }}
+                        animate={{ scale: [1, 1.08, 1, 1], rotate: [0, 0, 360, 360] }}
+                        transition={{ duration: 2.2, times: [0, 0.28, 0.7, 1], repeat: Infinity, repeatDelay: 3.1 }}
                         aria-label="Open pages logo"
                       >
                         <Pencil size={16} />
@@ -270,7 +281,7 @@ const Index = () => {
                 </header>
 
                 <div className="space-y-2">
-                  {isTopicsLoading ? (
+                  {showListSkeleton ? (
                     Array.from({ length: 3 }).map((_, idx) => (
                       <div key={`topic-skeleton-${idx}`} className="border-b border-gray-100 py-10 pr-6 rounded-xl px-4">
                         <div className="flex items-center gap-3 mb-4">
