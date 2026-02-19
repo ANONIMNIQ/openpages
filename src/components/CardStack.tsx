@@ -431,7 +431,7 @@ const CardStack: React.FC<CardStackProps> = ({
                           value={commentDraft}
                           onChange={(e) => setCommentDraft(e.target.value)}
                           placeholder="Напиши коментар към този аргумент..."
-                          className="w-full min-h-28 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition"
+                          className="w-full min-h-28 resize-none rounded-xl border border-gray-200 px-4 py-3 text-base md:text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition"
                           required
                         />
 
