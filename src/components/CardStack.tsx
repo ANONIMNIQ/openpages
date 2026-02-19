@@ -448,7 +448,7 @@ const CardStack: React.FC<CardStackProps> = ({
 
                         <button
                           type="submit"
-                          className={`h-10 px-5 rounded-full text-white text-[11px] font-black uppercase tracking-[0.2em] transition-colors self-center ${focusButtonTone}`}
+                          className={`block mx-auto h-10 px-5 rounded-full text-white text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${focusButtonTone}`}
                         >
                           Публикувай
                         </button>
