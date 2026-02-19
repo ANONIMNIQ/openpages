@@ -180,3 +180,35 @@ export async function deleteComment(accessToken: string, commentId: string) {
   });
   if (!response.ok) throw new Error("Неуспешно изтриване на коментар.");
 }
+
+export async function updateTopic(
+  accessToken: string,
+  topicId: string,
+  input: { title: string; description: string; published: boolean }
+) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+  const response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
+    method: "PATCH",
+    headers: {
+      ...getSupabaseHeaders(accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      title: input.title,
+      description: input.description,
+      published: input.published,
+    }),
+  });
+  if (!response.ok) throw new Error("Неуспешно редактиране на тема.");
+}
+
+export async function deleteTopic(accessToken: string, topicId: string) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+  const response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
+    method: "DELETE",
+    headers: getSupabaseHeaders(accessToken),
+  });
+  if (!response.ok) throw new Error("Неуспешно изтриване на тема.");
+}

@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   adminSessionStorageKey,
   createTopicWithArguments,
+  deleteTopic,
   deleteArgument,
   deleteComment,
   fetchAdminData,
   loginAdminWithPassword,
+  updateTopic,
   type AdminArgument,
   type AdminComment,
   type AdminSession,
@@ -31,6 +33,10 @@ const Admin = () => {
   const [topics, setTopics] = useState<AdminTopic[]>([]);
   const [argumentsList, setArgumentsList] = useState<AdminArgument[]>([]);
   const [comments, setComments] = useState<AdminComment[]>([]);
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPublished, setEditPublished] = useState(true);
   const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -155,6 +161,63 @@ const Admin = () => {
     }
   };
 
+  const startEditTopic = (topic: AdminTopic) => {
+    setEditingTopicId(topic.id);
+    setEditTitle(topic.title);
+    setEditDescription(topic.description);
+    setEditPublished(topic.published);
+  };
+
+  const cancelEditTopic = () => {
+    setEditingTopicId(null);
+    setEditTitle("");
+    setEditDescription("");
+    setEditPublished(true);
+  };
+
+  const onSaveTopic = async (topicId: string) => {
+    if (!session) return;
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await updateTopic(session.accessToken, topicId, {
+        title: editTitle,
+        description: editDescription,
+        published: editPublished,
+      });
+      await loadAdminData(session.accessToken);
+      setMessage("Темата е редактирана.");
+      cancelEditTopic();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Update error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDeleteTopic = async (topicId: string) => {
+    if (!session) return;
+    const confirmed = window.confirm("Сигурен ли си, че искаш да изтриеш тази тема с всички аргументи и коментари?");
+    if (!confirmed) return;
+
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await deleteTopic(session.accessToken, topicId);
+      await loadAdminData(session.accessToken);
+      setMessage("Темата е изтрита.");
+      if (editingTopicId === topicId) {
+        cancelEditTopic();
+      }
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Delete error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] p-8 flex items-center justify-center">
@@ -201,6 +264,76 @@ const Admin = () => {
 
         {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+
+        <section className="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 className="text-xl font-black mb-4">Теми ({topics.length})</h2>
+          <div className="space-y-3 max-h-[24rem] overflow-y-auto">
+            {topics.map((topic) => (
+              <div key={topic.id} className="border border-gray-100 rounded-xl p-3">
+                {editingTopicId === topic.id ? (
+                  <div className="space-y-3">
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full h-10 rounded-lg border border-gray-200 px-3"
+                    />
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      className="w-full min-h-20 rounded-lg border border-gray-200 px-3 py-2"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={editPublished}
+                        onChange={(e) => setEditPublished(e.target.checked)}
+                      />
+                      Публикувана
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onSaveTopic(topic.id)}
+                        className="h-8 px-4 rounded-full border border-emerald-200 text-emerald-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Запази
+                      </button>
+                      <button
+                        onClick={cancelEditTopic}
+                        className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Отказ
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-500 mb-1">{topic.published ? "Публикувана" : "Чернова"}</p>
+                    <p className="text-sm font-bold text-gray-900 mb-1">{topic.title}</p>
+                    <p className="text-sm text-gray-700 mb-3">{topic.description}</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditTopic(topic)}
+                        className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Редактирай
+                      </button>
+                      <button
+                        onClick={() => onDeleteTopic(topic.id)}
+                        className="h-8 px-4 rounded-full border border-rose-200 text-rose-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Изтрий тема
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="bg-white border border-gray-200 rounded-2xl p-6">
           <h2 className="text-xl font-black mb-4">Нова теза</h2>
