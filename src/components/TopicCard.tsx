@@ -1,18 +1,44 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { MessageSquare, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { animate, motion, useMotionValue } from 'framer-motion';
+import { MessageSquare } from 'lucide-react';
 
 interface TopicCardProps {
   title: string;
   description: string;
-  participants: number;
   argumentsCount: number;
+  dominantSide: 'pro' | 'con';
+  dominantPercent: number;
   onClick: () => void;
 }
 
-const TopicCard: React.FC<TopicCardProps> = ({ title, description, participants, argumentsCount, onClick }) => {
+const TopicCard: React.FC<TopicCardProps> = ({
+  title,
+  description,
+  argumentsCount,
+  dominantSide,
+  dominantPercent,
+  onClick,
+}) => {
+  const [animatedPercent, setAnimatedPercent] = useState(0);
+  const percentMotion = useMotionValue(0);
+  const accentText = dominantSide === 'pro' ? 'text-emerald-700' : 'text-rose-700';
+  const accentLabel = dominantSide === 'pro' ? 'ЗА' : 'ПРОТИВ';
+  const accentBar = dominantSide === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
+
+  useEffect(() => {
+    percentMotion.set(0);
+    const controls = animate(percentMotion, dominantPercent, {
+      duration: 0.75,
+      ease: [0.22, 1, 0.36, 1],
+      delay: 0.2,
+      onUpdate: (latest) => setAnimatedPercent(Math.round(latest)),
+    });
+
+    return () => controls.stop();
+  }, [dominantPercent, percentMotion]);
+
   return (
     <motion.div
       layout
@@ -20,7 +46,7 @@ const TopicCard: React.FC<TopicCardProps> = ({ title, description, participants,
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ x: 10 }}
       onClick={onClick}
-      className="group cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0"
+      className="group cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4"
     >
       <div className="flex items-center gap-3 mb-4">
         <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 group-hover:text-black transition-colors">
@@ -37,13 +63,22 @@ const TopicCard: React.FC<TopicCardProps> = ({ title, description, participants,
         {description}
       </p>
       
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <Users size={14} /> {participants} участници
-        </div>
+      <div className="flex items-center justify-between gap-6 mb-4">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <MessageSquare size={14} /> {argumentsCount} аргумента
         </div>
+        <div className={`text-[10px] font-black uppercase tracking-widest ${accentText}`}>
+          {accentLabel} {animatedPercent}%
+        </div>
+      </div>
+
+      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        <motion.div
+          className={`h-full ${accentBar}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${dominantPercent}%` }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+        />
       </div>
     </motion.div>
   );

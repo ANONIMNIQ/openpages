@@ -1,23 +1,68 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArgumentCard from './ArgumentCard';
-import { Plus, ChevronRight, RefreshCw, ChevronUp } from 'lucide-react';
+import { Pencil, ChevronRight, RefreshCw, ChevronUp, X, ArrowLeft } from 'lucide-react';
+
+interface CommentItem {
+  id: string;
+  text: string;
+  type: 'pro' | 'con';
+}
+
+interface StackArgument {
+  author: string;
+  text: string;
+  comments?: CommentItem[];
+}
 
 interface CardStackProps {
   title: string;
   type: 'pro' | 'con';
-  arguments: Array<{ author: string; text: string }>;
+  arguments: StackArgument[];
+  onCreateArgument?: (type: 'pro' | 'con') => void;
+  isCreateActive?: boolean;
+  collapseAllSignal?: number;
+  onCollapseAllRequest?: () => void;
+  onRequestScrollTop?: () => void;
+  globalFocusedStackType?: 'pro' | 'con' | null;
+  onFocusModeChange?: (stackType: 'pro' | 'con' | null) => void;
 }
 
-const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) => {
+const CardStack: React.FC<CardStackProps> = ({
+  title,
+  type,
+  arguments: args,
+  onCreateArgument,
+  isCreateActive = false,
+  collapseAllSignal,
+  onCollapseAllRequest,
+  onRequestScrollTop,
+  globalFocusedStackType = null,
+  onFocusModeChange,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isIntroPhase, setIsIntroPhase] = useState(true);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentType, setCommentType] = useState<'pro' | 'con'>(type);
+  const [commentsByCard, setCommentsByCard] = useState<Record<string, CommentItem[]>>({});
+  const [isCollapsing, setIsCollapsing] = useState(false);
+  const lastHandledCollapseSignalRef = useRef<number | undefined>(collapseAllSignal);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const accentColor = type === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
   const textColor = type === 'pro' ? 'text-emerald-600' : 'text-rose-600';
+  const focusButtonTone = commentType === 'pro' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700';
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setIsIntroPhase(false), 1700);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   const loadMore = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,39 +70,162 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
   };
 
   const displayedArgs = isExpanded ? args.slice(0, visibleCount) : args.slice(0, 5);
+  const hasExpandedVisibleCards = openCardId !== null && displayedArgs.some((_, idx) => `${title}-${idx}` === openCardId);
+  const isCommentFocusMode = focusedCardId !== null;
+  const isOtherStackFocused = globalFocusedStackType !== null && globalFocusedStackType !== type;
+  const displayedEntries = displayedArgs.map((arg, idx) => ({ arg, idx, cardId: `${title}-${idx}` }));
+  const orderedDisplayedEntries = isCommentFocusMode && focusedCardId
+    ? [...displayedEntries].sort((a, b) => (a.cardId === focusedCardId ? -1 : b.cardId === focusedCardId ? 1 : 0))
+    : displayedEntries;
+
+  useEffect(() => {
+    setCommentsByCard((prev) => {
+      const next = { ...prev };
+      args.forEach((arg, idx) => {
+        const cardId = `${title}-${idx}`;
+        if (!(cardId in next)) {
+          next[cardId] = arg.comments ? [...arg.comments] : [];
+        }
+      });
+      return next;
+    });
+  }, [args, title]);
+
+  const handleCardToggle = useCallback((cardId: string) => {
+    setOpenCardId((prev) => (prev === cardId ? null : cardId));
+  }, []);
+
+  const collapseStack = useCallback(() => {
+    if (isCollapsing) return;
+    setFocusedCardId(null);
+    setCommentDraft('');
+    onFocusModeChange?.(null);
+
+    if (hasExpandedVisibleCards) {
+      setIsCollapsing(true);
+      setOpenCardId(null);
+      window.setTimeout(() => {
+        setIsExpanded(false);
+        setIsCollapsing(false);
+      }, 220);
+      return;
+    }
+
+    setIsExpanded(false);
+  }, [hasExpandedVisibleCards, isCollapsing, onFocusModeChange]);
+
+  const handleCommentFocus = useCallback((cardId: string) => {
+    setFocusedCardId(cardId);
+    setOpenCardId(cardId);
+    setIsExpanded(true);
+    setCommentType(type);
+    onFocusModeChange?.(type);
+    onRequestScrollTop?.();
+  }, [onFocusModeChange, onRequestScrollTop, type]);
+
+  const handleCommentSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!focusedCardId || !commentDraft.trim()) return;
+
+    const newComment: CommentItem = {
+      id: `local-${Date.now()}`,
+      text: commentDraft.trim(),
+      type: commentType,
+    };
+
+    setCommentsByCard((prev) => ({
+      ...prev,
+      [focusedCardId]: [newComment, ...(prev[focusedCardId] ?? [])],
+    }));
+    setCommentDraft('');
+  }, [commentDraft, commentType, focusedCardId]);
+
+  const handleCloseCommentFocus = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!focusedCardId) return;
+
+    const targetCardId = focusedCardId;
+    setFocusedCardId(null);
+    setCommentDraft('');
+    onFocusModeChange?.(null);
+
+    window.setTimeout(() => {
+      cardRefs.current[targetCardId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 180);
+  }, [focusedCardId, onFocusModeChange]);
+
+  useEffect(() => {
+    if (collapseAllSignal === undefined) return;
+    if (lastHandledCollapseSignalRef.current === collapseAllSignal) return;
+    lastHandledCollapseSignalRef.current = collapseAllSignal;
+    collapseStack();
+  }, [collapseAllSignal, collapseStack]);
 
   return (
-    <motion.div layout className="w-full max-w-md mb-12">
-      {/* Header */}
-      <motion.div layout className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <motion.div layout className={`w-1 h-4 ${accentColor}`} />
-          <motion.h3 layout className={`text-[11px] font-black uppercase tracking-[0.25em] ${textColor}`}>
-            {title}
-          </motion.h3>
-        </div>
-        <motion.button 
-          layout
-          className={`p-2 rounded-full text-white ${accentColor} hover:scale-110 transition-transform shadow-lg`}
-        >
-          <Plus size={14} />
-        </motion.button>
-      </motion.div>
+    <motion.div
+      layout
+      initial={false}
+      animate={{
+        x: isOtherStackFocused ? -760 : 0,
+        opacity: isOtherStackFocused ? 0 : 1,
+        height: isOtherStackFocused ? 0 : 'auto',
+        marginBottom: isOtherStackFocused ? 0 : 48,
+      }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className={`w-full max-w-md overflow-hidden ${isOtherStackFocused ? 'pointer-events-none' : ''}`}
+    >
+      <AnimatePresence initial={false}>
+        {!isCommentFocusMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, x: -220, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-1 h-4 ${accentColor}`} />
+                <h3 className={`text-[11px] font-black uppercase tracking-[0.25em] ${textColor}`}>
+                  {title}
+                </h3>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCreateArgument?.(type);
+                }}
+                className={`p-2 rounded-full text-white ${accentColor} hover:scale-110 transition-transform shadow-lg ${isCreateActive ? 'ring-4 ring-black/10 scale-110' : ''}`}
+                aria-label={type === 'pro' ? 'Добави аргумент За' : 'Добави аргумент Против'}
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Container */}
       <motion.div 
-        layout
+        layout="position"
         className="relative flex flex-col"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <AnimatePresence>
-          {isExpanded && (
+          {isExpanded && !isCommentFocusMode && (
             <motion.button 
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              onClick={() => setIsExpanded(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => {
+                if (onCollapseAllRequest) {
+                  onCollapseAllRequest();
+                  return;
+                }
+                collapseStack();
+              }}
               className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 hover:text-black transition-colors flex items-center gap-2 self-start"
             >
               <ChevronUp size={12} /> Свий списъка
@@ -66,43 +234,170 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
         </AnimatePresence>
 
         <motion.div 
-          layout 
+          layout={isExpanded ? true : "position"}
+          transition={{ layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
           className={`relative flex flex-col ${!isExpanded ? 'cursor-pointer' : 'gap-4'}`}
-          onClick={() => !isExpanded && setIsExpanded(true)}
+          onClick={() => !isExpanded && !isCommentFocusMode && setIsExpanded(true)}
         >
-          {displayedArgs.map((arg, idx) => {
+          {orderedDisplayedEntries.map(({ arg, idx, cardId }) => {
             const isStackMode = !isExpanded;
+            const shouldSlideOutLeft = isCommentFocusMode && cardId !== focusedCardId;
+            const isStackIntroCard = isIntroPhase && isStackMode && !isCommentFocusMode;
             
             // В стек режим картите са една върху друга с отместване
             // В разгънат режим са просто в списък (gap-4 от контейнера)
             return (
-              <motion.div
-                key={`${title}-${idx}`}
-                layout
-                initial={false}
-                animate={{ 
-                  y: isStackMode ? (isHovered ? idx * 28 : idx * 14) : 0,
-                  scale: isStackMode ? 1 - idx * 0.03 : 1,
-                  zIndex: 10 - idx,
-                  opacity: isStackMode && idx > 0 ? (isHovered ? 0.9 : 0.6) : 1,
-                  // Използваме absolute само в стек режим за застъпване
-                  position: isStackMode ? 'absolute' : 'relative',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                }}
-                transition={{
-                  type: "tween", // Преминаваме към tween за по-линейно движение
-                  ease: [0.23, 1, 0.32, 1], // Quintic ease out - много гладко и без bounce
-                  duration: 0.5
-                }}
-              >
-                <ArgumentCard 
-                  {...arg} 
-                  type={type} 
-                  isStacked={isStackMode} 
-                />
-              </motion.div>
+              <React.Fragment key={cardId}>
+                <AnimatePresence>
+                  {isCommentFocusMode && cardId === focusedCardId && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                      className="mb-2"
+                    >
+                      <button
+                        onClick={handleCloseCommentFocus}
+                        className="h-8 w-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-black hover:bg-gray-100 transition-colors"
+                        aria-label="Назад към аргументите"
+                      >
+                        <ArrowLeft size={14} />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div
+                  ref={(el) => {
+                    cardRefs.current[cardId] = el;
+                  }}
+                  layout={isStackMode ? "position" : true}
+                  initial={isStackIntroCard ? { opacity: 0.35, y: 110, scale: 1.16, rotate: idx % 2 === 0 ? -9 : 9 } : false}
+                  animate={{ 
+                    x: shouldSlideOutLeft ? -720 : 0,
+                    y: isStackMode ? (isHovered ? idx * 28 : idx * 14) : 0,
+                    scale: isStackMode ? 1 - idx * 0.03 : 1,
+                    rotate: 0,
+                    zIndex: 10 - idx,
+                    opacity: shouldSlideOutLeft ? 0 : isStackMode && idx > 0 ? (isHovered ? 0.9 : 0.6) : 1,
+                  }}
+                  style={{
+                    position: isStackMode ? 'absolute' : 'relative',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                  }}
+                  className={shouldSlideOutLeft ? 'pointer-events-none' : ''}
+                  transition={
+                    isStackIntroCard
+                      ? {
+                          layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+                          type: "spring",
+                          stiffness: 220,
+                          damping: 30,
+                          mass: 0.9,
+                          delay: idx * 0.16,
+                        }
+                      : {
+                          layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+                          type: "tween",
+                          ease: [0.23, 1, 0.32, 1],
+                          duration: 0.5,
+                        }
+                  }
+                >
+                  <ArgumentCard 
+                    id={cardId}
+                    {...arg} 
+                    type={type} 
+                    isStacked={isStackMode} 
+                    isExpanded={openCardId === cardId}
+                    onToggle={handleCardToggle}
+                    onCommentClick={handleCommentFocus}
+                    commentsCount={(commentsByCard[cardId] ?? arg.comments ?? []).length}
+                    showCommentButton={!isCommentFocusMode || cardId === focusedCardId}
+                    layoutId={`argument-${cardId}`}
+                  />
+                </motion.div>
+
+                <AnimatePresence>
+                  {isCommentFocusMode && cardId === focusedCardId && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, y: 12 }}
+                      animate={{ opacity: 1, height: 'auto', y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: 12 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="mt-3 border border-gray-100 rounded-xl p-4 md:p-5 bg-white overflow-hidden"
+                    >
+                      <div className="flex items-center justify-end mb-3">
+                        <button
+                          onClick={handleCloseCommentFocus}
+                          className="h-8 w-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-black hover:bg-gray-100 transition-colors"
+                          aria-label="Затвори панела за коментари"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleCommentSubmit} className="space-y-4">
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setCommentType('pro')}
+                            className={`h-10 w-10 rounded-full border text-lg font-black inline-flex items-center justify-center transition-colors ${
+                              commentType === 'pro' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500'
+                            }`}
+                            aria-label="Коментар За"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCommentType('con')}
+                            className={`h-10 w-10 rounded-full border text-lg font-black inline-flex items-center justify-center transition-colors ${
+                              commentType === 'con' ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-500'
+                            }`}
+                            aria-label="Коментар Против"
+                          >
+                            -
+                          </button>
+                        </div>
+
+                        <textarea
+                          value={commentDraft}
+                          onChange={(e) => setCommentDraft(e.target.value)}
+                          placeholder="Напиши коментар към този аргумент..."
+                          className="w-full min-h-28 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition"
+                          required
+                        />
+
+                        <button
+                          type="submit"
+                          className={`h-10 px-5 rounded-full text-white text-[11px] font-black uppercase tracking-[0.2em] transition-colors self-center ${focusButtonTone}`}
+                        >
+                          Публикувай
+                        </button>
+                      </form>
+
+                      <div className="mt-5 pt-4 border-t border-gray-100 space-y-3">
+                        {(commentsByCard[focusedCardId] ?? []).length > 0 ? (
+                          (commentsByCard[focusedCardId] ?? []).map((comment) => (
+                            <div key={comment.id} className="rounded-lg border border-gray-100 bg-[#fcfcfc] px-3 py-2.5">
+                              <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${comment.type === 'pro' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {comment.type === 'pro' ? 'За' : 'Против'}
+                              </p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-400">Все още няма коментари към този аргумент.</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </React.Fragment>
             );
           })}
 
@@ -112,29 +407,34 @@ const CardStack: React.FC<CardStackProps> = ({ title, type, arguments: args }) =
           )}
 
           {/* Button Overlay */}
-          {!isExpanded && (
-            <motion.div 
-              layout
-              className="absolute bottom-4 left-0 w-full flex justify-center z-30 pointer-events-none"
-            >
-              <motion.div 
-                animate={{ y: isHovered ? 5 : 0 }}
-                className="bg-black text-white text-[9px] font-bold uppercase tracking-widest px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl pointer-events-auto"
+          <AnimatePresence>
+            {!isExpanded && !isCommentFocusMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute bottom-4 left-0 w-full flex justify-center z-30 pointer-events-none"
               >
-                Разгърни {args.length} аргумента <ChevronRight size={10} />
+                <motion.div 
+                  animate={{ y: isHovered ? 5 : 0 }}
+                  className="bg-black text-white text-[9px] font-bold uppercase tracking-widest px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl pointer-events-auto"
+                >
+                  Разгърни {args.length} аргумента <ChevronRight size={10} />
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Load More */}
         {isExpanded && visibleCount < args.length && (
           <motion.button
-            layout
+            layout="position"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: isCommentFocusMode ? 0 : 1, x: isCommentFocusMode ? -220 : 0 }}
             onClick={loadMore}
-            className="mt-4 w-full py-4 border-2 border-dashed border-gray-100 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2"
+            className={`mt-4 w-full py-4 border-2 border-dashed border-gray-100 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:border-black hover:text-black transition-all flex items-center justify-center gap-2 ${isCommentFocusMode ? 'pointer-events-none' : ''}`}
           >
             <RefreshCw size={12} /> Зареди още аргументи
           </motion.button>
