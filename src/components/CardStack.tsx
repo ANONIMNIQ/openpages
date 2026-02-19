@@ -60,6 +60,7 @@ const CardStack: React.FC<CardStackProps> = ({
   const [isCollapsing, setIsCollapsing] = useState(false);
   const lastHandledCollapseSignalRef = useRef<number | undefined>(collapseAllSignal);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const commentFormRef = useRef<HTMLFormElement | null>(null);
 
   const accentColor = type === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
   const textColor = type === 'pro' ? 'text-emerald-600' : 'text-rose-600';
@@ -223,6 +224,16 @@ const CardStack: React.FC<CardStackProps> = ({
     lastHandledCollapseSignalRef.current = collapseAllSignal;
     collapseStack();
   }, [collapseAllSignal, collapseStack]);
+
+  useEffect(() => {
+    if (!focusedCardId) return;
+    const timeoutId = window.setTimeout(() => {
+      commentFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 260);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [focusedCardId]);
 
   return (
     <motion.div
@@ -403,7 +414,7 @@ const CardStack: React.FC<CardStackProps> = ({
                         </button>
                       </div>
 
-                      <form onSubmit={handleCommentSubmit} className="space-y-4">
+                      <form ref={commentFormRef} onSubmit={handleCommentSubmit} className="space-y-4">
                         <div className="flex items-center justify-center gap-3">
                           <button
                             type="button"
