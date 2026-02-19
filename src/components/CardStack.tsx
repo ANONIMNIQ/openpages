@@ -244,7 +244,7 @@ const CardStack: React.FC<CardStackProps> = ({
             animate={{ opacity: 1, y: 0, height: 'auto', marginBottom: 24 }}
             exit={{ opacity: 0, x: -220, height: 0, marginBottom: 0 }}
             transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
+            className="overflow-visible py-1"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
