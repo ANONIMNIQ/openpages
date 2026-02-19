@@ -617,12 +617,12 @@ const Index = () => {
                                         </button>
                                       ))}
                                     </div>
-                                    <div className="relative" style={{ perspective: '620px' }}>
+                                    <div className="relative mx-auto h-28 w-28" style={{ perspective: '620px' }}>
                                       <div
                                         className="absolute inset-0 rounded-full opacity-90"
                                         style={{
                                           background: pieGradient,
-                                          transform: 'translateY(9px) rotateX(34deg)',
+                                          transform: 'translateY(11px) rotateX(58deg) scaleY(0.86)',
                                           filter: 'brightness(0.68) saturate(0.95)',
                                         }}
                                       />
@@ -636,10 +636,10 @@ const Index = () => {
                                         className="relative h-28 w-28 rounded-full shadow-[0_20px_22px_rgba(0,0,0,0.16)] disabled:opacity-70"
                                         style={{
                                           background: pieGradient,
-                                          transform: 'rotateX(34deg) translateY(-3px)',
+                                          transform: 'rotateX(34deg) translateY(-2px)',
                                         }}
                                         aria-label="Гласувай от графиката"
-                                        >
+                                      >
                                         <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 via-transparent to-white/20" />
                                         <div className="absolute inset-[24%] rounded-full bg-white/90 backdrop-blur-[1px]" />
                                       </button>
@@ -693,15 +693,16 @@ const Index = () => {
                                     <span className="text-xs font-bold text-gray-500 shrink-0">{option.votes} гласа · {percent}%</span>
                                   </div>
                                   <div className="relative pt-3">
+                                    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[8px] h-[3px] w-16 rounded-full bg-black/20 z-10" />
                                     <AnimatePresence>
                                       {isOptionCelebrating ? (
                                         <motion.div
                                           key={`poll-paper-${voteFx?.token}-${option.id}`}
-                                          initial={{ y: -28, opacity: 0, rotate: -6, scale: 0.8 }}
-                                          animate={{ y: 9, opacity: 1, rotate: 0, scale: 1 }}
-                                          exit={{ y: 16, opacity: 0 }}
+                                          initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
+                                          animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
+                                          exit={{ y: 8, opacity: 0 }}
                                           transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-14px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
                                         >
                                           <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
                                             <path
