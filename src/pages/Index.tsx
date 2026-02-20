@@ -371,7 +371,7 @@ const Index = () => {
   };
 
   useEffect(() => {
-    const introTimeoutId = window.setTimeout(() => setIsBootBarComplete(true), 1100);
+    const introTimeoutId = window.setTimeout(() => setIsBootBarComplete(true), 1450);
     return () => {
       window.clearTimeout(introTimeoutId);
     };
@@ -545,15 +545,32 @@ const Index = () => {
                 <motion.div
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}
-                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-y-0 left-0 bg-white"
                 />
                 <motion.div
-                  initial={{ left: '-18%' }}
-                  animate={{ left: '100%' }}
-                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-y-0 w-[18%] bg-gradient-to-r from-transparent via-white/80 to-transparent"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute left-0 bottom-0 h-[6px] bg-black"
                 />
+                <motion.div
+                  initial={{ left: '0%' }}
+                  animate={{ left: ['0%', '100%', '113%'] }}
+                  transition={{ duration: 1.35, times: [0, 0.86, 1], ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute bottom-0 z-20 pointer-events-none"
+                  style={{ transform: 'translateX(-50%)' }}
+                >
+                  <div className="relative h-[88vh] max-h-[92vh] w-[62px]">
+                    <div className="absolute left-1/2 top-0 h-[calc(100%_-_56px)] w-[34px] -translate-x-1/2 rounded-t-[30px] bg-black" />
+                    <div className="absolute left-1/2 top-[16px] h-[16px] w-[20px] -translate-x-1/2 rounded-full bg-white/18" />
+                    <div className="absolute left-1/2 bottom-0 -translate-x-1/2">
+                      <div className="h-0 w-0 border-l-[31px] border-r-[31px] border-t-[56px] border-l-transparent border-r-transparent border-t-black" />
+                      <div className="absolute left-1/2 bottom-[7px] -translate-x-1/2 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[18px] border-l-transparent border-r-transparent border-t-white/85" />
+                      <div className="absolute left-1/2 bottom-[4px] -translate-x-1/2 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[10px] border-l-transparent border-r-transparent border-t-black" />
+                    </div>
+                  </div>
+                </motion.div>
               </motion.div>
             ) : (
               <motion.div
