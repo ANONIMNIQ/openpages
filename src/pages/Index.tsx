@@ -6,7 +6,7 @@ import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2 } from 'lucide-react';
-import { createPublicArgument, fetchPublishedTopicsWithArguments, voteOnContent, type PublishedTopic } from '@/lib/supabase-data';
+import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
@@ -34,6 +34,9 @@ const Index = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
   const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuFilters, setMenuFilters] = useState<PublicMenuFilter[]>([]);
+  const [activeMenuFilterId, setActiveMenuFilterId] = useState<string>('all');
   const [votedOptionIdsByTopic, setVotedOptionIdsByTopic] = useState<Record<string, string[]>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -48,8 +51,17 @@ const Index = () => {
   const detailOpenTimeoutRef = useRef<number | null>(null);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
-  const visibleTopics = topicsData.slice(0, topicsVisibleCount);
-  const hasMoreTopics = topicsData.length > topicsVisibleCount;
+  const filteredTopics = (() => {
+    if (activeMenuFilterId === 'all') return topicsData;
+    const filter = menuFilters.find((item) => item.id === activeMenuFilterId);
+    if (!filter) return topicsData;
+    if (filter.filterType === 'content_type') {
+      return topicsData.filter((topic) => topic.contentType === filter.filterValue);
+    }
+    return topicsData.filter((topic) => (topic.tag ?? '').toLowerCase() === filter.filterValue.toLowerCase());
+  })();
+  const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
+  const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
   const showBootLoader = !selectedTopicId && !isBootBarComplete;
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = !showBootLoader && (isTopicsLoading || isListSkeletonHold);
@@ -317,10 +329,24 @@ const Index = () => {
     let canceled = false;
     const load = async () => {
       try {
-        const remoteTopics = await fetchPublishedTopicsWithArguments();
+        const [remoteTopics, remoteMenuFilters] = await Promise.all([
+          fetchPublishedTopicsWithArguments(),
+          fetchPublicMenuFilters(),
+        ]);
         if (!canceled && remoteTopics) {
           setTopicsData(remoteTopics);
           setTopicsVisibleCount(5);
+        }
+        if (!canceled) {
+          setMenuFilters(
+            (remoteMenuFilters && remoteMenuFilters.length > 0
+              ? remoteMenuFilters
+              : [
+                  { id: 'default-debate', label: 'Тези', filterType: 'content_type', filterValue: 'debate', sortOrder: 1, active: true },
+                  { id: 'default-poll', label: 'Анкети', filterType: 'content_type', filterValue: 'poll', sortOrder: 2, active: true },
+                  { id: 'default-vs', label: 'VS', filterType: 'content_type', filterValue: 'vs', sortOrder: 3, active: true },
+                ]) as PublicMenuFilter[]
+          );
         }
       } catch (error) {
         console.warn('Failed to load topics from Supabase.', error);
@@ -336,6 +362,10 @@ const Index = () => {
       canceled = true;
     };
   }, []);
+
+  useEffect(() => {
+    setTopicsVisibleCount(5);
+  }, [activeMenuFilterId]);
 
   useEffect(() => {
     if (isTopicsLoading) return;
@@ -429,8 +459,9 @@ const Index = () => {
                 exit={{ opacity: 0, x: -20 }}
                 className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
               >
-                <header className="mb-12 flex justify-between items-start">
-                  <div>
+                <header className="mb-8">
+                  <div className="flex justify-between items-start">
+                    <div>
                     <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
                       <motion.span
                         className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
@@ -445,10 +476,52 @@ const Index = () => {
                     <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
                       Отворена платформа за анонимни дискусии
                     </p>
+                    </div>
+                    <button
+                      onClick={() => setIsMenuOpen((prev) => !prev)}
+                      className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+                      aria-label={isMenuOpen ? 'Затвори меню' : 'Отвори меню'}
+                    >
+                      {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                   </div>
-                  <button className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-                    <Menu size={20} />
-                  </button>
+                  <AnimatePresence initial={false}>
+                    {isMenuOpen ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        exit={{ opacity: 0, y: -8, height: 0 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden mt-4"
+                      >
+                        <div className="flex flex-wrap gap-2 pb-1">
+                          <button
+                            onClick={() => setActiveMenuFilterId('all')}
+                            className={`h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
+                              activeMenuFilterId === 'all'
+                                ? 'border-black bg-black text-white'
+                                : 'border-gray-200 text-gray-500 hover:text-black hover:border-black'
+                            }`}
+                          >
+                            Всички
+                          </button>
+                          {menuFilters.filter((item) => item.active).map((filter) => (
+                            <button
+                              key={filter.id}
+                              onClick={() => setActiveMenuFilterId(filter.id)}
+                              className={`h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
+                                activeMenuFilterId === filter.id
+                                  ? 'border-black bg-black text-white'
+                                  : 'border-gray-200 text-gray-500 hover:text-black hover:border-black'
+                              }`}
+                            >
+                              {filter.label}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
                 </header>
 
                 <div className="space-y-2">
@@ -470,9 +543,9 @@ const Index = () => {
                         <Skeleton className="h-1.5 w-full rounded-full" />
                       </div>
                     ))
-                  ) : topicsData.length === 0 ? (
+                  ) : filteredTopics.length === 0 ? (
                     <div className="py-12 text-sm text-gray-400">
-                      Няма публикувани теми. Добави нова тема от <span className="font-bold text-gray-500">/admin</span>.
+                      Няма налично съдържание за избрания филтър.
                     </div>
                   ) : visibleTopics.map(topic => {
                     const defaultMetric = (() => {
@@ -518,7 +591,7 @@ const Index = () => {
                       />
                     );
                   })}
-                  {!isTopicsLoading && hasMoreTopics ? (
+                  {!isTopicsLoading && hasMoreTopics && filteredTopics.length > topicsVisibleCount ? (
                     <div className="pt-5 flex justify-center">
                       <button
                         onClick={() => setTopicsVisibleCount((prev) => prev + 5)}

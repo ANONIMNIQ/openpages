@@ -46,6 +46,16 @@ export interface AdminComment {
   created_at?: string;
 }
 
+export interface AdminMenuFilter {
+  id: string;
+  label: string;
+  filter_type: "content_type" | "tag";
+  filter_value: string;
+  sort_order?: number | null;
+  active: boolean;
+  created_at?: string;
+}
+
 export const adminSessionStorageKey = "open-pages-admin-session";
 
 async function extractSupabaseError(response: Response) {
@@ -127,11 +137,14 @@ export async function fetchAdminData(accessToken: string) {
     }
   }
 
-  const [argumentsResponse, commentsResponse] = await Promise.all([
+  const [argumentsResponse, commentsResponse, menuFiltersResponse] = await Promise.all([
     fetch(`${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`, {
       headers,
     }),
     fetch(`${supabaseUrl}/rest/v1/argument_comments?select=id,argument_id,type,text,created_at&order=created_at.desc`, {
+      headers,
+    }),
+    fetch(`${supabaseUrl}/rest/v1/menu_filters?select=id,label,filter_type,filter_value,sort_order,active,created_at&order=sort_order.asc.nullslast,created_at.asc`, {
       headers,
     }),
   ]);
@@ -152,7 +165,108 @@ export async function fetchAdminData(accessToken: string) {
     topics: (await topicsResponse.json()) as AdminTopic[],
     arguments: (await argumentsResponse.json()) as AdminArgument[],
     comments: (await commentsResponse.json()) as AdminComment[],
+    menuFilters: menuFiltersResponse.ok ? ((await menuFiltersResponse.json()) as AdminMenuFilter[]) : ([] as AdminMenuFilter[]),
   };
+}
+
+export async function createMenuFilter(input: {
+  accessToken: string;
+  label: string;
+  filterType: "content_type" | "tag";
+  filterValue: string;
+  sortOrder?: number | null;
+  active?: boolean;
+}) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/menu_filters`, {
+    method: "POST",
+    headers: {
+      ...getSupabaseHeaders(input.accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      label: input.label,
+      filter_type: input.filterType,
+      filter_value: input.filterValue,
+      sort_order: input.sortOrder ?? null,
+      active: input.active ?? true,
+    }),
+  });
+  if (!response.ok) {
+    const error = await extractSupabaseError(response);
+    throw new Error(`Неуспешно създаване на меню бутон: ${error}`);
+  }
+  const rows = (await response.json()) as AdminMenuFilter[];
+  return rows[0] ?? null;
+}
+
+export async function updateMenuFilter(
+  accessToken: string,
+  filterId: string,
+  input: {
+    label: string;
+    filterType: "content_type" | "tag";
+    filterValue: string;
+    sortOrder?: number | null;
+    active: boolean;
+  }
+) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/menu_filters?id=eq.${filterId}`, {
+    method: "PATCH",
+    headers: {
+      ...getSupabaseHeaders(accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      label: input.label,
+      filter_type: input.filterType,
+      filter_value: input.filterValue,
+      sort_order: input.sortOrder ?? null,
+      active: input.active,
+    }),
+  });
+  if (!response.ok) {
+    const error = await extractSupabaseError(response);
+    throw new Error(`Неуспешно обновяване на меню бутон: ${error}`);
+  }
+}
+
+export async function deleteMenuFilter(accessToken: string, filterId: string) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/menu_filters?id=eq.${filterId}`, {
+    method: "DELETE",
+    headers: getSupabaseHeaders(accessToken),
+  });
+  if (!response.ok) {
+    const error = await extractSupabaseError(response);
+    throw new Error(`Неуспешно изтриване на меню бутон: ${error}`);
+  }
+}
+
+export async function reorderMenuFilters(accessToken: string, orderedIds: string[]) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+  for (const [index, filterId] of orderedIds.entries()) {
+    const response = await fetch(`${supabaseUrl}/rest/v1/menu_filters?id=eq.${filterId}`, {
+      method: "PATCH",
+      headers: {
+        ...getSupabaseHeaders(accessToken),
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ sort_order: index + 1 }),
+    });
+    if (!response.ok) {
+      const error = await extractSupabaseError(response);
+      throw new Error(`Неуспешно подреждане на менюто: ${error}`);
+    }
+  }
 }
 
 export async function createTopicWithArguments(input: {

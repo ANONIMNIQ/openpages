@@ -51,6 +51,15 @@ export interface PublishedTopic {
   totalVotes: number;
 }
 
+export interface PublicMenuFilter {
+  id: string;
+  label: string;
+  filterType: "content_type" | "tag";
+  filterValue: string;
+  sortOrder: number | null;
+  active: boolean;
+}
+
 const localVoterStorageKey = "open-pages-voter-key";
 
 const createVoterKey = () => {
@@ -205,6 +214,39 @@ export async function fetchPublishedTopicsWithArguments() {
       totalVotes,
     } satisfies PublishedTopic;
   });
+}
+
+export async function fetchPublicMenuFilters() {
+  if (!isSupabaseConfigured()) return null;
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) return null;
+
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/menu_filters?select=id,label,filter_type,filter_value,sort_order,active&active=eq.true&order=sort_order.asc.nullslast,created_at.asc`,
+    { headers: getSupabaseHeaders() }
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const rows = (await response.json()) as Array<{
+    id: string;
+    label: string;
+    filter_type: "content_type" | "tag";
+    filter_value: string;
+    sort_order?: number | null;
+    active?: boolean;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.label,
+    filterType: row.filter_type,
+    filterValue: row.filter_value,
+    sortOrder: row.sort_order ?? null,
+    active: row.active ?? true,
+  })) satisfies PublicMenuFilter[];
 }
 
 export async function createPublicArgument(input: {

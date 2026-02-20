@@ -1,16 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   adminSessionStorageKey,
+  createMenuFilter,
   createTopicWithArguments,
+  deleteMenuFilter,
   deleteArgument,
   deleteComment,
   deleteTopic,
   fetchAdminData,
   loginAdminWithPassword,
+  reorderMenuFilters,
   reorderTopics,
+  updateMenuFilter,
   updateTopic,
   type AdminArgument,
   type AdminComment,
+  type AdminMenuFilter,
   type AdminSession,
   type AdminTopic,
 } from "@/lib/supabase-admin";
@@ -111,6 +116,7 @@ const Admin = () => {
   const [topics, setTopics] = useState<AdminTopic[]>([]);
   const [argumentsList, setArgumentsList] = useState<AdminArgument[]>([]);
   const [comments, setComments] = useState<AdminComment[]>([]);
+  const [menuFilters, setMenuFilters] = useState<AdminMenuFilter[]>([]);
 
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -125,6 +131,10 @@ const Admin = () => {
   const [editVsRightImage, setEditVsRightImage] = useState("");
   const [editPublished, setEditPublished] = useState(true);
   const [dragTopicId, setDragTopicId] = useState<string | null>(null);
+  const [menuFilterLabel, setMenuFilterLabel] = useState("");
+  const [menuFilterType, setMenuFilterType] = useState<"content_type" | "tag">("content_type");
+  const [menuFilterValue, setMenuFilterValue] = useState("debate");
+  const [dragMenuFilterId, setDragMenuFilterId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -148,6 +158,18 @@ const Admin = () => {
     [argumentsList]
   );
 
+  const availableCustomTags = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          topics
+            .map((topic) => (topic.custom_tag ?? "").trim())
+            .filter((tag) => tag.length > 0)
+        )
+      ),
+    [topics]
+  );
+
   useEffect(() => {
     if (!session) return;
     void loadAdminData(session.accessToken).catch(() => {
@@ -160,6 +182,7 @@ const Admin = () => {
     setTopics(data.topics);
     setArgumentsList(data.arguments);
     setComments(data.comments);
+    setMenuFilters(data.menuFilters ?? []);
   };
 
   const resetCreateForm = () => {
@@ -223,6 +246,7 @@ const Admin = () => {
     setTopics([]);
     setArgumentsList([]);
     setComments([]);
+    setMenuFilters([]);
     setMessage("");
     setError("");
   };
@@ -445,6 +469,135 @@ const Admin = () => {
     return "Теза";
   };
 
+  const onCreateMenuFilter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session) return;
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await createMenuFilter({
+        accessToken: session.accessToken,
+        label: menuFilterLabel.trim(),
+        filterType: menuFilterType,
+        filterValue: menuFilterValue.trim(),
+        sortOrder: menuFilters.length + 1,
+        active: true,
+      });
+      setMenuFilterLabel("");
+      setMenuFilterType("content_type");
+      setMenuFilterValue("debate");
+      await loadAdminData(session.accessToken);
+      setMessage("Меню бутонът е добавен.");
+    } catch (menuError) {
+      setError(menuError instanceof Error ? menuError.message : "Menu create error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSaveMenuFilter = async (filter: AdminMenuFilter) => {
+    if (!session) return;
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await updateMenuFilter(session.accessToken, filter.id, {
+        label: filter.label,
+        filterType: filter.filter_type,
+        filterValue: filter.filter_value,
+        sortOrder: filter.sort_order ?? null,
+        active: filter.active,
+      });
+      await loadAdminData(session.accessToken);
+      setMessage("Меню бутонът е обновен.");
+    } catch (menuError) {
+      setError(menuError instanceof Error ? menuError.message : "Menu update error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRemoveMenuFilter = async (filterId: string) => {
+    if (!session) return;
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await deleteMenuFilter(session.accessToken, filterId);
+      await loadAdminData(session.accessToken);
+      setMessage("Меню бутонът е изтрит.");
+    } catch (menuError) {
+      setError(menuError instanceof Error ? menuError.message : "Menu delete error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDropMenuFilter = async (targetFilterId: string) => {
+    if (!session || !dragMenuFilterId || dragMenuFilterId === targetFilterId) return;
+    const fromIndex = menuFilters.findIndex((item) => item.id === dragMenuFilterId);
+    const toIndex = menuFilters.findIndex((item) => item.id === targetFilterId);
+    if (fromIndex < 0 || toIndex < 0) return;
+
+    const reordered = [...menuFilters];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    setMenuFilters(reordered);
+
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await reorderMenuFilters(
+        session.accessToken,
+        reordered.map((item) => item.id)
+      );
+      await loadAdminData(session.accessToken);
+      setMessage("Подредбата на менюто е обновена.");
+    } catch (menuError) {
+      setError(menuError instanceof Error ? menuError.message : "Menu reorder error");
+      await loadAdminData(session.accessToken);
+    } finally {
+      setLoading(false);
+      setDragMenuFilterId(null);
+    }
+  };
+
+  const onCreateDefaultMenuFilters = async () => {
+    if (!session) return;
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      if (menuFilters.length > 0) {
+        setMessage("Менюто вече има бутони.");
+        return;
+      }
+      const defaults: Array<{ label: string; value: string }> = [
+        { label: "Тези", value: "debate" },
+        { label: "Анкети", value: "poll" },
+        { label: "VS", value: "vs" },
+      ];
+      for (const [idx, item] of defaults.entries()) {
+        await createMenuFilter({
+          accessToken: session.accessToken,
+          label: item.label,
+          filterType: "content_type",
+          filterValue: item.value,
+          sortOrder: idx + 1,
+          active: true,
+        });
+      }
+      await loadAdminData(session.accessToken);
+      setMessage("Добавени са началните бутони за меню.");
+    } catch (menuError) {
+      setError(menuError instanceof Error ? menuError.message : "Menu seed error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] p-8 flex items-center justify-center">
@@ -491,6 +644,154 @@ const Admin = () => {
 
         {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+
+        <section className="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 className="text-xl font-black mb-4">Меню бутони</h2>
+          <form onSubmit={onCreateMenuFilter} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 mb-4">
+            <input
+              value={menuFilterLabel}
+              onChange={(e) => setMenuFilterLabel(e.target.value)}
+              placeholder="Надпис на бутон"
+              className="h-10 rounded-lg border border-gray-200 px-3"
+              required
+            />
+            <select
+              value={menuFilterType}
+              onChange={(e) => {
+                const type = e.target.value as "content_type" | "tag";
+                setMenuFilterType(type);
+                setMenuFilterValue(type === "content_type" ? "debate" : "");
+              }}
+              className="h-10 rounded-lg border border-gray-200 px-3 bg-white"
+            >
+              <option value="content_type">Тип</option>
+              <option value="tag">Къстъм таг</option>
+            </select>
+            {menuFilterType === "content_type" ? (
+              <select
+                value={menuFilterValue}
+                onChange={(e) => setMenuFilterValue(e.target.value)}
+                className="h-10 rounded-lg border border-gray-200 px-3 bg-white"
+              >
+                <option value="debate">Тези</option>
+                <option value="poll">Анкети</option>
+                <option value="vs">VS</option>
+              </select>
+            ) : (
+              <input
+                value={menuFilterValue}
+                onChange={(e) => setMenuFilterValue(e.target.value)}
+                placeholder="Стойност на тага"
+                list="available-custom-tags"
+                className="h-10 rounded-lg border border-gray-200 px-3"
+                required
+              />
+            )}
+            <button type="submit" disabled={loading} className="h-10 px-4 rounded-full border border-black text-xs font-bold">
+              Добави
+            </button>
+          </form>
+          <div className="mb-4">
+            <button onClick={() => void onCreateDefaultMenuFilters()} className="h-9 px-4 rounded-full border border-gray-200 text-xs font-bold" disabled={loading}>
+              Добави базови: Тези / Анкети / VS
+            </button>
+          </div>
+          <div className="space-y-2">
+            {menuFilters.map((filter) => (
+              <div
+                key={filter.id}
+                draggable
+                onDragStart={() => setDragMenuFilterId(filter.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => void onDropMenuFilter(filter.id)}
+                className={`rounded-lg border p-2 grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto] gap-2 ${dragMenuFilterId === filter.id ? "border-black" : "border-gray-200"}`}
+              >
+                <input
+                  value={filter.label}
+                  onChange={(e) =>
+                    setMenuFilters((prev) => prev.map((item) => (item.id === filter.id ? { ...item, label: e.target.value } : item)))
+                  }
+                  className="h-9 rounded-md border border-gray-200 px-2 text-sm"
+                />
+                <select
+                  value={filter.filter_type}
+                  onChange={(e) =>
+                    setMenuFilters((prev) =>
+                      prev.map((item) =>
+                        item.id === filter.id
+                          ? {
+                              ...item,
+                              filter_type: e.target.value as "content_type" | "tag",
+                              filter_value: e.target.value === "content_type" ? "debate" : item.filter_value,
+                            }
+                          : item
+                      )
+                    )
+                  }
+                  className="h-9 rounded-md border border-gray-200 px-2 bg-white text-sm"
+                >
+                  <option value="content_type">Тип</option>
+                  <option value="tag">Таг</option>
+                </select>
+                {filter.filter_type === "content_type" ? (
+                  <select
+                    value={filter.filter_value}
+                    onChange={(e) =>
+                      setMenuFilters((prev) => prev.map((item) => (item.id === filter.id ? { ...item, filter_value: e.target.value } : item)))
+                    }
+                    className="h-9 rounded-md border border-gray-200 px-2 bg-white text-sm"
+                  >
+                    <option value="debate">Тези</option>
+                    <option value="poll">Анкети</option>
+                    <option value="vs">VS</option>
+                  </select>
+                ) : (
+                  <input
+                    value={filter.filter_value}
+                    onChange={(e) =>
+                      setMenuFilters((prev) => prev.map((item) => (item.id === filter.id ? { ...item, filter_value: e.target.value } : item)))
+                    }
+                    list="available-custom-tags"
+                    className="h-9 rounded-md border border-gray-200 px-2 text-sm"
+                    placeholder="Стойност на таг"
+                  />
+                )}
+                <label className="h-9 inline-flex items-center justify-center gap-2 px-2 rounded-md border border-gray-200 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={filter.active}
+                    onChange={(e) =>
+                      setMenuFilters((prev) => prev.map((item) => (item.id === filter.id ? { ...item, active: e.target.checked } : item)))
+                    }
+                  />
+                  Активен
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => void onSaveMenuFilter(filter)}
+                    className="h-9 px-3 rounded-md border border-emerald-200 text-emerald-700 text-xs font-bold"
+                    disabled={loading}
+                  >
+                    Запази
+                  </button>
+                  <button
+                    onClick={() => void onRemoveMenuFilter(filter.id)}
+                    className="h-9 px-3 rounded-md border border-rose-200 text-rose-700 text-xs font-bold"
+                    disabled={loading}
+                  >
+                    Изтрий
+                  </button>
+                </div>
+              </div>
+            ))}
+            {menuFilters.length === 0 ? <p className="text-sm text-gray-400">Няма меню бутони. Добави или зареди базовите.</p> : null}
+            <datalist id="available-custom-tags">
+              {availableCustomTags.map((tag) => (
+                <option key={tag} value={tag} />
+              ))}
+            </datalist>
+          </div>
+        </section>
 
         <section className="bg-white border border-gray-200 rounded-2xl p-6">
           <h2 className="text-xl font-black mb-4">Подреди съдържанието (drag & drop)</h2>

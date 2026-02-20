@@ -62,6 +62,18 @@ create table if not exists public.content_votes (
 create index if not exists content_votes_topic_id_idx on public.content_votes(topic_id);
 create index if not exists content_votes_option_id_idx on public.content_votes(option_id);
 
+create table if not exists public.menu_filters (
+  id uuid primary key default gen_random_uuid(),
+  label text not null,
+  filter_type text not null check (filter_type in ('content_type', 'tag')),
+  filter_value text not null,
+  sort_order integer,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists menu_filters_sort_order_idx on public.menu_filters(sort_order);
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -83,6 +95,7 @@ alter table public.topics enable row level security;
 alter table public.arguments enable row level security;
 alter table public.argument_comments enable row level security;
 alter table public.content_votes enable row level security;
+alter table public.menu_filters enable row level security;
 
 drop policy if exists "Admin users can read admin_users" on public.admin_users;
 create policy "Admin users can read admin_users"
@@ -237,6 +250,35 @@ create policy "Public can update own content vote"
 drop policy if exists "Admins can delete content votes" on public.content_votes;
 create policy "Admins can delete content votes"
   on public.content_votes
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+drop policy if exists "Public can read active menu filters" on public.menu_filters;
+create policy "Public can read active menu filters"
+  on public.menu_filters
+  for select
+  to anon, authenticated
+  using (active = true or public.is_admin());
+
+drop policy if exists "Admins can insert menu filters" on public.menu_filters;
+create policy "Admins can insert menu filters"
+  on public.menu_filters
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "Admins can update menu filters" on public.menu_filters;
+create policy "Admins can update menu filters"
+  on public.menu_filters
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "Admins can delete menu filters" on public.menu_filters;
+create policy "Admins can delete menu filters"
+  on public.menu_filters
   for delete
   to authenticated
   using (public.is_admin());
