@@ -151,7 +151,7 @@ export async function fetchPublishedTopicsWithArguments() {
 
   let topicsResponse = await fetch(
     `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
-    { headers: getSupabaseHeaders() }
+    { headers: getSupabaseHeaders(), cache: "no-store" }
   );
   if (!topicsResponse.ok) {
     const topicsError = await extractSupabaseError(topicsResponse);
@@ -161,7 +161,7 @@ export async function fetchPublishedTopicsWithArguments() {
     if (missingExtendedColumns) {
       topicsResponse = await fetch(
         `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&published=eq.true&order=created_at.desc`,
-        { headers: getSupabaseHeaders() }
+        { headers: getSupabaseHeaders(), cache: "no-store" }
       );
     } else {
       throw new Error(`Failed to load topics (${topicsResponse.status})`);
@@ -172,13 +172,14 @@ export async function fetchPublishedTopicsWithArguments() {
 
   const argumentsResponse = await fetch(
     `${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`,
-    { headers: getSupabaseHeaders() }
+    { headers: getSupabaseHeaders(), cache: "no-store" }
   );
   if (!argumentsResponse.ok) throw new Error(`Failed to load arguments (${argumentsResponse.status})`);
   const args = (await argumentsResponse.json()) as DbArgument[];
 
   const votesResponse = await fetch(`${supabaseUrl}/rest/v1/content_votes?select=topic_id,option_id`, {
     headers: getSupabaseHeaders(),
+    cache: "no-store",
   });
   const votes = votesResponse.ok ? ((await votesResponse.json()) as DbVoteRow[]) : [];
 
@@ -333,11 +334,12 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
   const voterKey = input.allowMultiple ? `${baseVoterKey}:${input.optionId}` : `${baseVoterKey}:single`;
 
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(voterKey)}`,
+    `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&voter_key=eq.${encodeURIComponent(voterKey)}`,
     {
       method: "DELETE",
       headers: {
         ...getSupabaseHeaders(),
+        Prefer: "return=representation",
       },
     }
   );
