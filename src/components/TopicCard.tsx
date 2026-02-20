@@ -33,6 +33,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   onClick,
 }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
+  const [canHover, setCanHover] = useState(false);
   const percentMotion = useMotionValue(0);
   const accentText = dominantSide === 'pro' ? 'text-emerald-700' : 'text-rose-700';
   const accentLabel = dominantSide === 'pro' ? 'ЗА' : 'ПРОТИВ';
@@ -53,25 +54,34 @@ const TopicCard: React.FC<TopicCardProps> = ({
     return () => controls.stop();
   }, [dominantPercent, percentMotion]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const sync = () => setCanHover(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ x: 10 }}
+      whileHover={canHover ? { x: 10 } : undefined}
       onClick={onClick}
-      className="group cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4"
+      className={`cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''}`}
     >
       {tag ? (
         <div className="flex items-center gap-3 mb-4">
           <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
             {tag}
           </span>
-          <div className="h-[1px] w-8 bg-gray-100 group-hover:w-12 group-hover:bg-black transition-all" />
+          <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:w-12 group-hover:bg-black' : ''}`} />
         </div>
       ) : null}
       
-      <h2 className="text-2xl font-black leading-tight mb-4 group-hover:text-gray-800 transition-colors">
+      <h2 className={`text-2xl font-black leading-tight mb-4 transition-colors ${canHover ? 'group-hover:text-gray-800' : ''}`}>
         {title}
       </h2>
       
