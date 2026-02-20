@@ -34,6 +34,16 @@ const Index = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
   const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
+  const [votedOptionIdsByTopic, setVotedOptionIdsByTopic] = useState<Record<string, string[]>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem('open-pages-voted-options');
+      if (!raw) return {};
+      return JSON.parse(raw) as Record<string, string[]>;
+    } catch {
+      return {};
+    }
+  });
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
 
@@ -232,13 +242,22 @@ const Index = () => {
     if (!selectedTopic || selectedTopic.contentType === 'debate' || isVoting) return;
     setIsVoting(true);
     try {
+      const allowMultiple = selectedTopic.contentType === 'poll' ? Boolean(selectedTopic.pollAllowMultiple) : false;
       await voteOnContent({
         topicId: selectedTopic.id,
         optionId,
-        allowMultiple: selectedTopic.contentType === 'poll' ? Boolean(selectedTopic.pollAllowMultiple) : false,
+        allowMultiple,
       });
       const refreshed = await fetchPublishedTopicsWithArguments();
       if (refreshed) setTopicsData(refreshed);
+      if (selectedTopic.contentType === 'poll') {
+        setVotedOptionIdsByTopic((prev) => {
+          const next = { ...prev };
+          const existing = next[selectedTopic.id] ?? [];
+          next[selectedTopic.id] = allowMultiple ? Array.from(new Set([...existing, optionId])) : [optionId];
+          return next;
+        });
+      }
       setVoteFx({
         topicId: selectedTopic.id,
         optionId,
@@ -259,6 +278,11 @@ const Index = () => {
       window.clearTimeout(timeoutId);
     };
   }, [voteFx]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('open-pages-voted-options', JSON.stringify(votedOptionIdsByTopic));
+  }, [votedOptionIdsByTopic]);
 
   useEffect(() => {
     setExplodedPollOptionId(null);
@@ -724,6 +748,7 @@ const Index = () => {
                                 voteFx?.type === 'poll' &&
                                 voteFx.topicId === selectedTopic.id &&
                                 voteFx.optionId === option.id;
+                              const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
                               return (
                                 <motion.button
                                   key={option.id}
@@ -731,12 +756,41 @@ const Index = () => {
                                   disabled={isVoting}
                                   whileHover={{ y: -1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
                                   whileTap={{ scale: 0.995 }}
-                                  className="relative w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
+                                  className="group relative w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
                                   style={{ borderColor: `${color}55` }}
                                 >
                                   <div className="flex items-center justify-between gap-3 mb-2">
                                     <span className="inline-flex items-center gap-2 min-w-0">
-                                      <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                      <span
+                                        className={`relative inline-flex h-4 w-4 rounded-full shrink-0 items-center justify-center transition-all ${
+                                          isOptionVoted ? 'border-2 border-black' : 'border border-transparent group-hover:border-black'
+                                        }`}
+                                        style={{ backgroundColor: color }}
+                                      >
+                                        <AnimatePresence>
+                                          {isOptionVoted ? (
+                                            <motion.svg
+                                              key={`check-${selectedTopic.id}-${option.id}`}
+                                              viewBox="0 0 20 20"
+                                              className="h-2.5 w-2.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]"
+                                              initial={{ opacity: 0, scale: 0.4, rotate: -12 }}
+                                              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                              exit={{ opacity: 0, scale: 0.5 }}
+                                              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                              aria-hidden="true"
+                                            >
+                                              <path
+                                                d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2.3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                              />
+                                            </motion.svg>
+                                          ) : null}
+                                        </AnimatePresence>
+                                      </span>
                                       <span className="text-sm font-bold text-black truncate">{option.label}</span>
                                     </span>
                                     <span className="text-xs font-bold text-gray-500 shrink-0">{option.votes} гласа · {percent}%</span>
