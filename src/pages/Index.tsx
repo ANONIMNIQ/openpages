@@ -561,13 +561,13 @@ const Index = () => {
                   className="absolute bottom-0 z-20 pointer-events-none"
                   style={{ transform: 'translateX(-50%)' }}
                 >
-                  <div className="relative h-[88vh] max-h-[92vh] w-[62px]">
-                    <div className="absolute left-1/2 top-0 h-[calc(100%_-_56px)] w-[34px] -translate-x-1/2 rounded-t-[30px] bg-black" />
-                    <div className="absolute left-1/2 top-[16px] h-[16px] w-[20px] -translate-x-1/2 rounded-full bg-white/18" />
+                  <div className="relative h-[88vh] max-h-[92vh] w-[66px]">
+                    <div className="absolute left-1/2 top-0 h-[calc(100%_-_64px)] w-[30px] -translate-x-1/2 rounded-t-[28px] bg-black" />
+                    <div className="absolute left-1/2 top-[12px] h-[20px] w-[16px] -translate-x-1/2 rounded-full bg-white/20" />
+                    <div className="absolute left-1/2 bottom-[64px] h-[6px] w-[30px] -translate-x-1/2 bg-white/95" />
                     <div className="absolute left-1/2 bottom-0 -translate-x-1/2">
-                      <div className="h-0 w-0 border-l-[31px] border-r-[31px] border-t-[56px] border-l-transparent border-r-transparent border-t-black" />
-                      <div className="absolute left-1/2 bottom-[7px] -translate-x-1/2 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[18px] border-l-transparent border-r-transparent border-t-white/85" />
-                      <div className="absolute left-1/2 bottom-[4px] -translate-x-1/2 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[10px] border-l-transparent border-r-transparent border-t-black" />
+                      <div className="h-0 w-0 border-l-[15px] border-r-[15px] border-t-[44px] border-l-transparent border-r-transparent border-t-[#f1e6cf]" />
+                      <div className="absolute left-1/2 bottom-[2px] -translate-x-1/2 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[9px] border-l-transparent border-r-transparent border-t-black" />
                     </div>
                   </div>
                 </motion.div>
