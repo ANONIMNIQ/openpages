@@ -268,11 +268,14 @@ const Index = () => {
       const isToggleOff = allowMultiple && existing.includes(optionId);
 
       if (isToggleOff) {
-        await unvoteOnContent({
+        const removed = await unvoteOnContent({
           topicId: selectedTopic.id,
           optionId,
           allowMultiple,
         });
+        if (!removed) {
+          throw new Error('Vote row not found for removal');
+        }
       } else {
         await voteOnContent({
           topicId: selectedTopic.id,

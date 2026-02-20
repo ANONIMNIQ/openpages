@@ -331,22 +331,34 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
   const supabaseUrl = getSupabaseUrl();
   const baseVoterKey = getVoterKey();
   if (!supabaseUrl || !baseVoterKey) return null;
-  const voterKey = input.allowMultiple ? `${baseVoterKey}:${input.optionId}` : `${baseVoterKey}:single`;
+  const candidateKeys = input.allowMultiple
+    ? [`${baseVoterKey}:${input.optionId}`, `${baseVoterKey}:single`, baseVoterKey]
+    : [`${baseVoterKey}:single`, baseVoterKey];
 
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&voter_key=eq.${encodeURIComponent(voterKey)}`,
-    {
-      method: "DELETE",
-      headers: {
-        ...getSupabaseHeaders(),
-        Prefer: "return=representation",
-      },
+  const tryDelete = async (key: string) => {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}`,
+      {
+        method: "DELETE",
+        headers: {
+          ...getSupabaseHeaders(),
+          Prefer: "return=representation",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to remove vote (${response.status})`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`Failed to remove vote (${response.status})`);
+    const deleted = (await response.json().catch(() => [])) as Array<{ topic_id: string }>;
+    return deleted.length > 0;
+  };
+
+  for (const key of candidateKeys) {
+    const deleted = await tryDelete(key);
+    if (deleted) return true;
   }
 
-  return true;
+  return false;
 }
