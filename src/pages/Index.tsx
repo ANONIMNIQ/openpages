@@ -416,82 +416,6 @@ const Index = () => {
     hidden: { opacity: 0, y: 22 },
     show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
   };
-  const renderFlipPreviewContent = (topic: PublishedTopic) => {
-    if (topic.contentType === 'debate') {
-      return (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 gap-4">
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">Аргументи ЗА</div>
-              <div className="space-y-2">
-                {topic.pro.slice(0, 4).map((arg, idx) => (
-                  <p key={`preview-pro-${topic.id}-${arg.id ?? idx}`} className="text-xs text-gray-700 leading-relaxed">
-                    {arg.text}
-                  </p>
-                ))}
-                {topic.pro.length === 0 ? <p className="text-xs text-gray-400">Все още няма аргументи.</p> : null}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 mb-2">Аргументи ПРОТИВ</div>
-              <div className="space-y-2">
-                {topic.con.slice(0, 4).map((arg, idx) => (
-                  <p key={`preview-con-${topic.id}-${arg.id ?? idx}`} className="text-xs text-gray-700 leading-relaxed">
-                    {arg.text}
-                  </p>
-                ))}
-                {topic.con.length === 0 ? <p className="text-xs text-gray-400">Все още няма аргументи.</p> : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (topic.contentType === 'poll') {
-      return (
-        <div className="space-y-3">
-          {topic.voteOptions.map((option, idx) => {
-            const percent = topic.totalVotes > 0 ? Math.round((option.votes / topic.totalVotes) * 100) : 0;
-            const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-            return (
-              <div key={`preview-poll-${topic.id}-${option.id}`} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <span className="inline-flex items-center gap-2 min-w-0">
-                    <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                    <span className="text-xs font-bold text-black truncate">{option.label}</span>
-                  </span>
-                  <span className="text-xs font-bold text-gray-500 shrink-0">{option.votes} гласа · {percent}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div className="h-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: color }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {topic.voteOptions.map((option, idx) => {
-          const percent = topic.totalVotes > 0 ? Math.round((option.votes / topic.totalVotes) * 100) : 0;
-          const tone = idx === 0 ? 'border-emerald-200' : 'border-rose-200';
-          return (
-            <div key={`preview-vs-${topic.id}-${option.id}`} className={`rounded-xl border bg-white p-4 ${tone}`}>
-              {option.image ? <img src={option.image} alt={option.label} className="w-full h-40 object-cover object-top rounded-lg mb-3" /> : null}
-              <p className="text-base font-black text-black mb-1">{option.label}</p>
-              <p className="text-xs font-bold text-gray-500 mb-2">{option.votes} гласа · {percent}%</p>
-              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   useEffect(() => {
     const introTimeoutId = window.setTimeout(() => setIsBootBarComplete(true), 2260);
@@ -659,13 +583,13 @@ const Index = () => {
     const onMove = (event: PointerEvent) => {
       if (flipDragStartXRef.current === null) return;
       const delta = flipDragStartXRef.current - event.clientX;
-      const next = Math.max(0, Math.min(1, flipDragStartProgressRef.current + delta / 220));
+      const next = Math.max(0, Math.min(1, flipDragStartProgressRef.current + delta / 260));
       setFlipProgress(next);
     };
 
     const onUp = () => {
       setIsFlipDragging(false);
-      if (flipProgress >= 0.5) {
+      if (flipProgress >= 0.42) {
         triggerFlipToNext();
       } else {
         setFlipProgress(0);
@@ -927,12 +851,15 @@ const Index = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16 relative overflow-hidden [perspective:1800px]"
+              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16 relative overflow-hidden"
             >
               {isDesktopFlipEnabled && nextTopicInSequence && !isDetailContentLoading ? (
                 <>
                   <div
-                    className="absolute inset-0 z-0 bg-white pointer-events-none rounded-2xl overflow-hidden"
+                    className="absolute inset-0 z-0 bg-white pointer-events-none"
+                    style={{
+                      clipPath: `inset(0 0 0 ${Math.max(0, 100 - flipProgress * 100)}%)`,
+                    }}
                   >
                     <div className="h-full p-8 md:p-12 flex flex-col justify-start">
                       <div className="mb-7">
@@ -944,48 +871,23 @@ const Index = () => {
                       </div>
                       <h3 className="text-2xl font-black text-black leading-tight tracking-tight mb-4">{nextTopicInSequence.title}</h3>
                       <p className="text-sm text-gray-500 leading-relaxed max-w-md">{nextTopicInSequence.description}</p>
-                      <div className="mt-8">
-                        {renderFlipPreviewContent(nextTopicInSequence)}
-                      </div>
                     </div>
                   </div>
-                  <motion.div
-                    aria-hidden="true"
-                    className="absolute top-0 right-0 z-10 h-full w-40 pointer-events-none"
-                    style={{
-                      opacity: flipProgress,
-                      background:
-                        'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 45%, rgba(0,0,0,0.22) 100%)',
-                    }}
-                  />
                   <button
                     type="button"
                     onClick={triggerFlipToNext}
                     onPointerDown={handleFlipPointerDown}
-                    className="hidden lg:block absolute top-0 right-0 z-30 h-36 w-36 cursor-grab active:cursor-grabbing"
+                    className="hidden lg:block absolute top-0 right-0 z-30 h-24 w-24 cursor-grab active:cursor-grabbing"
                     aria-label="Разгърни към следващата тема"
                     title="Разгърни към следващата тема"
                   >
                     <span
-                      className="absolute inset-0 bg-white border-l border-b border-gray-200 shadow-[0_22px_42px_rgba(0,0,0,0.22)]"
+                      className="absolute inset-0 bg-white border-l border-b border-gray-200 shadow-[0_10px_22px_rgba(0,0,0,0.12)]"
                       style={{
                         clipPath: 'polygon(100% 0, 0 0, 100% 100%)',
                         transformOrigin: 'top right',
-                        transform: `perspective(1200px) rotateY(${-172 * flipProgress}deg) rotateX(${8 * flipProgress}deg)`,
-                        filter: `drop-shadow(${-8 * flipProgress}px ${10 * flipProgress}px ${18 + 20 * flipProgress}px rgba(0,0,0,0.35))`,
-                        transition: isFlipDragging ? 'none' : 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)',
-                      }}
-                    />
-                    <span
-                      className="absolute top-0 right-0 h-20 w-20 pointer-events-none"
-                      style={{
-                        clipPath: 'polygon(100% 0, 0 0, 100% 100%)',
-                        background:
-                          'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(236,236,236,1) 62%, rgba(214,214,214,1) 100%)',
-                        boxShadow: '-8px 10px 18px rgba(0,0,0,0.16)',
-                        transform: `translate3d(0, 0, 0) rotateY(${-148 * flipProgress}deg)`,
-                        transformOrigin: 'top right',
-                        transition: isFlipDragging ? 'none' : 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        transform: `perspective(900px) rotateY(${-165 * flipProgress}deg)`,
+                        transition: isFlipDragging ? 'none' : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
                       }}
                     />
                   </button>
@@ -995,19 +897,10 @@ const Index = () => {
                 variants={detailStagger}
                 initial="hidden"
                 animate="show"
-                className="relative z-20 bg-white rounded-2xl"
+                className="relative z-20"
                 style={{
-                  transformStyle: isDesktopFlipEnabled && nextTopicInSequence ? 'preserve-3d' : 'flat',
-                  transform:
-                    isDesktopFlipEnabled && nextTopicInSequence
-                      ? `rotateY(${-150 * flipProgress}deg) translateX(${flipProgress * 28}px) translateZ(${flipProgress * 10}px)`
-                      : 'none',
-                  transformOrigin: 'top right',
-                  boxShadow:
-                    isDesktopFlipEnabled && nextTopicInSequence
-                      ? `0 ${16 + flipProgress * 24}px ${30 + flipProgress * 35}px rgba(0,0,0,${0.08 + flipProgress * 0.22})`
-                      : '0 0 0 rgba(0,0,0,0)',
-                  transition: isFlipDragging ? 'none' : 'transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  clipPath: isDesktopFlipEnabled && nextTopicInSequence ? `inset(0 ${flipProgress * 100}% 0 0)` : 'inset(0 0 0 0)',
+                  transition: isFlipDragging ? 'none' : 'clip-path 220ms cubic-bezier(0.22, 1, 0.36, 1)',
                 }}
               >
                 <motion.button
