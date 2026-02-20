@@ -555,13 +555,13 @@ const Index = () => {
                   <motion.div
                     initial={{ width: '0%' }}
                     animate={{ width: ['0%', '100%', '100%'] }}
-                    transition={{ duration: 1.82, times: [0, 0.74, 1], ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 1.82, times: [0, 0.69, 1], ease: [0.22, 1, 0.36, 1] }}
                     className="absolute left-0 bottom-0 h-[6px] bg-black z-10 pointer-events-none"
                   />
                   <motion.div
                     initial={{ x: 0, opacity: 1 }}
                     animate={{ x: [0, 0, 360], opacity: [1, 1, 1, 0] }}
-                    transition={{ duration: 1.82, times: [0, 0.78, 0.94, 1], ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 1.82, times: [0, 0.69, 0.94, 1], ease: [0.22, 1, 0.36, 1] }}
                     className="absolute right-0 bottom-0 z-20 pointer-events-none"
                     style={{ transform: 'translateX(4px)' }}
                   >
@@ -582,9 +582,9 @@ const Index = () => {
                   </motion.div>
                 </motion.div>
                 <motion.div
-                  initial={{ scaleY: 0, opacity: 0 }}
-                  animate={{ scaleY: [0, 0, 1, 1], opacity: [0, 0, 1, 0] }}
-                  transition={{ duration: 2.08, times: [0, 0.72, 0.9, 1], ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ scaleY: 0.006, opacity: 1 }}
+                  animate={{ scaleY: [0.006, 0.006, 1, 1], opacity: [1, 1, 1, 0] }}
+                  transition={{ duration: 2.08, times: [0, 0.69, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-0 bg-black origin-bottom z-[15] pointer-events-none"
                 />
               </motion.div>
