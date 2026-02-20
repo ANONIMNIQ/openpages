@@ -323,10 +323,13 @@ const Index = () => {
         navigate('/', { replace: true });
         return;
       }
-      resetTopicViewState();
-      setIsDetailOpening(false);
-      setSelectedTopicId(topicIdFromPath);
-      window.requestAnimationFrame(() => scrollDetailToTop());
+      const isNewDetailOpen = selectedTopicId !== topicIdFromPath;
+      if (isNewDetailOpen) {
+        resetTopicViewState();
+        setIsDetailOpening(false);
+        setSelectedTopicId(topicIdFromPath);
+        window.requestAnimationFrame(() => scrollDetailToTop());
+      }
 
       const expectedPath = buildTopicPath(existingTopic.id, existingTopic.title);
       if (location.pathname !== expectedPath) {
@@ -339,10 +342,13 @@ const Index = () => {
     if (queryTopicId) {
       const existingTopic = topicsData.find((topic) => topic.id === queryTopicId);
       if (existingTopic) {
-        resetTopicViewState();
-        setIsDetailOpening(false);
-        setSelectedTopicId(existingTopic.id);
-        window.requestAnimationFrame(() => scrollDetailToTop());
+        const isNewDetailOpen = selectedTopicId !== existingTopic.id;
+        if (isNewDetailOpen) {
+          resetTopicViewState();
+          setIsDetailOpening(false);
+          setSelectedTopicId(existingTopic.id);
+          window.requestAnimationFrame(() => scrollDetailToTop());
+        }
         navigate(buildTopicPath(existingTopic.id, existingTopic.title), { replace: true });
         return;
       }
@@ -350,10 +356,12 @@ const Index = () => {
       return;
     }
 
-    resetTopicViewState();
-    setIsDetailOpening(false);
-    setSelectedTopicId(null);
-  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate]);
+    if (selectedTopicId !== null) {
+      resetTopicViewState();
+      setIsDetailOpening(false);
+      setSelectedTopicId(null);
+    }
+  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId]);
 
   useEffect(() => {
     return () => {
