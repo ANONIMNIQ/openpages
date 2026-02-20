@@ -531,7 +531,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
       {/* Main Content Column - Starts from the very left */}
-      <main ref={mainRef} className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${mainOverflowClass} ${showBootLoader ? 'bg-gray-100' : 'bg-white'} relative`}>
+      <main ref={mainRef} className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${mainOverflowClass} overflow-x-hidden ${showBootLoader ? 'bg-gray-100' : 'bg-white'} relative`}>
         <AnimatePresence mode="wait">
           {!selectedTopicId ? (
             showBootLoader ? (
@@ -547,13 +547,14 @@ const Index = () => {
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-y-0 left-0 bg-white overflow-visible"
+                  className="absolute inset-y-0 left-0 bg-white overflow-hidden"
                 >
+                  <div className="absolute left-0 bottom-0 h-[6px] w-[calc(100%-3px)] bg-black z-10 pointer-events-none" />
                   <motion.div
-                    initial={{ scaleY: 0.006, opacity: 1 }}
-                    animate={{ scaleY: [0.006, 0.006, 1, 1], opacity: [1, 1, 1, 0] }}
+                    initial={{ scaleY: 0, opacity: 0 }}
+                    animate={{ scaleY: [0, 0, 1, 1], opacity: [0, 0, 1, 0] }}
                     transition={{ duration: 1.82, times: [0, 0.78, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute left-0 bottom-0 h-full w-[calc(100%-3px)] bg-black origin-bottom z-10 pointer-events-none"
+                    className="absolute inset-0 bg-black origin-bottom z-10 pointer-events-none"
                   />
                   <motion.div
                     initial={{ x: 0, opacity: 1 }}
