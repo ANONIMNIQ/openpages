@@ -355,21 +355,28 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
     return false;
   }
 
+  const optionIdOnUnvote = `__unvoted__${Date.now()}`;
   for (const key of existingKeys) {
-    const deleteResponse = await fetch(
+    const updateResponse = await fetch(
       `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}`,
       {
-        method: "DELETE",
+        method: "PATCH",
         headers: {
           ...getSupabaseHeaders(),
-          Prefer: "return=minimal",
+          Prefer: "return=representation",
         },
+        body: JSON.stringify({
+          option_id: optionIdOnUnvote,
+        }),
       }
     );
-    if (!deleteResponse.ok) {
-      throw new Error(`Failed to remove vote (${deleteResponse.status})`);
+    if (!updateResponse.ok) {
+      throw new Error(`Failed to remove vote (${updateResponse.status})`);
     }
+    const updated = (await updateResponse.json()) as Array<{ topic_id: string }>;
+    if (updated.length === 0) continue;
+    return true;
   }
 
-  return true;
+  return false;
 }
