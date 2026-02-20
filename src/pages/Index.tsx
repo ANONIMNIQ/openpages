@@ -589,6 +589,16 @@ const Index = () => {
                   transition={{ duration: 2.08, times: [0, 0.69, 0.7, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-0 bg-black origin-bottom z-[15] pointer-events-none"
                 />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.65 }}
+                  animate={{ opacity: [0, 0, 1, 1, 0], scale: [0.65, 0.65, 1, 1.04, 0.9] }}
+                  transition={{ duration: 2.08, times: [0, 0.7, 0.82, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none"
+                >
+                  <span className="inline-flex h-44 w-44 items-center justify-center rounded-full bg-black text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                    <Pencil size={86} />
+                  </span>
+                </motion.div>
               </motion.div>
             ) : (
               <motion.div
