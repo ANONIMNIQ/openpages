@@ -551,7 +551,7 @@ const Index = () => {
                   )}
                 </motion.header>
 
-                <motion.div variants={detailItem} className="space-y-12">
+                <motion.div variants={detailItem} className={selectedTopic?.contentType === 'poll' ? 'space-y-8' : 'space-y-12'}>
                   {selectedTopic?.contentType === 'debate' ? (
                     <>
                       <CardStack 
@@ -582,8 +582,8 @@ const Index = () => {
                   ) : (
                     <div className="space-y-4">
                       {selectedTopic?.contentType === 'poll' ? (
-                        <div className="space-y-4">
-                          <div className="relative rounded-2xl border border-gray-200 bg-white p-4">
+                        <div className="space-y-6">
+                          <div className="relative rounded-2xl border border-gray-200 bg-white p-4 hidden lg:block">
                             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Резултати</div>
                             {(() => {
                               const enriched = selectedTopic.voteOptions.map((option, idx) => {
