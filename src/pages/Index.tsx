@@ -556,9 +556,10 @@ const Index = () => {
                     transition={{ duration: 1.62, times: [0, 0.8, 1], ease: [0.22, 1, 0.36, 1] }}
                     className="absolute right-0 bottom-0 z-20 pointer-events-none"
                   >
-                    <div className="relative h-[96vh] max-h-[96vh] w-[clamp(132px,18vw,220px)]">
+                    <div className="relative h-screen w-[clamp(150px,20vw,260px)]">
                       <svg
-                        viewBox="16 16 68 68"
+                        viewBox="16 17 66 65"
+                        preserveAspectRatio="xMidYMax meet"
                         className="h-full w-full"
                         aria-hidden="true"
                       >
