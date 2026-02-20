@@ -360,6 +360,33 @@ export async function deleteArgument(accessToken: string, argumentId: string) {
   if (!response.ok) throw new Error("Неуспешно изтриване на аргумент.");
 }
 
+export async function updateArgument(
+  accessToken: string,
+  argumentId: string,
+  input: {
+    text: string;
+    side: "pro" | "con";
+  }
+) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+  const response = await fetch(`${supabaseUrl}/rest/v1/arguments?id=eq.${argumentId}`, {
+    method: "PATCH",
+    headers: {
+      ...getSupabaseHeaders(accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      text: input.text,
+      side: input.side,
+    }),
+  });
+  if (!response.ok) {
+    const error = await extractSupabaseError(response);
+    throw new Error(`Неуспешно редактиране на аргумент: ${error}`);
+  }
+}
+
 export async function deleteComment(accessToken: string, commentId: string) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
@@ -368,6 +395,33 @@ export async function deleteComment(accessToken: string, commentId: string) {
     headers: getSupabaseHeaders(accessToken),
   });
   if (!response.ok) throw new Error("Неуспешно изтриване на коментар.");
+}
+
+export async function updateComment(
+  accessToken: string,
+  commentId: string,
+  input: {
+    text: string;
+    type: "pro" | "con";
+  }
+) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+  const response = await fetch(`${supabaseUrl}/rest/v1/argument_comments?id=eq.${commentId}`, {
+    method: "PATCH",
+    headers: {
+      ...getSupabaseHeaders(accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      text: input.text,
+      type: input.type,
+    }),
+  });
+  if (!response.ok) {
+    const error = await extractSupabaseError(response);
+    throw new Error(`Неуспешно редактиране на коментар: ${error}`);
+  }
 }
 
 export async function updateTopic(

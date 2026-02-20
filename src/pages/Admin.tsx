@@ -11,6 +11,8 @@ import {
   loginAdminWithPassword,
   reorderMenuFilters,
   reorderTopics,
+  updateArgument,
+  updateComment,
   updateMenuFilter,
   updateTopic,
   type AdminArgument,
@@ -158,6 +160,12 @@ const Admin = () => {
   const [menuFilterType, setMenuFilterType] = useState<"content_type" | "tag">("content_type");
   const [menuFilterValue, setMenuFilterValue] = useState("debate");
   const [dragMenuFilterId, setDragMenuFilterId] = useState<string | null>(null);
+  const [editingArgumentId, setEditingArgumentId] = useState<string | null>(null);
+  const [editArgumentText, setEditArgumentText] = useState("");
+  const [editArgumentSide, setEditArgumentSide] = useState<"pro" | "con">("pro");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [editCommentType, setEditCommentType] = useState<"pro" | "con">("pro");
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -341,6 +349,82 @@ const Admin = () => {
       setMessage("Коментарът е изтрит.");
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Delete error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startEditArgument = (argument: AdminArgument) => {
+    setEditingArgumentId(argument.id);
+    setEditArgumentText(argument.text);
+    setEditArgumentSide(argument.side);
+  };
+
+  const cancelEditArgument = () => {
+    setEditingArgumentId(null);
+    setEditArgumentText("");
+    setEditArgumentSide("pro");
+  };
+
+  const onSaveArgument = async (argumentId: string) => {
+    if (!session) return;
+    const trimmed = editArgumentText.trim();
+    if (!trimmed) {
+      setError("Текстът на аргумента е задължителен.");
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await updateArgument(session.accessToken, argumentId, {
+        text: trimmed,
+        side: editArgumentSide,
+      });
+      await loadAdminData(session.accessToken);
+      cancelEditArgument();
+      setMessage("Аргументът е редактиран.");
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Update error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startEditComment = (comment: AdminComment) => {
+    setEditingCommentId(comment.id);
+    setEditCommentText(comment.text);
+    setEditCommentType(comment.type);
+  };
+
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditCommentText("");
+    setEditCommentType("pro");
+  };
+
+  const onSaveComment = async (commentId: string) => {
+    if (!session) return;
+    const trimmed = editCommentText.trim();
+    if (!trimmed) {
+      setError("Текстът на коментара е задължителен.");
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      await updateComment(session.accessToken, commentId, {
+        text: trimmed,
+        type: editCommentType,
+      });
+      await loadAdminData(session.accessToken);
+      cancelEditComment();
+      setMessage("Коментарът е редактиран.");
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Update error");
     } finally {
       setLoading(false);
     }
@@ -1107,13 +1191,57 @@ const Admin = () => {
           <div className="space-y-3 max-h-[24rem] overflow-y-auto">
             {argumentsList.map((arg) => (
               <div key={arg.id} className="border border-gray-100 rounded-xl p-3">
-                <p className="text-xs text-gray-500 mb-1">
-                  {topicMap[arg.topic_id]?.title ?? "Unknown"} · {arg.side === "pro" ? "ЗА" : "ПРОТИВ"}
-                </p>
-                <p className="text-sm text-gray-800 mb-3">{arg.text}</p>
-                <button onClick={() => void onDeleteArgument(arg.id)} className="h-8 px-4 rounded-full border border-rose-200 text-rose-700 text-xs font-bold" disabled={loading}>
-                  Изтрий аргумент
-                </button>
+                <p className="text-xs text-gray-500 mb-1">{topicMap[arg.topic_id]?.title ?? "Unknown"}</p>
+                {editingArgumentId === arg.id ? (
+                  <div className="space-y-3">
+                    <select
+                      value={editArgumentSide}
+                      onChange={(e) => setEditArgumentSide(e.target.value as "pro" | "con")}
+                      className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
+                    >
+                      <option value="pro">ЗА</option>
+                      <option value="con">ПРОТИВ</option>
+                    </select>
+                    <textarea
+                      value={editArgumentText}
+                      onChange={(e) => setEditArgumentText(e.target.value)}
+                      className="w-full min-h-24 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => void onSaveArgument(arg.id)}
+                        className="h-8 px-4 rounded-full bg-black text-white text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Запази
+                      </button>
+                      <button
+                        onClick={cancelEditArgument}
+                        className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Откажи
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-500 mb-2">{arg.side === "pro" ? "Аргумент ЗА" : "Аргумент ПРОТИВ"}</p>
+                    <p className="text-sm text-gray-800 mb-3">{arg.text}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => startEditArgument(arg)}
+                        className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Редактирай
+                      </button>
+                      <button onClick={() => void onDeleteArgument(arg.id)} className="h-8 px-4 rounded-full border border-rose-200 text-rose-700 text-xs font-bold" disabled={loading}>
+                        Изтрий аргумент
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -1131,10 +1259,55 @@ const Admin = () => {
                     {argumentMap[comment.argument_id].side === "pro" ? "Аргумент ЗА" : "Аргумент ПРОТИВ"}
                   </p>
                 ) : null}
-                <p className="text-sm text-gray-800 mb-3">{comment.text}</p>
-                <button onClick={() => void onDeleteComment(comment.id)} className="h-8 px-4 rounded-full border border-rose-200 text-rose-700 text-xs font-bold" disabled={loading}>
-                  Изтрий коментар
-                </button>
+                {editingCommentId === comment.id ? (
+                  <div className="space-y-3">
+                    <select
+                      value={editCommentType}
+                      onChange={(e) => setEditCommentType(e.target.value as "pro" | "con")}
+                      className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
+                    >
+                      <option value="pro">ЗА</option>
+                      <option value="con">ПРОТИВ</option>
+                    </select>
+                    <textarea
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      className="w-full min-h-20 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => void onSaveComment(comment.id)}
+                        className="h-8 px-4 rounded-full bg-black text-white text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Запази
+                      </button>
+                      <button
+                        onClick={cancelEditComment}
+                        className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Откажи
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-800 mb-3">{comment.text}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => startEditComment(comment)}
+                        className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold"
+                        disabled={loading}
+                      >
+                        Редактирай
+                      </button>
+                      <button onClick={() => void onDeleteComment(comment.id)} className="h-8 px-4 rounded-full border border-rose-200 text-rose-700 text-xs font-bold" disabled={loading}>
+                        Изтрий коментар
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
