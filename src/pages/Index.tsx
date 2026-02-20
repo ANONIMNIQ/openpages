@@ -549,18 +549,20 @@ const Index = () => {
                   transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-y-0 left-0 bg-white overflow-visible"
                 >
-                  <div className="absolute left-0 bottom-0 h-[6px] w-[calc(100%+22px)] bg-black" />
+                  <div className="absolute left-0 bottom-0 h-[6px] w-full bg-black" />
                   <motion.div
                     initial={{ x: 0, opacity: 1 }}
                     animate={{ x: [0, 0, 68], opacity: [1, 1, 0.35] }}
                     transition={{ duration: 1.62, times: [0, 0.8, 1], ease: [0.22, 1, 0.36, 1] }}
                     className="absolute right-0 bottom-0 z-20 pointer-events-none"
+                    style={{ transform: 'translateX(2px)' }}
                   >
                     <div className="relative h-screen w-[clamp(150px,20vw,260px)]">
                       <svg
                         viewBox="16 17 66 65"
                         preserveAspectRatio="xMidYMax meet"
                         className="h-full w-full"
+                        style={{ transform: 'scaleX(-1)', transformOrigin: 'center bottom' }}
                         aria-hidden="true"
                       >
                         <path
