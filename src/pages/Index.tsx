@@ -547,7 +547,6 @@ const Index = () => {
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
-                >
                   className="absolute inset-y-0 left-0 bg-white overflow-visible"
                 >
                   <div className="absolute left-0 bottom-0 h-[6px] w-[calc(100%+22px)] bg-black" />
