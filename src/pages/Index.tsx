@@ -549,7 +549,12 @@ const Index = () => {
                   transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-y-0 left-0 bg-white overflow-visible"
                 >
-                  <div className="absolute left-0 bottom-0 h-[6px] w-[calc(100%-3px)] bg-black" />
+                  <motion.div
+                    initial={{ height: 6, opacity: 1 }}
+                    animate={{ height: [6, 6, '100%', '100%'], opacity: [1, 1, 1, 0] }}
+                    transition={{ duration: 1.82, times: [0, 0.78, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute left-0 bottom-0 w-[calc(100%-3px)] bg-black origin-bottom z-10 pointer-events-none"
+                  />
                   <motion.div
                     initial={{ x: 0, opacity: 1 }}
                     animate={{ x: [0, 0, 360], opacity: [1, 1, 1, 0] }}
