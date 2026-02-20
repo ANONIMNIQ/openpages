@@ -49,6 +49,7 @@ const Index = () => {
   });
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
+  const delayedScrollToTopTimeoutRef = useRef<number | null>(null);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const filteredTopics = (() => {
@@ -79,6 +80,15 @@ const Index = () => {
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
+  const scheduleScrollDetailToTop = (delay = 260) => {
+    if (delayedScrollToTopTimeoutRef.current !== null) {
+      window.clearTimeout(delayedScrollToTopTimeoutRef.current);
+    }
+    delayedScrollToTopTimeoutRef.current = window.setTimeout(() => {
+      scrollDetailToTop();
+      delayedScrollToTopTimeoutRef.current = null;
+    }, delay);
+  };
 
   const handleOpenComposer = (type: 'pro' | 'con') => {
     if (selectedTopic?.contentType !== 'debate') return;
@@ -102,7 +112,6 @@ const Index = () => {
 
   const handleOpenTopic = (topicId: string) => {
     resetTopicViewState();
-    scrollDetailToTop();
     if (detailOpenTimeoutRef.current !== null) {
       window.clearTimeout(detailOpenTimeoutRef.current);
     }
@@ -112,7 +121,7 @@ const Index = () => {
       setIsDetailOpening(false);
       detailOpenTimeoutRef.current = null;
     }, 620);
-    window.requestAnimationFrame(() => scrollDetailToTop());
+    scheduleScrollDetailToTop();
     const topic = topicsData.find((item) => item.id === topicId);
     if (topic) {
       navigate(buildTopicPath(topic.id, topic.title));
@@ -381,7 +390,7 @@ const Index = () => {
         resetTopicViewState();
         setIsDetailOpening(false);
         setSelectedTopicId(topicIdFromPath);
-        window.requestAnimationFrame(() => scrollDetailToTop());
+        scheduleScrollDetailToTop();
       }
 
       const expectedPath = buildTopicPath(existingTopic.id, existingTopic.title);
@@ -400,7 +409,7 @@ const Index = () => {
           resetTopicViewState();
           setIsDetailOpening(false);
           setSelectedTopicId(existingTopic.id);
-          window.requestAnimationFrame(() => scrollDetailToTop());
+          scheduleScrollDetailToTop();
         }
         navigate(buildTopicPath(existingTopic.id, existingTopic.title), { replace: true });
         return;
@@ -420,6 +429,9 @@ const Index = () => {
     return () => {
       if (detailOpenTimeoutRef.current !== null) {
         window.clearTimeout(detailOpenTimeoutRef.current);
+      }
+      if (delayedScrollToTopTimeoutRef.current !== null) {
+        window.clearTimeout(delayedScrollToTopTimeoutRef.current);
       }
     };
   }, []);
