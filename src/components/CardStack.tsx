@@ -85,6 +85,7 @@ const CardStack: React.FC<CardStackProps> = ({
   };
 
   const displayedArgs = isExpanded ? args.slice(0, visibleCount) : args.slice(0, 5);
+  const hasArguments = args.length > 0;
   const hasExpandedVisibleCards = openCardId !== null && displayedArgs.some((arg, idx) => resolveCardId(title, idx, arg.id) === openCardId);
   const isCommentFocusMode = focusedCardId !== null;
   const isOtherStackFocused = globalFocusedStackType !== null && globalFocusedStackType !== type;
@@ -359,8 +360,8 @@ const CardStack: React.FC<CardStackProps> = ({
         <motion.div 
           layout={isExpanded ? true : "position"}
           transition={{ layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }}
-          className={`relative flex flex-col ${!isExpanded ? 'cursor-pointer' : 'gap-4'}`}
-          onClick={() => !isExpanded && !isCommentFocusMode && setIsExpanded(true)}
+          className={`relative flex flex-col ${!isExpanded && hasArguments ? 'cursor-pointer' : ''} ${isExpanded ? 'gap-4' : ''}`}
+          onClick={() => !isExpanded && !isCommentFocusMode && hasArguments && setIsExpanded(true)}
         >
           {orderedDisplayedEntries.map(({ arg, idx, cardId }) => {
             const isStackMode = !isExpanded;
@@ -541,13 +542,13 @@ const CardStack: React.FC<CardStackProps> = ({
           })}
 
           {/* Spacer за запазване на мястото в стек режим */}
-          {!isExpanded && (
+          {!isExpanded && hasArguments && (
             <div className="h-[260px] pointer-events-none" />
           )}
 
           {/* Button Overlay */}
           <AnimatePresence>
-            {!isExpanded && !isCommentFocusMode && (
+            {!isExpanded && !isCommentFocusMode && hasArguments && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -564,6 +565,14 @@ const CardStack: React.FC<CardStackProps> = ({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {!isCommentFocusMode && !hasArguments ? (
+            <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 py-5 text-center">
+              <p className="text-xs font-semibold text-gray-400">
+                {type === 'pro' ? 'Все още няма аргументи За.' : 'Все още няма аргументи Против.'}
+              </p>
+            </div>
+          ) : null}
         </motion.div>
 
         {/* Load More */}
