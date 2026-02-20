@@ -250,14 +250,12 @@ const Index = () => {
       });
       const refreshed = await fetchPublishedTopicsWithArguments();
       if (refreshed) setTopicsData(refreshed);
-      if (selectedTopic.contentType === 'poll') {
-        setVotedOptionIdsByTopic((prev) => {
-          const next = { ...prev };
-          const existing = next[selectedTopic.id] ?? [];
-          next[selectedTopic.id] = allowMultiple ? Array.from(new Set([...existing, optionId])) : [optionId];
-          return next;
-        });
-      }
+      setVotedOptionIdsByTopic((prev) => {
+        const next = { ...prev };
+        const existing = next[selectedTopic.id] ?? [];
+        next[selectedTopic.id] = allowMultiple ? Array.from(new Set([...existing, optionId])) : [optionId];
+        return next;
+      });
       setVoteFx({
         topicId: selectedTopic.id,
         optionId,
@@ -856,6 +854,7 @@ const Index = () => {
                               voteFx?.type === 'vs' &&
                               voteFx.topicId === selectedTopic.id &&
                               voteFx.optionId === option.id;
+                            const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
                             return (
                               <motion.button
                                 key={option.id}
@@ -882,8 +881,30 @@ const Index = () => {
                                 }
                                 transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                                 style={{ transformStyle: 'preserve-3d' }}
-                                className={`relative rounded-xl border bg-white p-5 text-left transition-shadow disabled:opacity-70 min-h-[30rem] ${tone}`}
+                                className={`relative rounded-xl border bg-white p-5 text-left transition-shadow disabled:opacity-70 min-h-[30rem] ${isOptionVoted ? 'border-black ring-2 ring-black/20' : tone}`}
                               >
+                                <AnimatePresence>
+                                  {isOptionVoted ? (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.7, y: -4 }}
+                                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                                      exit={{ opacity: 0, scale: 0.7, y: -4 }}
+                                      className="absolute top-3 right-3 z-20 h-7 w-7 rounded-full bg-black text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
+                                      aria-label="Избрано"
+                                    >
+                                      <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+                                        <path
+                                          d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2.3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    </motion.div>
+                                  ) : null}
+                                </AnimatePresence>
                                 {option.image ? (
                                   <img src={option.image} alt={option.label} className="w-full h-72 md:h-80 object-cover object-top rounded-lg mb-4" />
                                 ) : (
