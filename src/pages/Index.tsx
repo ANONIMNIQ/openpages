@@ -371,7 +371,7 @@ const Index = () => {
   };
 
   useEffect(() => {
-    const introTimeoutId = window.setTimeout(() => setIsBootBarComplete(true), 1450);
+    const introTimeoutId = window.setTimeout(() => setIsBootBarComplete(true), 1720);
     return () => {
       window.clearTimeout(introTimeoutId);
     };
@@ -540,6 +540,7 @@ const Index = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 className="relative w-full h-full overflow-hidden bg-gray-100"
               >
                 <motion.div
@@ -556,8 +557,8 @@ const Index = () => {
                 />
                 <motion.div
                   initial={{ left: '0%' }}
-                  animate={{ left: ['0%', '100%', '113%'] }}
-                  transition={{ duration: 1.35, times: [0, 0.86, 1], ease: [0.22, 1, 0.36, 1] }}
+                  animate={{ left: ['0%', '100%', '126%'], opacity: [1, 1, 0.35] }}
+                  transition={{ duration: 1.62, times: [0, 0.8, 1], ease: [0.22, 1, 0.36, 1] }}
                   className="absolute bottom-0 z-20 pointer-events-none"
                   style={{ transform: 'translateX(-50%)' }}
                 >
