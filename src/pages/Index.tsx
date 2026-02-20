@@ -235,6 +235,7 @@ const Index = () => {
       await voteOnContent({
         topicId: selectedTopic.id,
         optionId,
+        allowMultiple: selectedTopic.contentType === 'poll' ? Boolean(selectedTopic.pollAllowMultiple) : false,
       });
       const refreshed = await fetchPublishedTopicsWithArguments();
       if (refreshed) setTopicsData(refreshed);
@@ -875,7 +876,11 @@ const Index = () => {
                           })}
                         </div>
                       ) : null}
-                      <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">Избери само един отговор</p>
+                      <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">
+                        {selectedTopic?.contentType === 'poll' && selectedTopic.pollAllowMultiple
+                          ? 'Можеш да избереш 1 или повече отговора'
+                          : 'Избери само един отговор'}
+                      </p>
                     </div>
                   )}
                 </motion.div>

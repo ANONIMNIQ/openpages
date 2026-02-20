@@ -43,6 +43,7 @@ export interface PublishedTopic {
   tag?: string | null;
   contentType: ContentType;
   contentData?: Record<string, unknown> | null;
+  pollAllowMultiple?: boolean;
   argumentsCount: number;
   pro: DbArgument[];
   con: DbArgument[];
@@ -193,6 +194,10 @@ export async function fetchPublishedTopicsWithArguments() {
       tag,
       contentType,
       contentData: topic.content_data ?? null,
+      pollAllowMultiple:
+        contentType === "poll"
+          ? Boolean((topic.content_data as { allowMultiple?: boolean } | null)?.allowMultiple)
+          : false,
       argumentsCount: topicArgs.length,
       pro,
       con,
@@ -233,11 +238,12 @@ export async function createPublicArgument(input: {
   return rows[0] ?? null;
 }
 
-export async function voteOnContent(input: { topicId: string; optionId: string }) {
+export async function voteOnContent(input: { topicId: string; optionId: string; allowMultiple?: boolean }) {
   if (!isSupabaseConfigured()) return null;
   const supabaseUrl = getSupabaseUrl();
-  const voterKey = getVoterKey();
-  if (!supabaseUrl || !voterKey) return null;
+  const baseVoterKey = getVoterKey();
+  if (!supabaseUrl || !baseVoterKey) return null;
+  const voterKey = input.allowMultiple ? `${baseVoterKey}:${input.optionId}` : `${baseVoterKey}:single`;
 
   const response = await fetch(`${supabaseUrl}/rest/v1/content_votes?on_conflict=topic_id,voter_key`, {
     method: "POST",

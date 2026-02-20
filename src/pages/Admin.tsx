@@ -23,6 +23,7 @@ type VsData = {
 
 type PollData = {
   options: Array<{ id: string; label: string; color?: string | null }>;
+  allowMultiple?: boolean;
 };
 
 const optionId = (idx: number) => `opt-${idx + 1}`;
@@ -68,6 +69,7 @@ const asPollData = (raw: unknown): PollData => {
       label: option.label ?? "",
       color: option.color ?? defaultPollColors[idx % defaultPollColors.length],
     })),
+    allowMultiple: Boolean(safe.allowMultiple),
   };
 };
 
@@ -100,6 +102,7 @@ const Admin = () => {
   const [proText, setProText] = useState("");
   const [conText, setConText] = useState("");
   const [pollOptions, setPollOptions] = useState<PollOptionInput[]>([nextPollOption(0), nextPollOption(1)]);
+  const [pollAllowMultiple, setPollAllowMultiple] = useState(false);
   const [vsLeftName, setVsLeftName] = useState("");
   const [vsRightName, setVsRightName] = useState("");
   const [vsLeftImage, setVsLeftImage] = useState("");
@@ -115,6 +118,7 @@ const Admin = () => {
   const [editContentType, setEditContentType] = useState<ContentType>("debate");
   const [editCustomTag, setEditCustomTag] = useState("");
   const [editPollOptions, setEditPollOptions] = useState<PollOptionInput[]>([nextPollOption(0), nextPollOption(1)]);
+  const [editPollAllowMultiple, setEditPollAllowMultiple] = useState(false);
   const [editVsLeftName, setEditVsLeftName] = useState("");
   const [editVsRightName, setEditVsRightName] = useState("");
   const [editVsLeftImage, setEditVsLeftImage] = useState("");
@@ -166,6 +170,7 @@ const Admin = () => {
     setProText("");
     setConText("");
     setPollOptions([nextPollOption(0), nextPollOption(1)]);
+    setPollAllowMultiple(false);
     setVsLeftName("");
     setVsRightName("");
     setVsLeftImage("");
@@ -173,7 +178,7 @@ const Admin = () => {
   };
 
   const getCreateContentData = () => {
-    if (contentType === "poll") return toPollData(pollOptions);
+    if (contentType === "poll") return { ...toPollData(pollOptions), allowMultiple: pollAllowMultiple };
     if (contentType === "vs") {
       return {
         left: { id: "left", name: vsLeftName.trim(), image: vsLeftImage || null },
@@ -184,7 +189,7 @@ const Admin = () => {
   };
 
   const getEditContentData = () => {
-    if (editContentType === "poll") return toPollData(editPollOptions);
+    if (editContentType === "poll") return { ...toPollData(editPollOptions), allowMultiple: editPollAllowMultiple };
     if (editContentType === "vs") {
       return {
         left: { id: "left", name: editVsLeftName.trim(), image: editVsLeftImage || null },
@@ -313,6 +318,7 @@ const Admin = () => {
             }))
           : [nextPollOption(0), nextPollOption(1)]
       );
+      setEditPollAllowMultiple(Boolean(poll.allowMultiple));
       setEditVsLeftName("");
       setEditVsRightName("");
       setEditVsLeftImage("");
@@ -324,8 +330,10 @@ const Admin = () => {
       setEditVsLeftImage(vs.left.image ?? "");
       setEditVsRightImage(vs.right.image ?? "");
       setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
+      setEditPollAllowMultiple(false);
     } else {
       setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
+      setEditPollAllowMultiple(false);
       setEditVsLeftName("");
       setEditVsRightName("");
       setEditVsLeftImage("");
@@ -340,6 +348,7 @@ const Admin = () => {
     setEditContentType("debate");
     setEditCustomTag("");
     setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
+    setEditPollAllowMultiple(false);
     setEditVsLeftName("");
     setEditVsRightName("");
     setEditVsLeftImage("");
@@ -530,6 +539,10 @@ const Admin = () => {
                     ) : null}
                     {editContentType === "poll" ? (
                       <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input type="checkbox" checked={editPollAllowMultiple} onChange={(e) => setEditPollAllowMultiple(e.target.checked)} />
+                          Позволи 1 или повече отговора
+                        </label>
                         {editPollOptions.map((option, idx) => (
                           <div key={option.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
                             <input
@@ -630,6 +643,10 @@ const Admin = () => {
 
             {contentType === "poll" ? (
               <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={pollAllowMultiple} onChange={(e) => setPollAllowMultiple(e.target.checked)} />
+                  Позволи 1 или повече отговора
+                </label>
                 {pollOptions.map((option, idx) => (
                   <div key={option.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
                     <input
