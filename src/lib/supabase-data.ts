@@ -335,30 +335,41 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
     ? [`${baseVoterKey}:${input.optionId}`, `${baseVoterKey}:single`, baseVoterKey]
     : [`${baseVoterKey}:single`, baseVoterKey];
 
-  const tryDelete = async (key: string) => {
-    const response = await fetch(
+  const existingKeys: string[] = [];
+  for (const key of candidateKeys) {
+    const probeResponse = await fetch(
+      `${supabaseUrl}/rest/v1/content_votes?select=voter_key&topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}&limit=1`,
+      {
+        headers: getSupabaseHeaders(),
+        cache: "no-store",
+      }
+    );
+    if (!probeResponse.ok) {
+      throw new Error(`Failed to verify vote before removal (${probeResponse.status})`);
+    }
+    const rows = (await probeResponse.json()) as Array<{ voter_key: string }>;
+    if (rows.length > 0) existingKeys.push(key);
+  }
+
+  if (existingKeys.length === 0) {
+    return false;
+  }
+
+  for (const key of existingKeys) {
+    const deleteResponse = await fetch(
       `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}`,
       {
         method: "DELETE",
         headers: {
           ...getSupabaseHeaders(),
-          Prefer: "return=representation",
+          Prefer: "return=minimal",
         },
       }
     );
-
-    if (!response.ok) {
-      throw new Error(`Failed to remove vote (${response.status})`);
+    if (!deleteResponse.ok) {
+      throw new Error(`Failed to remove vote (${deleteResponse.status})`);
     }
-
-    const deleted = (await response.json().catch(() => [])) as Array<{ topic_id: string }>;
-    return deleted.length > 0;
-  };
-
-  for (const key of candidateKeys) {
-    const deleted = await tryDelete(key);
-    if (deleted) return true;
   }
 
-  return false;
+  return true;
 }
