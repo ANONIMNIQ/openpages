@@ -582,9 +582,9 @@ const Index = () => {
                   </motion.div>
                 </motion.div>
                 <motion.div
-                  initial={{ scaleY: 0.006, opacity: 1 }}
-                  animate={{ scaleY: [0.006, 0.006, 1, 1], opacity: [1, 1, 1, 0] }}
-                  transition={{ duration: 2.08, times: [0, 0.69, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ scaleY: 0, opacity: 0 }}
+                  animate={{ scaleY: [0, 0, 0.006, 1, 1], opacity: [0, 0, 1, 1, 0] }}
+                  transition={{ duration: 2.08, times: [0, 0.69, 0.7, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
                   className="absolute inset-0 bg-black origin-bottom z-[15] pointer-events-none"
                 />
               </motion.div>
