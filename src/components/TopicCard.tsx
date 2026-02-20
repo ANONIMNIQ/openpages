@@ -9,6 +9,7 @@ interface TopicCardProps {
   title: string;
   description: string;
   tag?: string | null;
+  tagIcon?: string | null;
   argumentsCount: number;
   countLabel?: string;
   contentType?: ContentType;
@@ -23,6 +24,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   title,
   description,
   tag,
+  tagIcon,
   argumentsCount,
   countLabel = 'аргумента',
   contentType = 'debate',
@@ -75,7 +77,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
       {tag ? (
         <div className="flex items-center gap-3 mb-4">
           <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-            {tag}
+            {tagIcon ? `${tagIcon} ${tag}` : tag}
           </span>
           <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:w-12 group-hover:bg-black' : ''}`} />
         </div>

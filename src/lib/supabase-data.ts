@@ -41,6 +41,7 @@ export interface PublishedTopic {
   title: string;
   description: string;
   tag?: string | null;
+  tagIcon?: string | null;
   contentType: ContentType;
   contentData?: Record<string, unknown> | null;
   pollAllowMultiple?: boolean;
@@ -50,6 +51,17 @@ export interface PublishedTopic {
   voteOptions: TopicVoteOption[];
   totalVotes: number;
 }
+
+const parseStoredTag = (raw?: string | null): { label: string | null; icon: string | null } => {
+  if (!raw) return { label: null, icon: null };
+  const divider = "::";
+  const dividerIndex = raw.indexOf(divider);
+  if (dividerIndex <= 0) return { label: raw, icon: null };
+  const icon = raw.slice(0, dividerIndex).trim();
+  const label = raw.slice(dividerIndex + divider.length).trim();
+  if (!label) return { label: raw, icon: null };
+  return { label, icon: icon || null };
+};
 
 export interface PublicMenuFilter {
   id: string;
@@ -189,18 +201,24 @@ export async function fetchPublishedTopicsWithArguments() {
     const contentType = topic.content_type ?? "debate";
     const voteOptions = toVoteOptions(topic, votesByTopic[topic.id] ?? {});
     const totalVotes = voteOptions.reduce((sum, option) => sum + option.votes, 0);
+    const parsedTag = parseStoredTag(topic.custom_tag);
     const tag =
       contentType === "poll"
         ? "Анкета"
         : contentType === "vs"
           ? "VS"
-          : topic.custom_tag ?? null;
+          : parsedTag.label ?? null;
+    const tagIcon =
+      contentType === "debate"
+        ? parsedTag.icon
+        : null;
 
     return {
       id: topic.id,
       title: topic.title,
       description: topic.description,
       tag,
+      tagIcon,
       contentType,
       contentData: topic.content_data ?? null,
       pollAllowMultiple:

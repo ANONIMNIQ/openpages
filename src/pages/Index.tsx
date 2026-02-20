@@ -580,6 +580,7 @@ const Index = () => {
                         title={topic.title}
                         description={topic.description}
                         tag={topic.tag}
+                        tagIcon={topic.tagIcon}
                         argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
                         countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
                         contentType={topic.contentType}
@@ -638,7 +639,7 @@ const Index = () => {
                       <div className="flex items-center gap-3 mb-8">
                         {selectedTopic?.tag ? (
                           <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                            {selectedTopic.tag}
+                            {selectedTopic.tagIcon ? `${selectedTopic.tagIcon} ${selectedTopic.tag}` : selectedTopic.tag}
                           </span>
                         ) : null}
                         <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
