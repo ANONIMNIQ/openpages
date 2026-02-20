@@ -36,9 +36,6 @@ const Index = () => {
   const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
   const [pollPieTooltip, setPollPieTooltip] = useState<{ x: number; y: number; label: string; percent: number; color: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDesktopFlipEnabled, setIsDesktopFlipEnabled] = useState(false);
-  const [flipProgress, setFlipProgress] = useState(0);
-  const [isFlipDragging, setIsFlipDragging] = useState(false);
   const [menuFilters, setMenuFilters] = useState<PublicMenuFilter[]>([]);
   const [activeMenuFilterId, setActiveMenuFilterId] = useState<string>('all');
   const [votedOptionIdsByTopic, setVotedOptionIdsByTopic] = useState<Record<string, string[]>>(() => {
@@ -55,9 +52,6 @@ const Index = () => {
   const pollPieWrapRef = useRef<HTMLDivElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
   const delayedScrollToTopTimeoutRef = useRef<number | null>(null);
-  const nextTopicFlipTimeoutRef = useRef<number | null>(null);
-  const flipDragStartXRef = useRef<number | null>(null);
-  const flipDragStartProgressRef = useRef(0);
   const topicsDataSignatureRef = useRef<string>('');
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
@@ -72,12 +66,6 @@ const Index = () => {
   })();
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
-  const topicSequence = filteredTopics.some((topic) => topic.id === selectedTopicId) ? filteredTopics : topicsData;
-  const selectedTopicSequenceIndex = selectedTopicId ? topicSequence.findIndex((topic) => topic.id === selectedTopicId) : -1;
-  const nextTopicInSequence =
-    selectedTopicSequenceIndex >= 0 && topicSequence.length > 1
-      ? topicSequence[(selectedTopicSequenceIndex + 1) % topicSequence.length]
-      : null;
   const showBootLoader = !selectedTopicId && !isBootBarComplete;
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = !showBootLoader && (isTopicsLoading || isListSkeletonHold);
@@ -153,41 +141,6 @@ const Index = () => {
     }
     setSelectedTopicId(null);
     navigate('/');
-  };
-
-  const goToNextTopic = useCallback(() => {
-    if (!nextTopicInSequence) return;
-    resetTopicViewState();
-    setIsDetailOpening(true);
-    setSelectedTopicId(nextTopicInSequence.id);
-    navigate(buildTopicPath(nextTopicInSequence.id, nextTopicInSequence.title));
-    scheduleScrollDetailToTop(0);
-
-    if (detailOpenTimeoutRef.current !== null) {
-      window.clearTimeout(detailOpenTimeoutRef.current);
-    }
-    detailOpenTimeoutRef.current = window.setTimeout(() => {
-      setIsDetailOpening(false);
-      detailOpenTimeoutRef.current = null;
-    }, 420);
-  }, [navigate, nextTopicInSequence]);
-
-  const triggerFlipToNext = useCallback(() => {
-    if (!nextTopicInSequence || nextTopicFlipTimeoutRef.current !== null) return;
-    setFlipProgress(1);
-    nextTopicFlipTimeoutRef.current = window.setTimeout(() => {
-      goToNextTopic();
-      setFlipProgress(0);
-      nextTopicFlipTimeoutRef.current = null;
-    }, 280);
-  }, [goToNextTopic, nextTopicInSequence]);
-
-  const handleFlipPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isDesktopFlipEnabled || !nextTopicInSequence) return;
-    event.preventDefault();
-    setIsFlipDragging(true);
-    flipDragStartXRef.current = event.clientX;
-    flipDragStartProgressRef.current = flipProgress;
   };
 
   const handleCollapseAllStacks = () => {
@@ -565,56 +518,12 @@ const Index = () => {
   }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const media = window.matchMedia('(min-width: 1024px) and (pointer:fine)');
-    const sync = () => setIsDesktopFlipEnabled(media.matches);
-    sync();
-    media.addEventListener('change', sync);
-    return () => media.removeEventListener('change', sync);
-  }, []);
-
-  useEffect(() => {
-    if (!selectedTopicId) setFlipProgress(0);
-  }, [selectedTopicId]);
-
-  useEffect(() => {
-    if (!isFlipDragging) return;
-
-    const onMove = (event: PointerEvent) => {
-      if (flipDragStartXRef.current === null) return;
-      const delta = flipDragStartXRef.current - event.clientX;
-      const next = Math.max(0, Math.min(1, flipDragStartProgressRef.current + delta / 260));
-      setFlipProgress(next);
-    };
-
-    const onUp = () => {
-      setIsFlipDragging(false);
-      if (flipProgress >= 0.42) {
-        triggerFlipToNext();
-      } else {
-        setFlipProgress(0);
-      }
-      flipDragStartXRef.current = null;
-    };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp, { once: true });
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    };
-  }, [flipProgress, isFlipDragging, triggerFlipToNext]);
-
-  useEffect(() => {
     return () => {
       if (detailOpenTimeoutRef.current !== null) {
         window.clearTimeout(detailOpenTimeoutRef.current);
       }
       if (delayedScrollToTopTimeoutRef.current !== null) {
         window.clearTimeout(delayedScrollToTopTimeoutRef.current);
-      }
-      if (nextTopicFlipTimeoutRef.current !== null) {
-        window.clearTimeout(nextTopicFlipTimeoutRef.current);
       }
     };
   }, []);
@@ -851,58 +760,9 @@ const Index = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16 relative overflow-hidden"
+              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >
-              {isDesktopFlipEnabled && nextTopicInSequence && !isDetailContentLoading ? (
-                <>
-                  <div
-                    className="absolute inset-0 z-0 bg-white pointer-events-none"
-                    style={{
-                      clipPath: `inset(0 0 0 ${Math.max(0, 100 - flipProgress * 100)}%)`,
-                    }}
-                  >
-                    <div className="h-full p-8 md:p-12 flex flex-col justify-start">
-                      <div className="mb-7">
-                        {nextTopicInSequence.tag ? (
-                          <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                            {nextTopicInSequence.tagIcon ? `${nextTopicInSequence.tagIcon} ${nextTopicInSequence.tag}` : nextTopicInSequence.tag}
-                          </span>
-                        ) : null}
-                      </div>
-                      <h3 className="text-2xl font-black text-black leading-tight tracking-tight mb-4">{nextTopicInSequence.title}</h3>
-                      <p className="text-sm text-gray-500 leading-relaxed max-w-md">{nextTopicInSequence.description}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={triggerFlipToNext}
-                    onPointerDown={handleFlipPointerDown}
-                    className="hidden lg:block absolute top-0 right-0 z-30 h-24 w-24 cursor-grab active:cursor-grabbing"
-                    aria-label="Разгърни към следващата тема"
-                    title="Разгърни към следващата тема"
-                  >
-                    <span
-                      className="absolute inset-0 bg-white border-l border-b border-gray-200 shadow-[0_10px_22px_rgba(0,0,0,0.12)]"
-                      style={{
-                        clipPath: 'polygon(100% 0, 0 0, 100% 100%)',
-                        transformOrigin: 'top right',
-                        transform: `perspective(900px) rotateY(${-165 * flipProgress}deg)`,
-                        transition: isFlipDragging ? 'none' : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-                      }}
-                    />
-                  </button>
-                </>
-              ) : null}
-              <motion.div
-                variants={detailStagger}
-                initial="hidden"
-                animate="show"
-                className="relative z-20"
-                style={{
-                  clipPath: isDesktopFlipEnabled && nextTopicInSequence ? `inset(0 ${flipProgress * 100}% 0 0)` : 'inset(0 0 0 0)',
-                  transition: isFlipDragging ? 'none' : 'clip-path 220ms cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
+              <motion.div variants={detailStagger} initial="hidden" animate="show">
                 <motion.button
                   variants={detailItem}
                   onClick={handleBackToList}
@@ -911,7 +771,7 @@ const Index = () => {
                   <ArrowLeft size={14} /> Обратно към списъка
                 </motion.button>
 
-                <motion.header variants={detailItem} className="mb-16 relative">
+                <motion.header variants={detailItem} className="mb-16">
                   {isDetailContentLoading ? (
                     <div>
                       <div className="flex items-center gap-3 mb-8">
