@@ -26,6 +26,7 @@ export async function fetchCommentsByArgumentIds(argumentIds: string[]) {
 
   const response = await fetch(`${supabaseUrl}/rest/v1/argument_comments?${params.toString()}`, {
     headers: getSupabaseHeaders(),
+    cache: "no-store",
   });
 
   if (!response.ok) {

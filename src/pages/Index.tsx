@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,6 +50,7 @@ const Index = () => {
   const mainRef = useRef<HTMLElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
   const delayedScrollToTopTimeoutRef = useRef<number | null>(null);
+  const topicsDataSignatureRef = useRef<string>('');
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const filteredTopics = (() => {
@@ -259,6 +260,15 @@ const Index = () => {
     }
   };
 
+  const syncTopicsData = useCallback(async () => {
+    const remoteTopics = await fetchPublishedTopicsWithArguments();
+    if (!remoteTopics) return;
+    const nextSignature = JSON.stringify(remoteTopics);
+    if (nextSignature === topicsDataSignatureRef.current) return;
+    topicsDataSignatureRef.current = nextSignature;
+    setTopicsData(remoteTopics);
+  }, []);
+
   const handleVote = async (optionId: string) => {
     if (!selectedTopic || selectedTopic.contentType === 'debate' || isVoting) return;
     setIsVoting(true);
@@ -363,6 +373,7 @@ const Index = () => {
           fetchPublicMenuFilters(),
         ]);
         if (!canceled && remoteTopics) {
+          topicsDataSignatureRef.current = JSON.stringify(remoteTopics);
           setTopicsData(remoteTopics);
           setTopicsVisibleCount(5);
         }
@@ -391,6 +402,45 @@ const Index = () => {
       canceled = true;
     };
   }, []);
+
+  useEffect(() => {
+    topicsDataSignatureRef.current = JSON.stringify(topicsData);
+  }, [topicsData]);
+
+  useEffect(() => {
+    if (isTopicsLoading) return;
+    let isCancelled = false;
+    let isSyncInFlight = false;
+
+    const tick = async () => {
+      if (isCancelled || isSyncInFlight || document.hidden) return;
+      isSyncInFlight = true;
+      try {
+        await syncTopicsData();
+      } catch (error) {
+        console.warn('Live sync failed', error);
+      } finally {
+        isSyncInFlight = false;
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void tick();
+    }, 4500);
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        void tick();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isTopicsLoading, syncTopicsData]);
 
   useEffect(() => {
     setTopicsVisibleCount(5);

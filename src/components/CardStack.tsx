@@ -124,8 +124,11 @@ const CardStack: React.FC<CardStackProps> = ({
 
     const argumentIds = args.map((arg, idx) => resolveCardId(title, idx, arg.id));
     let isCancelled = false;
+    let isSyncInFlight = false;
 
     const loadComments = async () => {
+      if (isSyncInFlight) return;
+      isSyncInFlight = true;
       try {
         const remoteByArgument = await fetchCommentsByArgumentIds(argumentIds);
         if (isCancelled) return;
@@ -148,12 +151,26 @@ const CardStack: React.FC<CardStackProps> = ({
         });
       } catch (error) {
         console.warn("Supabase comments load failed:", error);
+      } finally {
+        isSyncInFlight = false;
       }
     };
 
     void loadComments();
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) return;
+      void loadComments();
+    }, 4500);
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        void loadComments();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       isCancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [args, title]);
 
