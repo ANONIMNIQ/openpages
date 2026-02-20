@@ -560,16 +560,19 @@ const Index = () => {
                   animate={{ left: ['0%', '100%', '126%'], opacity: [1, 1, 0.35] }}
                   transition={{ duration: 1.62, times: [0, 0.8, 1], ease: [0.22, 1, 0.36, 1] }}
                   className="absolute bottom-0 z-20 pointer-events-none"
-                  style={{ transform: 'translateX(-50%)' }}
+                  style={{ transform: 'translateX(-18%)' }}
                 >
-                  <div className="relative h-[88vh] max-h-[92vh] w-[66px]">
-                    <div className="absolute left-1/2 top-0 h-[calc(100%_-_64px)] w-[30px] -translate-x-1/2 rounded-t-[28px] bg-black" />
-                    <div className="absolute left-1/2 top-[12px] h-[20px] w-[16px] -translate-x-1/2 rounded-full bg-white/20" />
-                    <div className="absolute left-1/2 bottom-[64px] h-[6px] w-[30px] -translate-x-1/2 bg-white/95" />
-                    <div className="absolute left-1/2 bottom-0 -translate-x-1/2">
-                      <div className="h-0 w-0 border-l-[15px] border-r-[15px] border-t-[44px] border-l-transparent border-r-transparent border-t-[#f1e6cf]" />
-                      <div className="absolute left-1/2 bottom-[2px] -translate-x-1/2 h-0 w-0 border-l-[4px] border-r-[4px] border-t-[9px] border-l-transparent border-r-transparent border-t-black" />
-                    </div>
+                  <div className="relative h-[88vh] max-h-[92vh] w-[clamp(88px,12vw,130px)]">
+                    <svg
+                      viewBox="0 16 100 66"
+                      className="h-full w-full"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="#000000"
+                        d="M82.1,20.2l-2.3-2.3c-0.2-0.2-0.5-0.2-0.7,0l-3.9,3.9l-0.6-0.6c-0.2-0.2-0.5-0.2-0.7,0c0,0,0,0,0,0L40.2,54.9l-2.4,2.4l0,0l-2.4,2.4l0,0l-4.8,4.8l0,0l-2.4,2.4l0,0l-2.4,2.4l-6.2,10.4L18,81.3c-0.2,0.2-0.2,0.5,0,0.7s0.5,0.2,0.7,0l1.8-1.8l10.4-6.1l2.4-2.4l0,0l2.4-2.4l0,0l4.8-4.8l0,0l2.4-2.4l0,0l2.4-2.4l31.6-31.7l0.7,0.7L65.7,40.7c-0.2,0.2-0.2,0.5,0,0.7s0.5,0.2,0.7,0l12.1-12.1c0.2-0.2,0.2-0.5,0-0.7c0,0,0,0,0,0l-1.1-1.1l1.3-1.3c0.2-0.2,0.2-0.5,0-0.7c0,0,0,0,0,0l-0.6-0.6l3.9-3.9C82.2,20.7,82.2,20.4,82.1,20.2z M21.5,78.5l4.8-8.1l3.3,3.3L21.5,78.5z M30.4,73L27,69.6l1.7-1.7l3.5,3.5L30.4,73z M32.9,70.6l-3.5-3.5l1.7-1.7l3.5,3.5L32.9,70.6z M35.2,68.2l-3.5-3.5l1.7-1.7l3.5,3.5L35.2,68.2z M37.6,65.8l-3.5-3.5l1.7-1.7l3.5,3.5L37.6,65.8z M40,63.5L36.5,60l1.7-1.7l3.5,3.5L40,63.5z M42.4,61.1l-3.5-3.5l1.7-1.7l3.5,3.5L42.4,61.1z M76.4,27.1L76.4,27.1L44.8,58.7l-0.4-0.4l32-32c0.1-0.1,0.1-0.3,0-0.4l-1.1-1.1c-0.1-0.1-0.2-0.1-0.3-0.1s-0.1,0.2-0.1,0.4c0,0,0,0,0.1,0.1l1,1L44,57.9l-2.7-2.7l32.9-32.9l0.6,0.6l2.3,2.3l0.6,0.6L76.4,27.1z M77.5,24.1L77,23.7l3-3c0.1-0.1,0.1-0.3,0-0.4L79.7,20c-0.1-0.1-0.3-0.1-0.3,0.1c-0.1,0.1-0.1,0.2,0,0.3l0.2,0.1l-2.9,2.9l-0.8-0.8l3.6-3.6l1.6,1.6L77.5,24.1z"
+                      />
+                    </svg>
                   </div>
                 </motion.div>
               </motion.div>
