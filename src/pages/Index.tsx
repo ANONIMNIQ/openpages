@@ -34,6 +34,7 @@ const Index = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
   const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
+  const [pollPieTooltip, setPollPieTooltip] = useState<{ x: number; y: number; label: string; percent: number; color: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuFilters, setMenuFilters] = useState<PublicMenuFilter[]>([]);
   const [activeMenuFilterId, setActiveMenuFilterId] = useState<string>('all');
@@ -48,6 +49,7 @@ const Index = () => {
     }
   });
   const mainRef = useRef<HTMLElement | null>(null);
+  const pollPieWrapRef = useRef<HTMLDivElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
   const delayedScrollToTopTimeoutRef = useRef<number | null>(null);
   const topicsDataSignatureRef = useRef<string>('');
@@ -260,6 +262,22 @@ const Index = () => {
     }
   };
 
+  const handlePollSliceHover = (
+    event: React.MouseEvent<SVGPathElement | SVGCircleElement>,
+    option: { label: string; percent: number; color: string }
+  ) => {
+    const wrap = pollPieWrapRef.current;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    setPollPieTooltip({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      label: option.label,
+      percent: Math.round(option.percent),
+      color: option.color,
+    });
+  };
+
   const syncTopicsData = useCallback(async () => {
     const remoteTopics = await fetchPublishedTopicsWithArguments();
     if (!remoteTopics) return;
@@ -336,6 +354,10 @@ const Index = () => {
   useEffect(() => {
     setExplodedPollOptionId(null);
   }, [selectedTopicId]);
+
+  useEffect(() => {
+    setPollPieTooltip(null);
+  }, [selectedTopicId, voteFx?.token]);
 
   const detailStagger = {
     hidden: {},
@@ -820,7 +842,7 @@ const Index = () => {
                               return (
                                 <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
                                   <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3 items-center">
-                                    <div className="mx-auto">
+                                    <div ref={pollPieWrapRef} className="relative mx-auto">
                                       <motion.svg
                                         key={`${selectedTopic.id}-${selectedTopic.totalVotes}`}
                                         viewBox="0 0 200 200"
@@ -846,6 +868,9 @@ const Index = () => {
                                                 strokeWidth="2"
                                                 initial={{ opacity: 0, scale: 0.86 }}
                                                 animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                                onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                                onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                                onMouseLeave={() => setPollPieTooltip(null)}
                                                 transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                               />
                                             );
@@ -859,11 +884,36 @@ const Index = () => {
                                               strokeWidth="2"
                                               initial={{ opacity: 0, scale: 0.86 }}
                                               animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                              onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                              onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                              onMouseLeave={() => setPollPieTooltip(null)}
                                               transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                             />
                                           );
                                         })}
                                       </motion.svg>
+                                      <AnimatePresence>
+                                        {pollPieTooltip ? (
+                                          <motion.div
+                                            key={`${pollPieTooltip.label}-${pollPieTooltip.percent}`}
+                                            initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.92, y: 4 }}
+                                            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                                            className="pointer-events-none absolute z-30 rounded-lg bg-black px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg max-w-[220px]"
+                                            style={{
+                                              left: pollPieTooltip.x,
+                                              top: pollPieTooltip.y - 10,
+                                              transform: 'translate(-50%, -100%)',
+                                            }}
+                                          >
+                                            <span className="inline-flex items-center gap-1.5">
+                                              <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: pollPieTooltip.color }} />
+                                              <span className="whitespace-nowrap">{pollPieTooltip.label}: {pollPieTooltip.percent}%</span>
+                                            </span>
+                                          </motion.div>
+                                        ) : null}
+                                      </AnimatePresence>
                                       <div className="mt-1 text-center text-[10px] font-black text-gray-500">
                                         {selectedTopic.totalVotes} гласа
                                       </div>
