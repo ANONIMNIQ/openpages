@@ -5,7 +5,7 @@ import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2 } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, ChevronRight } from 'lucide-react';
 import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, unvoteOnContent, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
@@ -36,6 +36,7 @@ const Index = () => {
   const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
   const [pollPieTooltip, setPollPieTooltip] = useState<{ x: number; y: number; label: string; percent: number; color: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCornerFlipping, setIsCornerFlipping] = useState(false);
   const [menuFilters, setMenuFilters] = useState<PublicMenuFilter[]>([]);
   const [activeMenuFilterId, setActiveMenuFilterId] = useState<string>('all');
   const [votedOptionIdsByTopic, setVotedOptionIdsByTopic] = useState<Record<string, string[]>>(() => {
@@ -52,6 +53,8 @@ const Index = () => {
   const pollPieWrapRef = useRef<HTMLDivElement | null>(null);
   const detailOpenTimeoutRef = useRef<number | null>(null);
   const delayedScrollToTopTimeoutRef = useRef<number | null>(null);
+  const nextTopicFlipTimeoutRef = useRef<number | null>(null);
+  const nextTopicFlipEndTimeoutRef = useRef<number | null>(null);
   const topicsDataSignatureRef = useRef<string>('');
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
@@ -66,6 +69,12 @@ const Index = () => {
   })();
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
+  const topicSequence = filteredTopics.some((topic) => topic.id === selectedTopicId) ? filteredTopics : topicsData;
+  const selectedTopicSequenceIndex = selectedTopicId ? topicSequence.findIndex((topic) => topic.id === selectedTopicId) : -1;
+  const nextTopicInSequence =
+    selectedTopicSequenceIndex >= 0 && topicSequence.length > 1
+      ? topicSequence[(selectedTopicSequenceIndex + 1) % topicSequence.length]
+      : null;
   const showBootLoader = !selectedTopicId && !isBootBarComplete;
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = !showBootLoader && (isTopicsLoading || isListSkeletonHold);
@@ -141,6 +150,38 @@ const Index = () => {
     }
     setSelectedTopicId(null);
     navigate('/');
+  };
+
+  const handleFlipToNextTopic = () => {
+    if (!nextTopicInSequence || isCornerFlipping) return;
+    setIsCornerFlipping(true);
+
+    if (nextTopicFlipTimeoutRef.current !== null) {
+      window.clearTimeout(nextTopicFlipTimeoutRef.current);
+    }
+    if (nextTopicFlipEndTimeoutRef.current !== null) {
+      window.clearTimeout(nextTopicFlipEndTimeoutRef.current);
+    }
+
+    nextTopicFlipTimeoutRef.current = window.setTimeout(() => {
+      resetTopicViewState();
+      setIsDetailOpening(true);
+      setSelectedTopicId(nextTopicInSequence.id);
+      navigate(buildTopicPath(nextTopicInSequence.id, nextTopicInSequence.title));
+      scheduleScrollDetailToTop(0);
+
+      if (detailOpenTimeoutRef.current !== null) {
+        window.clearTimeout(detailOpenTimeoutRef.current);
+      }
+      detailOpenTimeoutRef.current = window.setTimeout(() => {
+        setIsDetailOpening(false);
+        detailOpenTimeoutRef.current = null;
+      }, 420);
+    }, 210);
+
+    nextTopicFlipEndTimeoutRef.current = window.setTimeout(() => {
+      setIsCornerFlipping(false);
+    }, 560);
   };
 
   const handleCollapseAllStacks = () => {
@@ -525,6 +566,12 @@ const Index = () => {
       if (delayedScrollToTopTimeoutRef.current !== null) {
         window.clearTimeout(delayedScrollToTopTimeoutRef.current);
       }
+      if (nextTopicFlipTimeoutRef.current !== null) {
+        window.clearTimeout(nextTopicFlipTimeoutRef.current);
+      }
+      if (nextTopicFlipEndTimeoutRef.current !== null) {
+        window.clearTimeout(nextTopicFlipEndTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -771,7 +818,30 @@ const Index = () => {
                   <ArrowLeft size={14} /> Обратно към списъка
                 </motion.button>
 
-                <motion.header variants={detailItem} className="mb-16">
+                <motion.header variants={detailItem} className="mb-16 relative pr-20">
+                  {nextTopicInSequence ? (
+                    <motion.button
+                      type="button"
+                      onClick={handleFlipToNextTopic}
+                      disabled={isCornerFlipping}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="absolute top-0 right-0 h-12 w-12 rounded-md border border-gray-200 bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-black hover:border-black transition-colors disabled:opacity-80"
+                      aria-label="Следваща тема"
+                      title="Следваща тема"
+                      style={{ perspective: 900 }}
+                    >
+                      <motion.span
+                        animate={isCornerFlipping ? { rotateY: [0, -120, -180], x: [0, 8, 12], opacity: [1, 1, 0] } : { rotateY: 0, x: 0, opacity: 1 }}
+                        transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative h-7 w-7 block"
+                        style={{ transformStyle: 'preserve-3d', transformOrigin: 'right center' }}
+                      >
+                        <span className="absolute inset-0 border-r-2 border-b-2 border-gray-700 rounded-sm" />
+                        <ChevronRight size={14} className="absolute right-0.5 bottom-0.5" />
+                      </motion.span>
+                    </motion.button>
+                  ) : null}
                   {isDetailContentLoading ? (
                     <div>
                       <div className="flex items-center gap-3 mb-8">
