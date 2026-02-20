@@ -324,3 +324,27 @@ export async function voteOnContent(input: { topicId: string; optionId: string; 
 
   return (await response.json()) as Array<{ topic_id: string; option_id: string; voter_key: string }>;
 }
+
+export async function unvoteOnContent(input: { topicId: string; optionId: string; allowMultiple?: boolean }) {
+  if (!isSupabaseConfigured()) return null;
+  const supabaseUrl = getSupabaseUrl();
+  const baseVoterKey = getVoterKey();
+  if (!supabaseUrl || !baseVoterKey) return null;
+  const voterKey = input.allowMultiple ? `${baseVoterKey}:${input.optionId}` : `${baseVoterKey}:single`;
+
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(voterKey)}`,
+    {
+      method: "DELETE",
+      headers: {
+        ...getSupabaseHeaders(),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to remove vote (${response.status})`);
+  }
+
+  return true;
+}

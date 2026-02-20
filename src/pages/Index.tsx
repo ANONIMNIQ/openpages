@@ -6,7 +6,7 @@ import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2 } from 'lucide-react';
-import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
+import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, unvoteOnContent, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
@@ -264,25 +264,42 @@ const Index = () => {
     setIsVoting(true);
     try {
       const allowMultiple = selectedTopic.contentType === 'poll' ? Boolean(selectedTopic.pollAllowMultiple) : false;
-      await voteOnContent({
-        topicId: selectedTopic.id,
-        optionId,
-        allowMultiple,
-      });
+      const existing = votedOptionIdsByTopic[selectedTopic.id] ?? [];
+      const isToggleOff = allowMultiple && existing.includes(optionId);
+
+      if (isToggleOff) {
+        await unvoteOnContent({
+          topicId: selectedTopic.id,
+          optionId,
+          allowMultiple,
+        });
+      } else {
+        await voteOnContent({
+          topicId: selectedTopic.id,
+          optionId,
+          allowMultiple,
+        });
+      }
       const refreshed = await fetchPublishedTopicsWithArguments();
       if (refreshed) setTopicsData(refreshed);
       setVotedOptionIdsByTopic((prev) => {
         const next = { ...prev };
-        const existing = next[selectedTopic.id] ?? [];
-        next[selectedTopic.id] = allowMultiple ? Array.from(new Set([...existing, optionId])) : [optionId];
+        const current = next[selectedTopic.id] ?? [];
+        if (isToggleOff) {
+          next[selectedTopic.id] = current.filter((id) => id !== optionId);
+        } else {
+          next[selectedTopic.id] = allowMultiple ? Array.from(new Set([...current, optionId])) : [optionId];
+        }
         return next;
       });
-      setVoteFx({
-        topicId: selectedTopic.id,
-        optionId,
-        type: selectedTopic.contentType,
-        token: Date.now(),
-      });
+      if (!isToggleOff) {
+        setVoteFx({
+          topicId: selectedTopic.id,
+          optionId,
+          type: selectedTopic.contentType,
+          token: Date.now(),
+        });
+      }
     } catch (error) {
       console.warn('Vote failed', error);
     } finally {
