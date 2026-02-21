@@ -18,6 +18,7 @@ interface TopicCardProps {
   dominantLabel?: string;
   dominantColor?: string;
   onClick: () => void;
+  hasVoted?: boolean;
 }
 
 const TopicCard: React.FC<TopicCardProps> = ({
@@ -33,6 +34,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   dominantLabel,
   dominantColor,
   onClick,
+  hasVoted = false,
 }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const [canHover, setCanHover] = useState(false);
@@ -44,9 +46,12 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const resolvedMetricStyle = contentType === 'poll' && dominantColor ? { color: dominantColor } : undefined;
   const CounterIcon = contentType === 'vs' ? Swords : contentType === 'poll' ? BarChart3 : MessageSquare;
 
+  // Резултатите се показват винаги за дебати и VS, но за анкети само ако е гласувано
+  const showResults = contentType !== 'poll' || hasVoted;
+
   useEffect(() => {
     percentMotion.set(0);
-    const controls = animate(percentMotion, dominantPercent, {
+    const controls = animate(percentMotion, showResults ? dominantPercent : 0, {
       duration: 0.75,
       ease: [0.22, 1, 0.36, 1],
       delay: 0.2,
@@ -54,7 +59,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
     });
 
     return () => controls.stop();
-  }, [dominantPercent, percentMotion]);
+  }, [dominantPercent, percentMotion, showResults]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -96,7 +101,11 @@ const TopicCard: React.FC<TopicCardProps> = ({
           <CounterIcon size={14} /> {argumentsCount} {countLabel}
         </div>
         <div className={`text-[10px] font-black uppercase tracking-widest ${resolvedMetricStyle ? '' : accentText}`} style={resolvedMetricStyle}>
-          {(dominantLabel ?? accentLabel)} {animatedPercent}%
+          {showResults ? (
+            <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
+          ) : (
+            "ГЛАСУВАЙ"
+          )}
         </div>
       </div>
 
@@ -105,7 +114,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
           className={`h-full ${resolvedBarStyle ? '' : accentBar}`}
           style={resolvedBarStyle}
           initial={{ width: 0 }}
-          animate={{ width: `${dominantPercent}%` }}
+          animate={{ width: showResults ? `${dominantPercent}%` : 0 }}
           transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
         />
       </div>
