@@ -933,8 +933,8 @@ const Index = () => {
                                                           strokeWidth="2"
                                                           initial={{ opacity: 0, scale: 0.86 }}
                                                           animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
-                                                          onMouseEnter={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
-                                                          onMouseMove={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
+                                                          onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                                          onMouseMove={(event) => handlePollSliceHover(event, slice)}
                                                           onMouseLeave={() => setPollPieTooltip(null)}
                                                           transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                                         />
@@ -949,8 +949,8 @@ const Index = () => {
                                                         strokeWidth="2"
                                                         initial={{ opacity: 0, scale: 0.86 }}
                                                         animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
-                                                        onMouseEnter={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
-                                                        onMouseMove={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
+                                                        onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                                        onMouseMove={(event) => handlePollSliceHover(event, slice)}
                                                         onMouseLeave={() => setPollPieTooltip(null)}
                                                         transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                                       />

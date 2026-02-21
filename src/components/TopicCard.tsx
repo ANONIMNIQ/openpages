@@ -85,7 +85,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
         <div className="flex items-center gap-3 mb-4">
           {isClosed ? (
             <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-              ПРИКЛЮЧИЛА
+              ПРИКЛЮЧИЛА АНКЕТА
             </span>
           ) : tag ? (
             <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
