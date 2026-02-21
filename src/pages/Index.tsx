@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import HTMLPageFlip from 'react-pageflip';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -53,6 +54,7 @@ const Index = () => {
   const detailOpenTimeoutRef = useRef<number | null>(null);
   const delayedScrollToTopTimeoutRef = useRef<number | null>(null);
   const topicsDataSignatureRef = useRef<string>('');
+  const pageFlipRef = useRef<any>(null);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const filteredTopics = (() => {
@@ -64,6 +66,10 @@ const Index = () => {
     }
     return topicsData.filter((topic) => (topic.tag ?? '').toLowerCase() === filter.filterValue.toLowerCase());
   })();
+
+  const currentIndex = filteredTopics.findIndex(t => t.id === selectedTopicId);
+  const nextTopic = currentIndex !== -1 && currentIndex < filteredTopics.length - 1 ? filteredTopics[currentIndex + 1] : null;
+
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
   const showBootLoader = !selectedTopicId && !isBootBarComplete;
@@ -141,6 +147,15 @@ const Index = () => {
     }
     setSelectedTopicId(null);
     navigate('/');
+  };
+
+  const handleFlipToNext = (e: any) => {
+    if (e.data === 1 && nextTopic) {
+      // Когато прелистим към втората страница (скелетона)
+      setTimeout(() => {
+        handleOpenTopic(nextTopic.id);
+      }, 300);
+    }
   };
 
   const handleCollapseAllStacks = () => {
@@ -763,171 +778,784 @@ const Index = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
+              className="w-full max-w-[46rem] mx-auto h-screen relative"
             >
-              <motion.div variants={detailStagger} initial="hidden" animate="show">
-                <motion.button
-                  variants={detailItem}
-                  onClick={handleBackToList}
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12"
+              {/* Page Flip Wrapper - Desktop Only */}
+              <div className="hidden lg:block h-full w-full">
+                <HTMLPageFlip
+                  width={640}
+                  height={1000}
+                  size="stretch"
+                  minWidth={320}
+                  maxWidth={640}
+                  minHeight={400}
+                  maxHeight={1200}
+                  showCover={false}
+                  mobileScrollSupport={true}
+                  onFlip={handleFlipToNext}
+                  className="topic-book"
+                  ref={pageFlipRef}
+                  startPage={0}
+                  drawShadow={true}
+                  flippingTime={1000}
+                  usePortrait={true}
+                  startZIndex={0}
+                  autoSize={true}
+                  maxShadowOpacity={0.5}
+                  showPageCorners={!!nextTopic}
+                  disableFlipByClick={false}
+                  clickEventForward={true}
+                  useMouseEvents={true}
+                  swipeDistance={30}
                 >
-                  <ArrowLeft size={14} /> Обратно към списъка
-                </motion.button>
-
-                <motion.header variants={detailItem} className="mb-16">
-                  {isDetailContentLoading ? (
-                    <div>
-                      <div className="flex items-center gap-3 mb-8">
-                        <Skeleton className="h-5 w-24 rounded-sm" />
-                        <Skeleton className="h-4 w-28" />
-                      </div>
-                      <Skeleton className="h-10 w-[86%] mb-3" />
-                      <Skeleton className="h-10 w-[64%] mb-6" />
-                      <Skeleton className="h-4 w-[82%] mb-2" />
-                      <Skeleton className="h-4 w-[70%]" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-3 mb-8">
-                        {selectedTopic?.isClosed ? (
-                          <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                            ПРИКЛЮЧИЛА АНКЕТА
-                          </span>
-                        ) : selectedTopic?.tag ? (
-                          <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                            {selectedTopic.tagIcon ? `${selectedTopic.tagIcon} ${selectedTopic.tag}` : selectedTopic.tag}
-                          </span>
-                        ) : null}
-                        <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
-                          <ShieldCheck size={12} /> 100% Анонимно
-                        </div>
-                      </div>
-                      
-                      <h1 className="text-3xl font-black text-black leading-[1.1] tracking-tight mb-6">
-                        {selectedTopic?.title}
-                      </h1>
-                      
-                      <p className="text-sm text-gray-500 leading-relaxed max-w-md">
-                        {selectedTopic?.description}
-                      </p>
-                      <button
-                        onClick={handleShareTopic}
-                        className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
-                        type="button"
+                  {/* Page 1: Real Content */}
+                  <div className="bg-white h-full overflow-y-auto px-8 md:px-12 py-16 custom-scrollbar">
+                    <motion.div variants={detailStagger} initial="hidden" animate="show">
+                      <motion.button
+                        variants={detailItem}
+                        onClick={handleBackToList}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12"
                       >
-                        <Share2 size={14} />
-                        Сподели
-                      </button>
-                    </>
-                  )}
-                </motion.header>
+                        <ArrowLeft size={14} /> Обратно към списъка
+                      </motion.button>
 
-                <motion.div variants={detailItem} className={selectedTopic?.contentType === 'poll' ? 'space-y-8' : 'space-y-12'}>
-                  {selectedTopic?.contentType === 'debate' ? (
-                    <>
-                      <CardStack 
-                        title="Аргументи ЗА" 
-                        type="pro" 
-                        arguments={proArgumentsWithIds} 
-                        onCreateArgument={handleOpenComposer}
-                        isCreateActive={isComposerOpen && composerType === 'pro'}
-                        collapseAllSignal={collapseAllSignal}
-                        onCollapseAllRequest={handleCollapseAllStacks}
-                        onRequestScrollTop={handleScrollMainTop}
-                        globalFocusedStackType={activeCommentStackType}
-                        onFocusModeChange={setActiveCommentStackType}
-                      />
-                      <CardStack 
-                        title="Аргументи ПРОТИВ" 
-                        type="con" 
-                        arguments={conArgumentsWithIds} 
-                        onCreateArgument={handleOpenComposer}
-                        isCreateActive={isComposerOpen && composerType === 'con'}
-                        collapseAllSignal={collapseAllSignal}
-                        onCollapseAllRequest={handleCollapseAllStacks}
-                        onRequestScrollTop={handleScrollMainTop}
-                        globalFocusedStackType={activeCommentStackType}
-                        onFocusModeChange={setActiveCommentStackType}
-                      />
-                    </>
-                  ) : (
-                    <div className="space-y-4">
-                      {selectedTopic?.contentType === 'poll' ? (
-                        <div className="space-y-6">
-                          {(() => {
-                            const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
-                            const showResults = hasVoted || selectedTopic.isClosed;
-                            return (
-                              <>
-                                <AnimatePresence>
-                                  {showResults && (
-                                    <motion.div
-                                      initial={{ opacity: 0, height: 0 }}
-                                      animate={{ opacity: 1, height: 'auto' }}
-                                      exit={{ opacity: 0, height: 0 }}
-                                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                                      className="relative rounded-2xl border border-gray-200 bg-white p-4 hidden lg:block overflow-hidden"
-                                    >
-                                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Резултати</div>
-                                      {(() => {
-                                        const enriched = selectedTopic.voteOptions.map((option, idx) => {
+                      <motion.header variants={detailItem} className="mb-16">
+                        {isDetailContentLoading ? (
+                          <div>
+                            <div className="flex items-center gap-3 mb-8">
+                              <Skeleton className="h-5 w-24 rounded-sm" />
+                              <Skeleton className="h-4 w-28" />
+                            </div>
+                            <Skeleton className="h-10 w-[86%] mb-3" />
+                            <Skeleton className="h-10 w-[64%] mb-6" />
+                            <Skeleton className="h-4 w-[82%] mb-2" />
+                            <Skeleton className="h-4 w-[70%]" />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-3 mb-8">
+                              {selectedTopic?.isClosed ? (
+                                <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                                  ПРИКЛЮЧИЛА АНКЕТА
+                                </span>
+                              ) : selectedTopic?.tag ? (
+                                <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                                  {selectedTopic.tagIcon ? `${selectedTopic.tagIcon} ${selectedTopic.tag}` : selectedTopic.tag}
+                                </span>
+                              ) : null}
+                              <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
+                                <ShieldCheck size={12} /> 100% Анонимно
+                              </div>
+                            </div>
+                            
+                            <h1 className="text-3xl font-black text-black leading-[1.1] tracking-tight mb-6">
+                              {selectedTopic?.title}
+                            </h1>
+                            
+                            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+                              {selectedTopic?.description}
+                            </p>
+                            <button
+                              onClick={handleShareTopic}
+                              className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                              type="button"
+                            >
+                              <Share2 size={14} />
+                              Сподели
+                            </button>
+                          </>
+                        )}
+                      </motion.header>
+
+                      <motion.div variants={detailItem} className={selectedTopic?.contentType === 'poll' ? 'space-y-8' : 'space-y-12'}>
+                        {selectedTopic?.contentType === 'debate' ? (
+                          <>
+                            <CardStack 
+                              title="Аргументи ЗА" 
+                              type="pro" 
+                              arguments={proArgumentsWithIds} 
+                              onCreateArgument={handleOpenComposer}
+                              isCreateActive={isComposerOpen && composerType === 'pro'}
+                              collapseAllSignal={collapseAllSignal}
+                              onCollapseAllRequest={handleCollapseAllStacks}
+                              onRequestScrollTop={handleScrollMainTop}
+                              globalFocusedStackType={activeCommentStackType}
+                              onFocusModeChange={setActiveCommentStackType}
+                            />
+                            <CardStack 
+                              title="Аргументи ПРОТИВ" 
+                              type="con" 
+                              arguments={conArgumentsWithIds} 
+                              onCreateArgument={handleOpenComposer}
+                              isCreateActive={isComposerOpen && composerType === 'con'}
+                              collapseAllSignal={collapseAllSignal}
+                              onCollapseAllRequest={handleCollapseAllStacks}
+                              onRequestScrollTop={handleScrollMainTop}
+                              globalFocusedStackType={activeCommentStackType}
+                              onFocusModeChange={setActiveCommentStackType}
+                            />
+                          </>
+                        ) : (
+                          <div className="space-y-4">
+                            {selectedTopic?.contentType === 'poll' ? (
+                              <div className="space-y-6">
+                                {(() => {
+                                  const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
+                                  const showResults = hasVoted || selectedTopic.isClosed;
+                                  return (
+                                    <>
+                                      <AnimatePresence>
+                                        {showResults && (
+                                          <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                            className="relative rounded-2xl border border-gray-200 bg-white p-4 overflow-hidden"
+                                          >
+                                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Резултати</div>
+                                            {(() => {
+                                              const enriched = selectedTopic.voteOptions.map((option, idx) => {
+                                                const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                                                const percent = selectedTopic.totalVotes > 0 ? (option.votes / selectedTopic.totalVotes) * 100 : 0;
+                                                return { ...option, color, percent };
+                                              });
+                                              const totalPercent = enriched.reduce((sum, option) => sum + option.percent, 0);
+                                              const normalized = totalPercent > 0 ? enriched : enriched.map((option) => ({ ...option, percent: 100 / Math.max(enriched.length, 1) }));
+                                              const cx = 100;
+                                              const cy = 100;
+                                              const radius = 86;
+                                              let startAngle = -Math.PI / 2;
+                                              const slices = normalized.map((option) => {
+                                                const sliceAngle = (Math.PI * 2 * option.percent) / 100;
+                                                const endAngle = startAngle + sliceAngle;
+                                                const midAngle = startAngle + sliceAngle / 2;
+                                                const isFullSlice = option.percent >= 99.999;
+                                                const x1 = cx + radius * Math.cos(startAngle);
+                                                const y1 = cy + radius * Math.sin(startAngle);
+                                                const x2 = cx + radius * Math.cos(endAngle);
+                                                const y2 = cy + radius * Math.sin(endAngle);
+                                                const largeArc = sliceAngle > Math.PI ? 1 : 0;
+                                                const path = isFullSlice
+                                                  ? ""
+                                                  : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                                const result = {
+                                                  ...option,
+                                                  path,
+                                                  isFullSlice,
+                                                  midAngle,
+                                                };
+                                                startAngle = endAngle;
+                                                return result;
+                                              });
+
+                                              return (
+                                                <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
+                                                  <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3 items-center">
+                                                    <div ref={pollPieWrapRef} className="relative mx-auto">
+                                                      <motion.svg
+                                                        key={`${selectedTopic.id}-${selectedTopic.totalVotes}`}
+                                                        viewBox="0 0 200 200"
+                                                        className="h-40 w-40 drop-shadow-[0_10px_14px_rgba(0,0,0,0.18)]"
+                                                        initial={{ opacity: 0, scale: 0.9, rotate: -8 }}
+                                                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                                                        aria-label="Резултати от анкетата"
+                                                      >
+                                                        {slices.map((slice, sliceIdx) => {
+                                                          const isExploded = explodedPollOptionId === slice.id;
+                                                          const explodeX = isExploded ? Math.cos(slice.midAngle) * 9 : 0;
+                                                          const explodeY = isExploded ? Math.sin(slice.midAngle) * 9 : 0;
+                                                          if (slice.isFullSlice) {
+                                                            return (
+                                                              <motion.circle
+                                                                key={`slice-full-${slice.id}`}
+                                                                cx={cx}
+                                                                cy={cy}
+                                                                r={radius}
+                                                                fill={slice.color}
+                                                                stroke="#ffffff"
+                                                                strokeWidth="2"
+                                                                initial={{ opacity: 0, scale: 0.86 }}
+                                                                animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                                                onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                                                onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                                                onMouseLeave={() => setPollPieTooltip(null)}
+                                                                transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
+                                                              />
+                                                            );
+                                                          }
+                                                          return (
+                                                            <motion.path
+                                                              key={`slice-${slice.id}`}
+                                                              d={slice.path}
+                                                              fill={slice.color}
+                                                              stroke="#ffffff"
+                                                              strokeWidth="2"
+                                                              initial={{ opacity: 0, scale: 0.86 }}
+                                                              animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                                              onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                                              onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                                              onMouseLeave={() => setPollPieTooltip(null)}
+                                                              transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
+                                                            />
+                                                          );
+                                                        })}
+                                                      </motion.svg>
+                                                      <AnimatePresence>
+                                                        {pollPieTooltip ? (
+                                                          <motion.div
+                                                            key={`${pollPieTooltip.label}-${pollPieTooltip.percent}`}
+                                                            initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                            exit={{ opacity: 0, scale: 0.92, y: 4 }}
+                                                            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                                                            className="pointer-events-none absolute z-30 rounded-lg bg-black px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg max-w-[220px]"
+                                                            style={{
+                                                              left: pollPieTooltip.x,
+                                                              top: pollPieTooltip.y - 10,
+                                                              transform: 'translate(-50%, -100%)',
+                                                            }}
+                                                          >
+                                                            <span className="inline-flex items-center gap-1.5">
+                                                              <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: pollPieTooltip.color }} />
+                                                              <span className="whitespace-nowrap">{pollPieTooltip.label}: {pollPieTooltip.percent}%</span>
+                                                            </span>
+                                                          </motion.div>
+                                                        ) : null}
+                                                      </AnimatePresence>
+                                                      <div className="mt-1 text-center text-[10px] font-black text-gray-500">
+                                                        {selectedTopic.totalVotes} гласа
+                                                      </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                      {normalized.map((option) => (
+                                                        <button
+                                                          key={`legend-${option.id}`}
+                                                          onClick={() => {
+                                                            if (selectedTopic.isClosed) return;
+                                                            setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
+                                                            void handleVote(option.id);
+                                                          }}
+                                                          disabled={isVoting || selectedTopic.isClosed}
+                                                          type="button"
+                                                          className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 disabled:opacity-70 ${
+                                                            explodedPollOptionId === option.id ? 'border-black/30 bg-white' : 'border-gray-200 bg-white/60 hover:bg-white'
+                                                          } ${selectedTopic.isClosed ? 'cursor-default' : ''}`}
+                                                        >
+                                                          <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
+                                                          <span className="truncate">{option.label}</span>
+                                                          <span className="ml-auto text-gray-500 shrink-0">{Math.round(option.percent)}%</span>
+                                                        </button>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })()}
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        {selectedTopic.isClosed ? "Анкетата е приключила" : hasVoted ? "Твоят глас" : "Гласувай с бутон"}
+                                      </div>
+                                      <div className="grid grid-cols-1 gap-2">
+                                        {selectedTopic.voteOptions.map((option, idx) => {
+                                          const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
                                           const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                          const percent = selectedTopic.totalVotes > 0 ? (option.votes / selectedTopic.totalVotes) * 100 : 0;
-                                          return { ...option, color, percent };
-                                        });
-                                        const totalPercent = enriched.reduce((sum, option) => sum + option.percent, 0);
-                                        const normalized = totalPercent > 0 ? enriched : enriched.map((option) => ({ ...option, percent: 100 / Math.max(enriched.length, 1) }));
-                                        const cx = 100;
-                                        const cy = 100;
-                                        const radius = 86;
-                                        let startAngle = -Math.PI / 2;
-                                        const slices = normalized.map((option) => {
-                                          const sliceAngle = (Math.PI * 2 * option.percent) / 100;
-                                          const endAngle = startAngle + sliceAngle;
-                                          const midAngle = startAngle + sliceAngle / 2;
-                                          const isFullSlice = option.percent >= 99.999;
-                                          const x1 = cx + radius * Math.cos(startAngle);
-                                          const y1 = cy + radius * Math.sin(startAngle);
-                                          const x2 = cx + radius * Math.cos(endAngle);
-                                          const y2 = cy + radius * Math.sin(endAngle);
-                                          const largeArc = sliceAngle > Math.PI ? 1 : 0;
-                                          const path = isFullSlice
-                                            ? ""
-                                            : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-                                          const result = {
-                                            ...option,
-                                            path,
-                                            isFullSlice,
-                                            midAngle,
-                                          };
-                                          startAngle = endAngle;
-                                          return result;
-                                        });
+                                          const isOptionCelebrating =
+                                            voteFx?.type === 'poll' &&
+                                            voteFx.topicId === selectedTopic.id &&
+                                            voteFx.optionId === option.id;
+                                          const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
+                                          
+                                          if (selectedTopic.isClosed) {
+                                            return (
+                                              <div key={option.id} className="w-full px-4 py-3">
+                                                <div className="flex items-center justify-between gap-3 mb-2">
+                                                  <span className="inline-flex items-center gap-2 min-w-0">
+                                                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                                    <span className="text-sm font-bold text-black truncate">{option.label}</span>
+                                                  </span>
+                                                  <span className="text-xs font-bold text-gray-500 shrink-0">
+                                                    {option.votes} гласа · {percent}%
+                                                  </span>
+                                                </div>
+                                                <div className="relative h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                                  <div className="h-full" style={{ backgroundColor: color, width: `${percent}%` }} />
+                                                </div>
+                                              </div>
+                                            );
+                                          }
 
-                                        return (
-                                          <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
-                                            <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3 items-center">
-                                              <div ref={pollPieWrapRef} className="relative mx-auto">
-                                                <motion.svg
-                                                  key={`${selectedTopic.id}-${selectedTopic.totalVotes}`}
-                                                  viewBox="0 0 200 200"
-                                                  className="h-40 w-40 drop-shadow-[0_10px_14px_rgba(0,0,0,0.18)]"
-                                                  initial={{ opacity: 0, scale: 0.9, rotate: -8 }}
-                                                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                                                  aria-label="Резултати от анкетата"
-                                                >
-                                                  {slices.map((slice, sliceIdx) => {
-                                                    const isExploded = explodedPollOptionId === slice.id;
-                                                    const explodeX = isExploded ? Math.cos(slice.midAngle) * 9 : 0;
-                                                    const explodeY = isExploded ? Math.sin(slice.midAngle) * 9 : 0;
-                                                    if (slice.isFullSlice) {
+                                          return (
+                                            <motion.button
+                                              key={option.id}
+                                              onClick={() => handleVote(option.id)}
+                                              disabled={isVoting}
+                                              whileHover={{ y: -1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                                              whileTap={{ scale: 0.995 }}
+                                              className="group relative w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
+                                              style={{ borderColor: `${color}55` }}
+                                            >
+                                              <div className="flex items-center justify-between gap-3 mb-2">
+                                                <span className="inline-flex items-center gap-2 min-w-0">
+                                                  <span
+                                                    className={`relative inline-flex h-4 w-4 rounded-full shrink-0 items-center justify-center transition-all ${
+                                                      isOptionVoted ? 'border-2 border-black' : 'border border-transparent group-hover:border-black'
+                                                    }`}
+                                                    style={{ backgroundColor: color }}
+                                                  >
+                                                    <AnimatePresence>
+                                                      {isOptionVoted ? (
+                                                        <motion.svg
+                                                          key={`check-${selectedTopic.id}-${option.id}`}
+                                                          viewBox="0 0 20 20"
+                                                          className="h-2.5 w-2.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]"
+                                                          initial={{ opacity: 0, scale: 0.4, rotate: -12 }}
+                                                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                                          exit={{ opacity: 0, scale: 0.5 }}
+                                                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                                          aria-hidden="true"
+                                                        >
+                                                          <path
+                                                            d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="2.3"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                          />
+                                                        </motion.svg>
+                                                      ) : null}
+                                                    </AnimatePresence>
+                                                  </span>
+                                                  <span className="text-sm font-bold text-black truncate">{option.label}</span>
+                                                </span>
+                                                {hasVoted && (
+                                                  <motion.span
+                                                    initial={{ opacity: 0, x: 10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    className="text-xs font-bold text-gray-500 shrink-0"
+                                                  >
+                                                    {option.votes} гласа · {percent}%
+                                                  </motion.span>
+                                                )}
+                                              </div>
+                                              <AnimatePresence>
+                                                {hasVoted && (
+                                                  <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    className="relative pt-3 overflow-hidden"
+                                                  >
+                                                    <AnimatePresence>
+                                                      {isOptionCelebrating ? (
+                                                        <motion.div
+                                                          key={`poll-paper-${voteFx?.token}-${option.id}`}
+                                                          initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
+                                                          animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
+                                                          exit={{ y: 8, opacity: 0 }}
+                                                          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                                                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                                        >
+                                                          <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                                            <path
+                                                              d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                              fill="none"
+                                                              stroke="currentColor"
+                                                              strokeWidth="2.3"
+                                                              strokeLinecap="round"
+                                                              strokeLinejoin="round"
+                                                              className="text-black/90"
+                                                            />
+                                                          </svg>
+                                                        </motion.div>
+                                                      ) : null}
+                                                    </AnimatePresence>
+                                                    <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
+                                                      <motion.div
+                                                        className="h-full"
+                                                        style={{ backgroundColor: color }}
+                                                        animate={{
+                                                          width: `${percent}%`,
+                                                          boxShadow: isOptionCelebrating
+                                                            ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
+                                                            : '0 0 0 rgba(0,0,0,0)',
+                                                          scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
+                                                        }}
+                                                        transition={{
+                                                          width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                                                          boxShadow: { duration: 0.55, ease: 'easeOut' },
+                                                          scaleY: { duration: 0.35, ease: 'easeOut' },
+                                                        }}
+                                                      />
+                                                    </div>
+                                                  </motion.div>
+                                                )}
+                                              </AnimatePresence>
+                                            </motion.button>
+                                          );
+                                        })}
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            ) : null}
+                            {selectedTopic?.contentType === 'vs' ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {selectedTopic.voteOptions.map((option, idx) => {
+                                  const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                                  const tone = idx === 0 ? 'border-emerald-200' : 'border-rose-200';
+                                  const isOptionCelebrating =
+                                    voteFx?.type === 'vs' &&
+                                    voteFx.topicId === selectedTopic.id &&
+                                    voteFx.optionId === option.id;
+                                  const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
+                                  return (
+                                    <motion.button
+                                      key={option.id}
+                                      onClick={() => handleVote(option.id)}
+                                      disabled={isVoting}
+                                      whileHover={{
+                                        y: -3,
+                                        rotateY: idx === 0 ? -4 : 4,
+                                        boxShadow: '0 16px 38px rgba(0,0,0,0.14)',
+                                      }}
+                                      whileTap={{ scale: 0.992 }}
+                                      animate={
+                                        isOptionCelebrating
+                                          ? {
+                                              rotateX: [0, -5, 0],
+                                              rotateY: idx === 0 ? [0, -10, 0] : [0, 10, 0],
+                                              boxShadow: [
+                                                '0 10px 28px rgba(0,0,0,0.12)',
+                                                '0 24px 54px rgba(0,0,0,0.28)',
+                                                '0 10px 28px rgba(0,0,0,0.12)',
+                                              ],
+                                            }
+                                          : { rotateX: 0, rotateY: 0, boxShadow: '0 10px 28px rgba(0,0,0,0.12)' }
+                                      }
+                                      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                                      style={{ transformStyle: 'preserve-3d' }}
+                                      className={`relative rounded-xl border bg-white p-5 text-left transition-shadow disabled:opacity-70 min-h-[30rem] ${isOptionVoted ? 'border-black ring-2 ring-black/20' : tone}`}
+                                    >
+                                      {option.image ? (
+                                        <div className="relative mb-4">
+                                          <img src={option.image} alt={option.label} className="w-full h-72 md:h-80 object-cover object-top rounded-lg" />
+                                          <AnimatePresence>
+                                            {isOptionVoted ? (
+                                              <motion.div
+                                                initial={{ opacity: 0, scale: 0.7, y: -4 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.7, y: -4 }}
+                                                className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full bg-black/85 text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.28)]"
+                                                aria-label="Избрано"
+                                              >
+                                                <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+                                                  <path
+                                                    d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.3"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                  />
+                                                </svg>
+                                              </motion.div>
+                                            ) : null}
+                                          </AnimatePresence>
+                                        </div>
+                                      ) : (
+                                        <div className="relative mb-4">
+                                          <div className="w-full h-72 md:h-80 rounded-lg bg-gray-100" />
+                                          <AnimatePresence>
+                                            {isOptionVoted ? (
+                                              <motion.div
+                                                initial={{ opacity: 0, scale: 0.7, y: -4 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.7, y: -4 }}
+                                                className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full bg-black/85 text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.28)]"
+                                                aria-label="Избрано"
+                                              >
+                                                <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+                                                  <path
+                                                    d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.3"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                  />
+                                                </svg>
+                                              </motion.div>
+                                            ) : null}
+                                          </AnimatePresence>
+                                        </div>
+                                      )}
+                                      <p className="text-lg font-black text-black mb-2">{option.label}</p>
+                                      <p className="text-xs font-bold text-gray-500 mb-3">{option.votes} гласа</p>
+                                      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                        <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
+                                      </div>
+                                      <AnimatePresence>
+                                        {isOptionCelebrating ? (
+                                          <div className="pointer-events-none absolute inset-0 overflow-visible">
+                                            {Array.from({ length: 34 }).map((_, emojiIdx) => {
+                                              const palette = ['❤️', '❤️', '❤️', '👍', '👍', '🔥', '👏', '💥', '🎉', '💚', '✨'];
+                                              const emoji = palette[emojiIdx % palette.length];
+                                              const spread = 36 + (emojiIdx % 10) * 18;
+                                              const direction = emojiIdx % 2 === 0 ? 1 : -1;
+                                              const x = direction * spread;
+                                              const y = -70 - (emojiIdx % 7) * 24;
+                                              return (
+                                              <motion.span
+                                                key={`${emoji}-${emojiIdx}-${voteFx?.token}`}
+                                                initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }}
+                                                animate={{
+                                                  opacity: [0, 1, 0],
+                                                  x,
+                                                  y,
+                                                  scale: [0.45, 1.25, 0.95],
+                                                  rotate: (emojiIdx % 2 === 0 ? 1 : -1) * (24 + (emojiIdx % 5) * 8),
+                                                }}
+                                                transition={{ duration: 0.95, delay: emojiIdx * 0.012, ease: 'easeOut' }}
+                                                className="absolute left-1/2 top-[58%] text-2xl"
+                                              >
+                                                {emoji}
+                                              </motion.span>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : null}
+                                      </AnimatePresence>
+                                    </motion.button>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                            <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">
+                              {selectedTopic?.isClosed
+                                ? 'Гласуването за тази анкета е приключило'
+                                : selectedTopic?.contentType === 'poll' && selectedTopic.pollAllowMultiple
+                                ? 'Можеш да избереш 1 или повече отговора'
+                                : 'Избери само един отговор'}
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    </motion.div>
+                  </div>
+
+                  {/* Page 2: Skeleton (Behind) */}
+                  <div className="bg-white h-full px-8 md:px-12 py-16">
+                    <div className="flex items-center gap-3 mb-12">
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-8">
+                      <Skeleton className="h-5 w-24 rounded-sm" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                    <Skeleton className="h-10 w-[86%] mb-3" />
+                    <Skeleton className="h-10 w-[64%] mb-6" />
+                    <Skeleton className="h-4 w-[82%] mb-2" />
+                    <Skeleton className="h-4 w-[70%] mb-16" />
+                    <div className="space-y-12">
+                      <div className="space-y-4">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-32 w-full rounded-xl" />
+                      </div>
+                      <div className="space-y-4">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-32 w-full rounded-xl" />
+                      </div>
+                    </div>
+                  </div>
+                </HTMLPageFlip>
+              </div>
+
+              {/* Mobile View - Standard Scroll */}
+              <div className="lg:hidden w-full">
+                <motion.div variants={detailStagger} initial="hidden" animate="show">
+                  <motion.button
+                    variants={detailItem}
+                    onClick={handleBackToList}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12"
+                  >
+                    <ArrowLeft size={14} /> Обратно към списъка
+                  </motion.button>
+
+                  <motion.header variants={detailItem} className="mb-16">
+                    {isDetailContentLoading ? (
+                      <div>
+                        <div className="flex items-center gap-3 mb-8">
+                          <Skeleton className="h-5 w-24 rounded-sm" />
+                          <Skeleton className="h-4 w-28" />
+                        </div>
+                        <Skeleton className="h-10 w-[86%] mb-3" />
+                        <Skeleton className="h-10 w-[64%] mb-6" />
+                        <Skeleton className="h-4 w-[82%] mb-2" />
+                        <Skeleton className="h-4 w-[70%]" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3 mb-8">
+                          {selectedTopic?.isClosed ? (
+                            <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                              ПРИКЛЮЧИЛА АНКЕТА
+                            </span>
+                          ) : selectedTopic?.tag ? (
+                            <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                              {selectedTopic.tagIcon ? `${selectedTopic.tagIcon} ${selectedTopic.tag}` : selectedTopic.tag}
+                            </span>
+                          ) : null}
+                          <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest">
+                            <ShieldCheck size={12} /> 100% Анонимно
+                          </div>
+                        </div>
+                        
+                        <h1 className="text-3xl font-black text-black leading-[1.1] tracking-tight mb-6">
+                          {selectedTopic?.title}
+                        </h1>
+                        
+                        <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+                          {selectedTopic?.description}
+                        </p>
+                        <button
+                          onClick={handleShareTopic}
+                          className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                          type="button"
+                        >
+                          <Share2 size={14} />
+                          Сподели
+                        </button>
+                      </>
+                    )}
+                  </motion.header>
+
+                  <motion.div variants={detailItem} className={selectedTopic?.contentType === 'poll' ? 'space-y-8' : 'space-y-12'}>
+                    {selectedTopic?.contentType === 'debate' ? (
+                      <>
+                        <CardStack 
+                          title="Аргументи ЗА" 
+                          type="pro" 
+                          arguments={proArgumentsWithIds} 
+                          onCreateArgument={handleOpenComposer}
+                          isCreateActive={isComposerOpen && composerType === 'pro'}
+                          collapseAllSignal={collapseAllSignal}
+                          onCollapseAllRequest={handleCollapseAllStacks}
+                          onRequestScrollTop={handleScrollMainTop}
+                          globalFocusedStackType={activeCommentStackType}
+                          onFocusModeChange={setActiveCommentStackType}
+                        />
+                        <CardStack 
+                          title="Аргументи ПРОТИВ" 
+                          type="con" 
+                          arguments={conArgumentsWithIds} 
+                          onCreateArgument={handleOpenComposer}
+                          isCreateActive={isComposerOpen && composerType === 'con'}
+                          collapseAllSignal={collapseAllSignal}
+                          onCollapseAllRequest={handleCollapseAllStacks}
+                          onRequestScrollTop={handleScrollMainTop}
+                          globalFocusedStackType={activeCommentStackType}
+                          onFocusModeChange={setActiveCommentStackType}
+                        />
+                      </>
+                    ) : (
+                      <div className="space-y-4">
+                        {selectedTopic?.contentType === 'poll' ? (
+                          <div className="space-y-6">
+                            {(() => {
+                              const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
+                              const showResults = hasVoted || selectedTopic.isClosed;
+                              return (
+                                <>
+                                  <AnimatePresence>
+                                    {showResults && (
+                                      <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                                        className="relative rounded-2xl border border-gray-200 bg-white p-4 overflow-hidden"
+                                      >
+                                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Резултати</div>
+                                        {(() => {
+                                          const enriched = selectedTopic.voteOptions.map((option, idx) => {
+                                            const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                                            const percent = selectedTopic.totalVotes > 0 ? (option.votes / selectedTopic.totalVotes) * 100 : 0;
+                                            return { ...option, color, percent };
+                                          });
+                                          const totalPercent = enriched.reduce((sum, option) => sum + option.percent, 0);
+                                          const normalized = totalPercent > 0 ? enriched : enriched.map((option) => ({ ...option, percent: 100 / Math.max(enriched.length, 1) }));
+                                          const cx = 100;
+                                          const cy = 100;
+                                          const radius = 86;
+                                          let startAngle = -Math.PI / 2;
+                                          const slices = normalized.map((option) => {
+                                            const sliceAngle = (Math.PI * 2 * option.percent) / 100;
+                                            const endAngle = startAngle + sliceAngle;
+                                            const midAngle = startAngle + sliceAngle / 2;
+                                            const isFullSlice = option.percent >= 99.999;
+                                            const x1 = cx + radius * Math.cos(startAngle);
+                                            const y1 = cy + radius * Math.sin(startAngle);
+                                            const x2 = cx + radius * Math.cos(endAngle);
+                                            const y2 = cy + radius * Math.sin(endAngle);
+                                            const largeArc = sliceAngle > Math.PI ? 1 : 0;
+                                            const path = isFullSlice
+                                              ? ""
+                                              : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                            const result = {
+                                              ...option,
+                                              path,
+                                              isFullSlice,
+                                              midAngle,
+                                            };
+                                            startAngle = endAngle;
+                                            return result;
+                                          });
+
+                                          return (
+                                            <div className="rounded-xl border border-gray-100 bg-[#fafafa] px-3 py-3">
+                                              <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3 items-center">
+                                                <div ref={pollPieWrapRef} className="relative mx-auto">
+                                                  <motion.svg
+                                                    key={`${selectedTopic.id}-${selectedTopic.totalVotes}`}
+                                                    viewBox="0 0 200 200"
+                                                    className="h-40 w-40 drop-shadow-[0_10px_14px_rgba(0,0,0,0.18)]"
+                                                    initial={{ opacity: 0, scale: 0.9, rotate: -8 }}
+                                                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                                                    aria-label="Резултати от анкетата"
+                                                  >
+                                                    {slices.map((slice, sliceIdx) => {
+                                                      const isExploded = explodedPollOptionId === slice.id;
+                                                      const explodeX = isExploded ? Math.cos(slice.midAngle) * 9 : 0;
+                                                      const explodeY = isExploded ? Math.sin(slice.midAngle) * 9 : 0;
+                                                      if (slice.isFullSlice) {
+                                                        return (
+                                                          <motion.circle
+                                                            key={`slice-full-${slice.id}`}
+                                                            cx={cx}
+                                                            cy={cy}
+                                                            r={radius}
+                                                            fill={slice.color}
+                                                            stroke="#ffffff"
+                                                            strokeWidth="2"
+                                                            initial={{ opacity: 0, scale: 0.86 }}
+                                                            animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
+                                                            onMouseEnter={(event) => handlePollSliceHover(event, slice)}
+                                                            onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                                            onMouseLeave={() => setPollPieTooltip(null)}
+                                                            transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
+                                                          />
+                                                        );
+                                                      }
                                                       return (
-                                                        <motion.circle
-                                                          key={`slice-full-${slice.id}`}
-                                                          cx={cx}
-                                                          cy={cy}
-                                                          r={radius}
+                                                        <motion.path
+                                                          key={`slice-${slice.id}`}
+                                                          d={slice.path}
                                                           fill={slice.color}
                                                           stroke="#ffffff"
                                                           strokeWidth="2"
@@ -939,182 +1567,124 @@ const Index = () => {
                                                           transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                                         />
                                                       );
-                                                    }
-                                                    return (
-                                                      <motion.path
-                                                        key={`slice-${slice.id}`}
-                                                        d={slice.path}
-                                                        fill={slice.color}
-                                                        stroke="#ffffff"
-                                                        strokeWidth="2"
-                                                        initial={{ opacity: 0, scale: 0.86 }}
-                                                        animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
-                                                        onMouseEnter={(event) => handlePollSliceHover(event, slice)}
-                                                        onMouseMove={(event) => handlePollSliceHover(event, slice)}
-                                                        onMouseLeave={() => setPollPieTooltip(null)}
-                                                        transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
-                                                      />
-                                                    );
-                                                  })}
-                                                </motion.svg>
-                                                <AnimatePresence>
-                                                  {pollPieTooltip ? (
-                                                    <motion.div
-                                                      key={`${pollPieTooltip.label}-${pollPieTooltip.percent}`}
-                                                      initial={{ opacity: 0, scale: 0.92, y: 6 }}
-                                                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                      exit={{ opacity: 0, scale: 0.92, y: 4 }}
-                                                      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                                                      className="pointer-events-none absolute z-30 rounded-lg bg-black px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg max-w-[220px]"
-                                                      style={{
-                                                        left: pollPieTooltip.x,
-                                                        top: pollPieTooltip.y - 10,
-                                                        transform: 'translate(-50%, -100%)',
+                                                    })}
+                                                  </motion.svg>
+                                                  <AnimatePresence>
+                                                    {pollPieTooltip ? (
+                                                      <motion.div
+                                                        key={`${pollPieTooltip.label}-${pollPieTooltip.percent}`}
+                                                        initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.92, y: 4 }}
+                                                        transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                                                        className="pointer-events-none absolute z-30 rounded-lg bg-black px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg max-w-[220px]"
+                                                        style={{
+                                                          left: pollPieTooltip.x,
+                                                          top: pollPieTooltip.y - 10,
+                                                          transform: 'translate(-50%, -100%)',
+                                                        }}
+                                                      >
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                          <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: pollPieTooltip.color }} />
+                                                          <span className="whitespace-nowrap">{pollPieTooltip.label}: {pollPieTooltip.percent}%</span>
+                                                        </span>
+                                                      </motion.div>
+                                                    ) : null}
+                                                  </AnimatePresence>
+                                                  <div className="mt-1 text-center text-[10px] font-black text-gray-500">
+                                                    {selectedTopic.totalVotes} гласа
+                                                  </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                  {normalized.map((option) => (
+                                                    <button
+                                                      key={`legend-${option.id}`}
+                                                      onClick={() => {
+                                                        if (selectedTopic.isClosed) return;
+                                                        setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
+                                                        void handleVote(option.id);
                                                       }}
+                                                      disabled={isVoting || selectedTopic.isClosed}
+                                                      type="button"
+                                                      className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 disabled:opacity-70 ${
+                                                        explodedPollOptionId === option.id ? 'border-black/30 bg-white' : 'border-gray-200 bg-white/60 hover:bg-white'
+                                                      } ${selectedTopic.isClosed ? 'cursor-default' : ''}`}
                                                     >
-                                                      <span className="inline-flex items-center gap-1.5">
-                                                        <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: pollPieTooltip.color }} />
-                                                        <span className="whitespace-nowrap">{pollPieTooltip.label}: {pollPieTooltip.percent}%</span>
-                                                      </span>
-                                                    </motion.div>
-                                                  ) : null}
-                                                </AnimatePresence>
-                                                <div className="mt-1 text-center text-[10px] font-black text-gray-500">
-                                                  {selectedTopic.totalVotes} гласа
+                                                      <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
+                                                      <span className="truncate">{option.label}</span>
+                                                      <span className="ml-auto text-gray-500 shrink-0">{Math.round(option.percent)}%</span>
+                                                    </button>
+                                                  ))}
                                                 </div>
                                               </div>
-                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                                                {normalized.map((option) => (
-                                                  <button
-                                                    key={`legend-${option.id}`}
-                                                    onClick={() => {
-                                                      if (selectedTopic.isClosed) return;
-                                                      setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
-                                                      void handleVote(option.id);
-                                                    }}
-                                                    disabled={isVoting || selectedTopic.isClosed}
-                                                    type="button"
-                                                    className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 disabled:opacity-70 ${
-                                                      explodedPollOptionId === option.id ? 'border-black/30 bg-white' : 'border-gray-200 bg-white/60 hover:bg-white'
-                                                    } ${selectedTopic.isClosed ? 'cursor-default' : ''}`}
-                                                  >
-                                                    <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
-                                                    <span className="truncate">{option.label}</span>
-                                                    <span className="ml-auto text-gray-500 shrink-0">{Math.round(option.percent)}%</span>
-                                                  </button>
-                                                ))}
-                                              </div>
+                                            </div>
+                                          );
+                                        })()}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                    {selectedTopic.isClosed ? "Анкетата е приключила" : hasVoted ? "Твоят глас" : "Гласувай с бутон"}
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-2">
+                                    {selectedTopic.voteOptions.map((option, idx) => {
+                                      const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                                      const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                                      const isOptionCelebrating =
+                                        voteFx?.type === 'poll' &&
+                                        voteFx.topicId === selectedTopic.id &&
+                                        voteFx.optionId === option.id;
+                                      const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
+                                      
+                                      if (selectedTopic.isClosed) {
+                                        return (
+                                          <div key={option.id} className="w-full px-4 py-3">
+                                            <div className="flex items-center justify-between gap-3 mb-2">
+                                              <span className="inline-flex items-center gap-2 min-w-0">
+                                                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                                <span className="text-sm font-bold text-black truncate">{option.label}</span>
+                                              </span>
+                                              <span className="text-xs font-bold text-gray-500 shrink-0">
+                                                {option.votes} гласа · {percent}%
+                                              </span>
+                                            </div>
+                                            <div className="relative h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                              <div className="h-full" style={{ backgroundColor: color, width: `${percent}%` }} />
                                             </div>
                                           </div>
                                         );
-                                      })()}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                  {selectedTopic.isClosed ? "Анкетата е приключила" : hasVoted ? "Твоят глас" : "Гласувай с бутон"}
-                                </div>
-                                <div className="grid grid-cols-1 gap-2">
-                                  {selectedTopic.voteOptions.map((option, idx) => {
-                                    const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
-                                    const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                    const isOptionCelebrating =
-                                      voteFx?.type === 'poll' &&
-                                      voteFx.topicId === selectedTopic.id &&
-                                      voteFx.optionId === option.id;
-                                    const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
-                                    
-                                    if (selectedTopic.isClosed) {
+                                      }
+
                                       return (
-                                        <div key={option.id} className="w-full px-4 py-3">
+                                        <motion.button
+                                          key={option.id}
+                                          onClick={() => handleVote(option.id)}
+                                          disabled={isVoting}
+                                          whileHover={{ y: -1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                                          whileTap={{ scale: 0.995 }}
+                                          className="group relative w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
+                                          style={{ borderColor: `${color}55` }}
+                                        >
                                           <div className="flex items-center justify-between gap-3 mb-2">
                                             <span className="inline-flex items-center gap-2 min-w-0">
-                                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                                              <span className="text-sm font-bold text-black truncate">{option.label}</span>
-                                            </span>
-                                            <span className="text-xs font-bold text-gray-500 shrink-0">
-                                              {option.votes} гласа · {percent}%
-                                            </span>
-                                          </div>
-                                          <div className="relative h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                                            <div className="h-full" style={{ backgroundColor: color, width: `${percent}%` }} />
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-
-                                    return (
-                                      <motion.button
-                                        key={option.id}
-                                        onClick={() => handleVote(option.id)}
-                                        disabled={isVoting}
-                                        whileHover={{ y: -1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-                                        whileTap={{ scale: 0.995 }}
-                                        className="group relative w-full text-left rounded-xl border bg-white px-4 py-3 transition-shadow disabled:opacity-70"
-                                        style={{ borderColor: `${color}55` }}
-                                      >
-                                        <div className="flex items-center justify-between gap-3 mb-2">
-                                          <span className="inline-flex items-center gap-2 min-w-0">
-                                            <span
-                                              className={`relative inline-flex h-4 w-4 rounded-full shrink-0 items-center justify-center transition-all ${
-                                                isOptionVoted ? 'border-2 border-black' : 'border border-transparent group-hover:border-black'
-                                              }`}
-                                              style={{ backgroundColor: color }}
-                                            >
-                                              <AnimatePresence>
-                                                {isOptionVoted ? (
-                                                  <motion.svg
-                                                    key={`check-${selectedTopic.id}-${option.id}`}
-                                                    viewBox="0 0 20 20"
-                                                    className="h-2.5 w-2.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]"
-                                                    initial={{ opacity: 0, scale: 0.4, rotate: -12 }}
-                                                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                                    exit={{ opacity: 0, scale: 0.5 }}
-                                                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                                                    aria-hidden="true"
-                                                  >
-                                                    <path
-                                                      d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
-                                                      fill="none"
-                                                      stroke="currentColor"
-                                                      strokeWidth="2.3"
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                    />
-                                                  </motion.svg>
-                                                ) : null}
-                                              </AnimatePresence>
-                                            </span>
-                                            <span className="text-sm font-bold text-black truncate">{option.label}</span>
-                                          </span>
-                                          {hasVoted && (
-                                            <motion.span
-                                              initial={{ opacity: 0, x: 10 }}
-                                              animate={{ opacity: 1, x: 0 }}
-                                              className="text-xs font-bold text-gray-500 shrink-0"
-                                            >
-                                              {option.votes} гласа · {percent}%
-                                            </motion.span>
-                                          )}
-                                        </div>
-                                        <AnimatePresence>
-                                          {hasVoted && (
-                                            <motion.div
-                                              initial={{ opacity: 0, height: 0 }}
-                                              animate={{ opacity: 1, height: 'auto' }}
-                                              className="relative pt-3 overflow-hidden"
-                                            >
-                                              <AnimatePresence>
-                                                {isOptionCelebrating ? (
-                                                  <motion.div
-                                                    key={`poll-paper-${voteFx?.token}-${option.id}`}
-                                                    initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
-                                                    animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
-                                                    exit={{ y: 8, opacity: 0 }}
-                                                    transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
-                                                  >
-                                                    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                              <span
+                                                className={`relative inline-flex h-4 w-4 rounded-full shrink-0 items-center justify-center transition-all ${
+                                                  isOptionVoted ? 'border-2 border-black' : 'border border-transparent group-hover:border-black'
+                                                }`}
+                                                style={{ backgroundColor: color }}
+                                              >
+                                                <AnimatePresence>
+                                                  {isOptionVoted ? (
+                                                    <motion.svg
+                                                      key={`check-${selectedTopic.id}-${option.id}`}
+                                                      viewBox="0 0 20 20"
+                                                      className="h-2.5 w-2.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]"
+                                                      initial={{ opacity: 0, scale: 0.4, rotate: -12 }}
+                                                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                                      exit={{ opacity: 0, scale: 0.5 }}
+                                                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                                      aria-hidden="true"
+                                                    >
                                                       <path
                                                         d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
                                                         fill="none"
@@ -1122,185 +1692,228 @@ const Index = () => {
                                                         strokeWidth="2.3"
                                                         strokeLinecap="round"
                                                         strokeLinejoin="round"
-                                                        className="text-black/90"
                                                       />
-                                                    </svg>
-                                                  </motion.div>
-                                                ) : null}
-                                              </AnimatePresence>
-                                              <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
-                                                <motion.div
-                                                  className="h-full"
-                                                  style={{ backgroundColor: color }}
-                                                  animate={{
-                                                    width: `${percent}%`,
-                                                    boxShadow: isOptionCelebrating
-                                                      ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
-                                                      : '0 0 0 rgba(0,0,0,0)',
-                                                    scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
-                                                  }}
-                                                  transition={{
-                                                    width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-                                                    boxShadow: { duration: 0.55, ease: 'easeOut' },
-                                                    scaleY: { duration: 0.35, ease: 'easeOut' },
-                                                  }}
-                                                />
-                                              </div>
-                                            </motion.div>
-                                          )}
-                                        </AnimatePresence>
-                                      </motion.button>
-                                    );
-                                  })}
-                                </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      ) : null}
-                      {selectedTopic?.contentType === 'vs' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {selectedTopic.voteOptions.map((option, idx) => {
-                            const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
-                            const tone = idx === 0 ? 'border-emerald-200' : 'border-rose-200';
-                            const isOptionCelebrating =
-                              voteFx?.type === 'vs' &&
-                              voteFx.topicId === selectedTopic.id &&
-                              voteFx.optionId === option.id;
-                            const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
-                            return (
-                              <motion.button
-                                key={option.id}
-                                onClick={() => handleVote(option.id)}
-                                disabled={isVoting}
-                                whileHover={{
-                                  y: -3,
-                                  rotateY: idx === 0 ? -4 : 4,
-                                  boxShadow: '0 16px 38px rgba(0,0,0,0.14)',
-                                }}
-                                whileTap={{ scale: 0.992 }}
-                                animate={
-                                  isOptionCelebrating
-                                    ? {
-                                        rotateX: [0, -5, 0],
-                                        rotateY: idx === 0 ? [0, -10, 0] : [0, 10, 0],
-                                        boxShadow: [
-                                          '0 10px 28px rgba(0,0,0,0.12)',
-                                          '0 24px 54px rgba(0,0,0,0.28)',
-                                          '0 10px 28px rgba(0,0,0,0.12)',
-                                        ],
-                                      }
-                                    : { rotateX: 0, rotateY: 0, boxShadow: '0 10px 28px rgba(0,0,0,0.12)' }
-                                }
-                                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                                style={{ transformStyle: 'preserve-3d' }}
-                                className={`relative rounded-xl border bg-white p-5 text-left transition-shadow disabled:opacity-70 min-h-[30rem] ${isOptionVoted ? 'border-black ring-2 ring-black/20' : tone}`}
-                              >
-                                {option.image ? (
-                                  <div className="relative mb-4">
-                                    <img src={option.image} alt={option.label} className="w-full h-72 md:h-80 object-cover object-top rounded-lg" />
-                                    <AnimatePresence>
-                                      {isOptionVoted ? (
-                                        <motion.div
-                                          initial={{ opacity: 0, scale: 0.7, y: -4 }}
-                                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                                          exit={{ opacity: 0, scale: 0.7, y: -4 }}
-                                          className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full bg-black/85 text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.28)]"
-                                          aria-label="Избрано"
-                                        >
-                                          <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
-                                            <path
-                                              d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2.3"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                            />
-                                          </svg>
-                                        </motion.div>
-                                      ) : null}
-                                    </AnimatePresence>
+                                                    </motion.svg>
+                                                  ) : null}
+                                                </AnimatePresence>
+                                              </span>
+                                              <span className="text-sm font-bold text-black truncate">{option.label}</span>
+                                            </span>
+                                            {hasVoted && (
+                                              <motion.span
+                                                initial={{ opacity: 0, x: 10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                className="text-xs font-bold text-gray-500 shrink-0"
+                                              >
+                                                {option.votes} гласа · {percent}%
+                                              </motion.span>
+                                            )}
+                                          </div>
+                                          <AnimatePresence>
+                                            {hasVoted && (
+                                              <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                className="relative pt-3 overflow-hidden"
+                                              >
+                                                <AnimatePresence>
+                                                  {isOptionCelebrating ? (
+                                                    <motion.div
+                                                      key={`poll-paper-${voteFx?.token}-${option.id}`}
+                                                      initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
+                                                      animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
+                                                      exit={{ y: 8, opacity: 0 }}
+                                                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                                                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                                    >
+                                                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                                        <path
+                                                          d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                          fill="none"
+                                                          stroke="currentColor"
+                                                          strokeWidth="2.3"
+                                                          strokeLinecap="round"
+                                                          strokeLinejoin="round"
+                                                          className="text-black/90"
+                                                        />
+                                                      </svg>
+                                                    </motion.div>
+                                                  ) : null}
+                                                </AnimatePresence>
+                                                <div className={`relative h-2 rounded-full overflow-hidden transition-colors ${isOptionCelebrating ? 'bg-black/10' : 'bg-gray-100'}`}>
+                                                  <motion.div
+                                                    className="h-full"
+                                                    style={{ backgroundColor: color }}
+                                                    animate={{
+                                                      width: `${percent}%`,
+                                                      boxShadow: isOptionCelebrating
+                                                        ? ['0 0 0 rgba(0,0,0,0)', '0 0 20px rgba(0,0,0,0.35)', '0 0 0 rgba(0,0,0,0)']
+                                                        : '0 0 0 rgba(0,0,0,0)',
+                                                      scaleY: isOptionCelebrating ? [1, 1.45, 1] : 1,
+                                                    }}
+                                                    transition={{
+                                                      width: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                                                      boxShadow: { duration: 0.55, ease: 'easeOut' },
+                                                      scaleY: { duration: 0.35, ease: 'easeOut' },
+                                                    }}
+                                                  />
+                                                </div>
+                                              </motion.div>
+                                            )}
+                                          </AnimatePresence>
+                                        </motion.button>
+                                      );
+                                    })}
                                   </div>
-                                ) : (
-                                  <div className="relative mb-4">
-                                    <div className="w-full h-72 md:h-80 rounded-lg bg-gray-100" />
-                                    <AnimatePresence>
-                                      {isOptionVoted ? (
-                                        <motion.div
-                                          initial={{ opacity: 0, scale: 0.7, y: -4 }}
-                                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                                          exit={{ opacity: 0, scale: 0.7, y: -4 }}
-                                          className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full bg-black/85 text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.28)]"
-                                          aria-label="Избрано"
-                                        >
-                                          <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
-                                            <path
-                                              d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              strokeWidth="2.3"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                            />
-                                          </svg>
-                                        </motion.div>
-                                      ) : null}
-                                    </AnimatePresence>
-                                  </div>
-                                )}
-                                <p className="text-lg font-black text-black mb-2">{option.label}</p>
-                                <p className="text-xs font-bold text-gray-500 mb-3">{option.votes} гласа</p>
-                                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                                  <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
-                                </div>
-                                <AnimatePresence>
-                                  {isOptionCelebrating ? (
-                                    <div className="pointer-events-none absolute inset-0 overflow-visible">
-                                      {Array.from({ length: 34 }).map((_, emojiIdx) => {
-                                        const palette = ['❤️', '❤️', '❤️', '👍', '👍', '🔥', '👏', '💥', '🎉', '💚', '✨'];
-                                        const emoji = palette[emojiIdx % palette.length];
-                                        const spread = 36 + (emojiIdx % 10) * 18;
-                                        const direction = emojiIdx % 2 === 0 ? 1 : -1;
-                                        const x = direction * spread;
-                                        const y = -70 - (emojiIdx % 7) * 24;
-                                        return (
-                                        <motion.span
-                                          key={`${emoji}-${emojiIdx}-${voteFx?.token}`}
-                                          initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }}
-                                          animate={{
-                                            opacity: [0, 1, 0],
-                                            x,
-                                            y,
-                                            scale: [0.45, 1.25, 0.95],
-                                            rotate: (emojiIdx % 2 === 0 ? 1 : -1) * (24 + (emojiIdx % 5) * 8),
-                                          }}
-                                          transition={{ duration: 0.95, delay: emojiIdx * 0.012, ease: 'easeOut' }}
-                                          className="absolute left-1/2 top-[58%] text-2xl"
-                                        >
-                                          {emoji}
-                                        </motion.span>
-                                        );
-                                      })}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : null}
+                        {selectedTopic?.contentType === 'vs' ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {selectedTopic.voteOptions.map((option, idx) => {
+                              const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
+                              const tone = idx === 0 ? 'border-emerald-200' : 'border-rose-200';
+                              const isOptionCelebrating =
+                                voteFx?.type === 'vs' &&
+                                voteFx.topicId === selectedTopic.id &&
+                                voteFx.optionId === option.id;
+                              const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
+                              return (
+                                <motion.button
+                                  key={option.id}
+                                  onClick={() => handleVote(option.id)}
+                                  disabled={isVoting}
+                                  whileHover={{
+                                    y: -3,
+                                    rotateY: idx === 0 ? -4 : 4,
+                                    boxShadow: '0 16px 38px rgba(0,0,0,0.14)',
+                                  }}
+                                  whileTap={{ scale: 0.992 }}
+                                  animate={
+                                    isOptionCelebrating
+                                      ? {
+                                          rotateX: [0, -5, 0],
+                                          rotateY: idx === 0 ? [0, -10, 0] : [0, 10, 0],
+                                          boxShadow: [
+                                            '0 10px 28px rgba(0,0,0,0.12)',
+                                            '0 24px 54px rgba(0,0,0,0.28)',
+                                            '0 10px 28px rgba(0,0,0,0.12)',
+                                          ],
+                                        }
+                                      : { rotateX: 0, rotateY: 0, boxShadow: '0 10px 28px rgba(0,0,0,0.12)' }
+                                  }
+                                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                                  style={{ transformStyle: 'preserve-3d' }}
+                                  className={`relative rounded-xl border bg-white p-5 text-left transition-shadow disabled:opacity-70 min-h-[30rem] ${isOptionVoted ? 'border-black ring-2 ring-black/20' : tone}`}
+                                >
+                                  {option.image ? (
+                                    <div className="relative mb-4">
+                                      <img src={option.image} alt={option.label} className="w-full h-72 md:h-80 object-cover object-top rounded-lg" />
+                                      <AnimatePresence>
+                                        {isOptionVoted ? (
+                                          <motion.div
+                                            initial={{ opacity: 0, scale: 0.7, y: -4 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.7, y: -4 }}
+                                            className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full bg-black/85 text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.28)]"
+                                            aria-label="Избрано"
+                                          >
+                                            <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+                                              <path
+                                                d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2.3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                              />
+                                            </svg>
+                                          </motion.div>
+                                        ) : null}
+                                      </AnimatePresence>
                                     </div>
-                                  ) : null}
-                                </AnimatePresence>
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      ) : null}
-                      <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">
-                        {selectedTopic?.isClosed
-                          ? 'Гласуването за тази анкета е приключило'
-                          : selectedTopic?.contentType === 'poll' && selectedTopic.pollAllowMultiple
-                          ? 'Можеш да избереш 1 или повече отговора'
-                          : 'Избери само един отговор'}
-                      </p>
-                    </div>
-                  )}
+                                  ) : (
+                                    <div className="relative mb-4">
+                                      <div className="w-full h-72 md:h-80 rounded-lg bg-gray-100" />
+                                      <AnimatePresence>
+                                        {isOptionVoted ? (
+                                          <motion.div
+                                            initial={{ opacity: 0, scale: 0.7, y: -4 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.7, y: -4 }}
+                                            className="absolute top-2 right-2 z-20 h-7 w-7 rounded-full bg-black/85 text-white inline-flex items-center justify-center shadow-[0_6px_14px_rgba(0,0,0,0.28)]"
+                                            aria-label="Избрано"
+                                          >
+                                            <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
+                                              <path
+                                                d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2.3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                              />
+                                            </svg>
+                                          </motion.div>
+                                        ) : null}
+                                      </AnimatePresence>
+                                    </div>
+                                  )}
+                                  <p className="text-lg font-black text-black mb-2">{option.label}</p>
+                                  <p className="text-xs font-bold text-gray-500 mb-3">{option.votes} гласа</p>
+                                  <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                    <div className={`h-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${percent}%` }} />
+                                  </div>
+                                  <AnimatePresence>
+                                    {isOptionCelebrating ? (
+                                      <div className="pointer-events-none absolute inset-0 overflow-visible">
+                                        {Array.from({ length: 34 }).map((_, emojiIdx) => {
+                                          const palette = ['❤️', '❤️', '❤️', '👍', '👍', '🔥', '👏', '💥', '🎉', '💚', '✨'];
+                                          const emoji = palette[emojiIdx % palette.length];
+                                          const spread = 36 + (emojiIdx % 10) * 18;
+                                          const direction = emojiIdx % 2 === 0 ? 1 : -1;
+                                          const x = direction * spread;
+                                          const y = -70 - (emojiIdx % 7) * 24;
+                                          return (
+                                          <motion.span
+                                            key={`${emoji}-${emojiIdx}-${voteFx?.token}`}
+                                            initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }}
+                                            animate={{
+                                              opacity: [0, 1, 0],
+                                              x,
+                                              y,
+                                              scale: [0.45, 1.25, 0.95],
+                                              rotate: (emojiIdx % 2 === 0 ? 1 : -1) * (24 + (emojiIdx % 5) * 8),
+                                            }}
+                                            transition={{ duration: 0.95, delay: emojiIdx * 0.012, ease: 'easeOut' }}
+                                            className="absolute left-1/2 top-[58%] text-2xl"
+                                          >
+                                            {emoji}
+                                          </motion.span>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : null}
+                                  </AnimatePresence>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                        <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">
+                          {selectedTopic?.isClosed
+                            ? 'Гласуването за тази анкета е приключило'
+                            : selectedTopic?.contentType === 'poll' && selectedTopic.pollAllowMultiple
+                            ? 'Можеш да избереш 1 или повече отговора'
+                            : 'Избери само един отговор'}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
                 </motion.div>
-              </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
