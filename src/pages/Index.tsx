@@ -1102,19 +1102,19 @@ const Index = () => {
                                             <motion.div
                                               initial={{ opacity: 0, height: 0 }}
                                               animate={{ opacity: 1, height: 'auto' }}
-                                              className="relative pt-3 overflow-hidden"
+                                              className="relative pt-3 overflow-visible"
                                             >
                                               <AnimatePresence>
                                                 {isOptionCelebrating ? (
                                                   <motion.div
                                                     key={`poll-paper-${voteFx?.token}-${option.id}`}
-                                                    initial={{ y: -34, opacity: 0, rotate: -6, scale: 0.78 }}
+                                                    initial={{ y: -45, opacity: 0, rotate: -6, scale: 0.78 }}
                                                     animate={{ y: 2, opacity: 1, rotate: 0, scale: 1 }}
                                                     exit={{ y: 8, opacity: 0 }}
                                                     transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                                                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-18px] h-7 w-5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
+                                                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[-28px] h-9 w-6.5 rounded-[4px] bg-white border border-black/70 shadow-[0_8px_16px_rgba(0,0,0,0.2)] z-20 flex items-center justify-center"
                                                   >
-                                                    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" aria-hidden="true">
+                                                    <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
                                                       <path
                                                         d="M3 10 C5 12, 6 14, 8 16 C10 12, 13 8, 17 5"
                                                         fill="none"
