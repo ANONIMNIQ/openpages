@@ -775,6 +775,7 @@ const Index = () => {
             <motion.div 
               key="detail-container"
               className="w-full max-w-[46rem] mx-auto h-screen relative overflow-hidden"
+              style={{ perspective: '1200px' }}
             >
               {/* Page Flip Effect Layer (Desktop Only) */}
               <AnimatePresence>
