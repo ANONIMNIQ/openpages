@@ -108,7 +108,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
           <CounterIcon size={14} /> {argumentsCount} {countLabel}
         </div>
-        <div className={`text-[10px] font-black uppercase tracking-widest ${resolvedMetricStyle ? '' : accentText}`} style={resolvedMetricStyle}>
+        <div 
+          className={`text-[10px] font-black uppercase tracking-widest ${showResults ? (resolvedMetricStyle ? '' : accentText) : 'text-gray-400'}`} 
+          style={showResults ? resolvedMetricStyle : undefined}
+        >
           {isClosed ? (
             <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
           ) : showResults ? (
