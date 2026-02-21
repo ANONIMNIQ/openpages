@@ -288,7 +288,7 @@ const Index = () => {
   }, []);
 
   const handleVote = async (optionId: string) => {
-    if (!selectedTopic || selectedTopic.contentType === 'debate' || isVoting) return;
+    if (!selectedTopic || selectedTopic.contentType === 'debate' || isVoting || selectedTopic.isClosed) return;
     setIsVoting(true);
     try {
       const allowMultiple = selectedTopic.contentType === 'poll' ? Boolean(selectedTopic.pollAllowMultiple) : false;
@@ -382,7 +382,7 @@ const Index = () => {
     setIsListSkeletonHold(true);
     const timeoutId = window.setTimeout(() => setIsListSkeletonHold(false), 520);
     return () => {
-      window.clearTimeout(timeoutId);
+      window.clearTimeout(introTimeoutId);
     };
   }, [isBootBarComplete]);
 
@@ -740,6 +740,7 @@ const Index = () => {
                         dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
                         onClick={() => handleOpenTopic(topic.id)}
                         hasVoted={hasVoted}
+                        isClosed={topic.isClosed}
                       />
                     );
                   })}
@@ -788,7 +789,11 @@ const Index = () => {
                   ) : (
                     <>
                       <div className="flex items-center gap-3 mb-8">
-                        {selectedTopic?.tag ? (
+                        {selectedTopic?.isClosed ? (
+                          <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                            ПРИКЛЮЧИЛА АНКЕТА
+                          </span>
+                        ) : selectedTopic?.tag ? (
                           <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
                             {selectedTopic.tagIcon ? `${selectedTopic.tagIcon} ${selectedTopic.tag}` : selectedTopic.tag}
                           </span>
@@ -851,10 +856,11 @@ const Index = () => {
                         <div className="space-y-6">
                           {(() => {
                             const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
+                            const showResults = hasVoted || selectedTopic.isClosed;
                             return (
                               <>
                                 <AnimatePresence>
-                                  {hasVoted && (
+                                  {showResults && (
                                     <motion.div
                                       initial={{ opacity: 0, height: 0 }}
                                       animate={{ opacity: 1, height: 'auto' }}
@@ -927,8 +933,8 @@ const Index = () => {
                                                           strokeWidth="2"
                                                           initial={{ opacity: 0, scale: 0.86 }}
                                                           animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
-                                                          onMouseEnter={(event) => handlePollSliceHover(event, slice)}
-                                                          onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                                          onMouseEnter={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
+                                                          onMouseMove={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
                                                           onMouseLeave={() => setPollPieTooltip(null)}
                                                           transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                                         />
@@ -943,8 +949,8 @@ const Index = () => {
                                                         strokeWidth="2"
                                                         initial={{ opacity: 0, scale: 0.86 }}
                                                         animate={{ opacity: 1, scale: 1, x: explodeX, y: explodeY }}
-                                                        onMouseEnter={(event) => handlePollSliceHover(event, slice)}
-                                                        onMouseMove={(event) => handlePollSliceHover(event, slice)}
+                                                        onMouseEnter={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
+                                                        onMouseMove={(event) => !selectedTopic.isClosed && handlePollSliceHover(event, slice)}
                                                         onMouseLeave={() => setPollPieTooltip(null)}
                                                         transition={{ opacity: { duration: 0.28 }, scale: { duration: 0.32, delay: sliceIdx * 0.03 }, x: { type: "spring", stiffness: 260, damping: 20 }, y: { type: "spring", stiffness: 260, damping: 20 } }}
                                                       />
@@ -982,14 +988,15 @@ const Index = () => {
                                                   <button
                                                     key={`legend-${option.id}`}
                                                     onClick={() => {
+                                                      if (selectedTopic.isClosed) return;
                                                       setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
                                                       void handleVote(option.id);
                                                     }}
-                                                    disabled={isVoting}
+                                                    disabled={isVoting || selectedTopic.isClosed}
                                                     type="button"
                                                     className={`w-full min-w-0 h-7 px-2 rounded-md border text-[10px] font-semibold text-gray-700 transition-colors flex items-center gap-1.5 disabled:opacity-70 ${
                                                       explodedPollOptionId === option.id ? 'border-black/30 bg-white' : 'border-gray-200 bg-white/60 hover:bg-white'
-                                                    }`}
+                                                    } ${selectedTopic.isClosed ? 'cursor-default' : ''}`}
                                                   >
                                                     <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: option.color }} />
                                                     <span className="truncate">{option.label}</span>
@@ -1005,7 +1012,7 @@ const Index = () => {
                                   )}
                                 </AnimatePresence>
                                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                  {hasVoted ? "Твоят глас" : "Гласувай с бутон"}
+                                  {selectedTopic.isClosed ? "Анкетата е приключила" : hasVoted ? "Твоят глас" : "Гласувай с бутон"}
                                 </div>
                                 <div className="grid grid-cols-1 gap-2">
                                   {selectedTopic.voteOptions.map((option, idx) => {
@@ -1016,6 +1023,26 @@ const Index = () => {
                                       voteFx.topicId === selectedTopic.id &&
                                       voteFx.optionId === option.id;
                                     const isOptionVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(option.id);
+                                    
+                                    if (selectedTopic.isClosed) {
+                                      return (
+                                        <div key={option.id} className="w-full px-4 py-3">
+                                          <div className="flex items-center justify-between gap-3 mb-2">
+                                            <span className="inline-flex items-center gap-2 min-w-0">
+                                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                              <span className="text-sm font-bold text-black truncate">{option.label}</span>
+                                            </span>
+                                            <span className="text-xs font-bold text-gray-500 shrink-0">
+                                              {option.votes} гласа · {percent}%
+                                            </span>
+                                          </div>
+                                          <div className="relative h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                            <div className="h-full" style={{ backgroundColor: color, width: `${percent}%` }} />
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+
                                     return (
                                       <motion.button
                                         key={option.id}
@@ -1264,7 +1291,9 @@ const Index = () => {
                         </div>
                       ) : null}
                       <p className="text-[11px] text-gray-400 uppercase tracking-widest text-center">
-                        {selectedTopic?.contentType === 'poll' && selectedTopic.pollAllowMultiple
+                        {selectedTopic?.isClosed
+                          ? 'Гласуването за тази анкета е приключило'
+                          : selectedTopic?.contentType === 'poll' && selectedTopic.pollAllowMultiple
                           ? 'Можеш да избереш 1 или повече отговора'
                           : 'Избери само един отговор'}
                       </p>

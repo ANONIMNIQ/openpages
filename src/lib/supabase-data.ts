@@ -45,6 +45,7 @@ export interface PublishedTopic {
   contentType: ContentType;
   contentData?: Record<string, unknown> | null;
   pollAllowMultiple?: boolean;
+  isClosed?: boolean;
   argumentsCount: number;
   pro: DbArgument[];
   con: DbArgument[];
@@ -225,6 +226,10 @@ export async function fetchPublishedTopicsWithArguments() {
       pollAllowMultiple:
         contentType === "poll"
           ? Boolean((topic.content_data as { allowMultiple?: boolean } | null)?.allowMultiple)
+          : false,
+      isClosed:
+        contentType === "poll"
+          ? Boolean((topic.content_data as { isClosed?: boolean } | null)?.isClosed)
           : false,
       argumentsCount: topicArgs.length,
       pro,

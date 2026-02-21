@@ -19,6 +19,7 @@ interface TopicCardProps {
   dominantColor?: string;
   onClick: () => void;
   hasVoted?: boolean;
+  isClosed?: boolean;
 }
 
 const TopicCard: React.FC<TopicCardProps> = ({
@@ -35,6 +36,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
   dominantColor,
   onClick,
   hasVoted = false,
+  isClosed = false,
 }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const [canHover, setCanHover] = useState(false);
@@ -46,8 +48,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const resolvedMetricStyle = contentType === 'poll' && dominantColor ? { color: dominantColor } : undefined;
   const CounterIcon = contentType === 'vs' ? Swords : contentType === 'poll' ? BarChart3 : MessageSquare;
 
-  // Резултатите се показват винаги за дебати и VS, но за анкети само ако е гласувано
-  const showResults = contentType !== 'poll' || hasVoted;
+  // Резултатите се показват винаги за дебати и VS, но за анкети само ако е гласувано или е приключила
+  const showResults = contentType !== 'poll' || hasVoted || isClosed;
 
   useEffect(() => {
     percentMotion.set(0);
@@ -79,11 +81,17 @@ const TopicCard: React.FC<TopicCardProps> = ({
       onClick={onClick}
       className={`cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''}`}
     >
-      {tag ? (
+      {tag || isClosed ? (
         <div className="flex items-center gap-3 mb-4">
-          <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-            {tagIcon ? `${tagIcon} ${tag}` : tag}
-          </span>
+          {isClosed ? (
+            <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+              ПРИКЛЮЧИЛА
+            </span>
+          ) : tag ? (
+            <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+              {tagIcon ? `${tagIcon} ${tag}` : tag}
+            </span>
+          ) : null}
           <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:w-12 group-hover:bg-black' : ''}`} />
         </div>
       ) : null}
@@ -101,7 +109,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
           <CounterIcon size={14} /> {argumentsCount} {countLabel}
         </div>
         <div className={`text-[10px] font-black uppercase tracking-widest ${resolvedMetricStyle ? '' : accentText}`} style={resolvedMetricStyle}>
-          {showResults ? (
+          {isClosed ? (
+            <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
+          ) : showResults ? (
             <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
           ) : (
             "ГЛАСУВАЙ"

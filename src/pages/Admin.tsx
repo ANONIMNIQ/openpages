@@ -31,6 +31,7 @@ type VsData = {
 type PollData = {
   options: Array<{ id: string; label: string; color?: string | null }>;
   allowMultiple?: boolean;
+  isClosed?: boolean;
 };
 
 const optionId = (idx: number) => `opt-${idx + 1}`;
@@ -77,6 +78,7 @@ const asPollData = (raw: unknown): PollData => {
       color: option.color ?? defaultPollColors[idx % defaultPollColors.length],
     })),
     allowMultiple: Boolean(safe.allowMultiple),
+    isClosed: Boolean(safe.isClosed),
   };
 };
 
@@ -132,6 +134,7 @@ const Admin = () => {
   const [conText, setConText] = useState("");
   const [pollOptions, setPollOptions] = useState<PollOptionInput[]>([nextPollOption(0), nextPollOption(1)]);
   const [pollAllowMultiple, setPollAllowMultiple] = useState(false);
+  const [pollIsClosed, setPollIsClosed] = useState(false);
   const [vsLeftName, setVsLeftName] = useState("");
   const [vsRightName, setVsRightName] = useState("");
   const [vsLeftImage, setVsLeftImage] = useState("");
@@ -150,6 +153,7 @@ const Admin = () => {
   const [editCustomTagIcon, setEditCustomTagIcon] = useState("");
   const [editPollOptions, setEditPollOptions] = useState<PollOptionInput[]>([nextPollOption(0), nextPollOption(1)]);
   const [editPollAllowMultiple, setEditPollAllowMultiple] = useState(false);
+  const [editPollIsClosed, setEditPollIsClosed] = useState(false);
   const [editVsLeftName, setEditVsLeftName] = useState("");
   const [editVsRightName, setEditVsRightName] = useState("");
   const [editVsLeftImage, setEditVsLeftImage] = useState("");
@@ -226,6 +230,7 @@ const Admin = () => {
     setConText("");
     setPollOptions([nextPollOption(0), nextPollOption(1)]);
     setPollAllowMultiple(false);
+    setPollIsClosed(false);
     setVsLeftName("");
     setVsRightName("");
     setVsLeftImage("");
@@ -233,7 +238,7 @@ const Admin = () => {
   };
 
   const getCreateContentData = () => {
-    if (contentType === "poll") return { ...toPollData(pollOptions), allowMultiple: pollAllowMultiple };
+    if (contentType === "poll") return { ...toPollData(pollOptions), allowMultiple: pollAllowMultiple, isClosed: pollIsClosed };
     if (contentType === "vs") {
       return {
         left: { id: "left", name: vsLeftName.trim(), image: vsLeftImage || null },
@@ -244,7 +249,7 @@ const Admin = () => {
   };
 
   const getEditContentData = () => {
-    if (editContentType === "poll") return { ...toPollData(editPollOptions), allowMultiple: editPollAllowMultiple };
+    if (editContentType === "poll") return { ...toPollData(editPollOptions), allowMultiple: editPollAllowMultiple, isClosed: editPollIsClosed };
     if (editContentType === "vs") {
       return {
         left: { id: "left", name: editVsLeftName.trim(), image: editVsLeftImage || null },
@@ -453,6 +458,7 @@ const Admin = () => {
           : [nextPollOption(0), nextPollOption(1)]
       );
       setEditPollAllowMultiple(Boolean(poll.allowMultiple));
+      setEditPollIsClosed(Boolean(poll.isClosed));
       setEditVsLeftName("");
       setEditVsRightName("");
       setEditVsLeftImage("");
@@ -465,11 +471,13 @@ const Admin = () => {
       setEditVsRightImage(vs.right.image ?? "");
       setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
       setEditPollAllowMultiple(false);
+      setEditPollIsClosed(false);
       setEditCustomTag("");
       setEditCustomTagIcon("");
     } else {
       setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
       setEditPollAllowMultiple(false);
+      setEditPollIsClosed(false);
       setEditVsLeftName("");
       setEditVsRightName("");
       setEditVsLeftImage("");
@@ -490,6 +498,7 @@ const Admin = () => {
     setEditCustomTagIcon("");
     setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
     setEditPollAllowMultiple(false);
+    setEditPollIsClosed(false);
     setEditVsLeftName("");
     setEditVsRightName("");
     setEditVsLeftImage("");
@@ -972,10 +981,16 @@ const Admin = () => {
                     ) : null}
                     {editContentType === "poll" ? (
                       <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm text-gray-700">
-                          <input type="checkbox" checked={editPollAllowMultiple} onChange={(e) => setEditPollAllowMultiple(e.target.checked)} />
-                          Позволи 1 или повече отговора
-                        </label>
+                        <div className="flex flex-wrap gap-4">
+                          <label className="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" checked={editPollAllowMultiple} onChange={(e) => setEditPollAllowMultiple(e.target.checked)} />
+                            Позволи 1 или повече отговора
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-rose-700 font-bold">
+                            <input type="checkbox" checked={editPollIsClosed} onChange={(e) => setEditPollIsClosed(e.target.checked)} />
+                            ПРИКЛЮЧИЛА АНКЕТА
+                          </label>
+                        </div>
                         {editPollOptions.map((option, idx) => (
                           <div key={option.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
                             <input
@@ -1091,10 +1106,16 @@ const Admin = () => {
 
             {contentType === "poll" ? (
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={pollAllowMultiple} onChange={(e) => setPollAllowMultiple(e.target.checked)} />
-                  Позволи 1 или повече отговора
-                </label>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" checked={pollAllowMultiple} onChange={(e) => setPollAllowMultiple(e.target.checked)} />
+                    Позволи 1 или повече отговора
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-rose-700 font-bold">
+                    <input type="checkbox" checked={pollIsClosed} onChange={(e) => setPollIsClosed(e.target.checked)} />
+                    ПРИКЛЮЧИЛА АНКЕТА
+                  </label>
+                </div>
                 {pollOptions.map((option, idx) => (
                   <div key={option.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
                     <input
