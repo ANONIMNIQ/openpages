@@ -75,7 +75,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
     return () => media.removeEventListener('change', sync);
   }, []);
 
-  // "Tall" cards should now look like the featured frameless ones
   const isBoxed = isCompact && !isTall;
 
   if (isBoxed) {
@@ -142,7 +141,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={onClick}
-      className={`cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''} ${isTall ? 'h-full flex flex-col justify-between' : ''}`}
+      className={`cursor-pointer border-b border-gray-100 py-10 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''} ${isTall ? 'h-full flex flex-col justify-between' : ''}`}
     >
       <div>
         {tag || isClosed ? (
@@ -164,7 +163,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
           {title}
         </h2>
         
-        <p className="text-sm text-gray-500 mb-6 line-clamp-3 max-w-md leading-relaxed">
+        <p className="text-sm text-gray-500 mb-6 line-clamp-3 max-w-2xl leading-relaxed">
           {description}
         </p>
       </div>
