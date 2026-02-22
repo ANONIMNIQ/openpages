@@ -51,19 +51,19 @@ const EmojiBurst = ({ token }: { token: number }) => {
   const emojis = ['🔥', '✨', '👏', '🎉', '❤️', '👍', '🌟', '🚀'];
   return (
     <div className="absolute inset-0 pointer-events-none z-50">
-      {Array.from({ length: 20 }).map((_, i) => (
+      {Array.from({ length: 25 }).map((_, i) => (
         <motion.span
           key={`${token}-${i}`}
           initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
           animate={{ 
             opacity: [0, 1, 1, 0], 
-            scale: [0, 1.5, 1, 0.5], 
-            y: -250 - Math.random() * 200, 
-            x: (Math.random() - 0.5) * 400,
-            rotate: (Math.random() - 0.5) * 90
+            scale: [0, 1.8, 1.2, 0.6], 
+            y: -300 - Math.random() * 300, 
+            x: (Math.random() - 0.5) * 600,
+            rotate: (Math.random() - 0.5) * 180
           }}
-          transition={{ duration: 1.5, ease: "easeOut", delay: Math.random() * 0.1 }}
-          className="text-3xl absolute left-1/2 top-1/2"
+          transition={{ duration: 2, ease: "easeOut", delay: Math.random() * 0.15 }}
+          className="text-4xl absolute left-1/2 top-1/2"
         >
           {emojis[i % emojis.length]}
         </motion.span>
@@ -395,6 +395,7 @@ const Index = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
               className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >
               <header className="mb-8">
@@ -487,7 +488,13 @@ const Index = () => {
                   })();
 
                   return (
-                    <div key={topic.id} className={gridClasses}>
+                    <motion.div 
+                      key={topic.id} 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className={gridClasses}
+                    >
                       <TopicCard
                         title={topic.title}
                         description={topic.description}
@@ -506,7 +513,7 @@ const Index = () => {
                         hasVoted={(votedOptionIdsByTopic[topic.id] ?? []).length > 0}
                         isClosed={topic.isClosed}
                       />
-                    </div>
+                    </motion.div>
                   );
                 })}
                 {!isTopicsLoading && hasMoreTopics && (
@@ -593,11 +600,6 @@ const Index = () => {
                     </div>
                   ) : selectedTopic?.contentType === 'poll' ? (
                     <div className="space-y-8">
-                      <div className="text-center mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">
-                          {(votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 ? 'Твоят глас' : 'Гласувай с бутон'}
-                        </span>
-                      </div>
                       {((votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 || selectedTopic.isClosed) && (
                         <div className="relative rounded-2xl border border-gray-100 bg-[#fafafa] p-6">
                           <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Резултати</div>
@@ -700,6 +702,9 @@ const Index = () => {
                         })}
                       </div>
                       <div className="text-center pt-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 block mb-2">
+                          {(votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 ? 'Твоят глас' : 'Гласувай с бутон'}
+                        </span>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                           {selectedTopic.pollAllowMultiple ? 'Можеш да избереш повече от един отговор' : 'Избери само един отговор'}
                         </span>
@@ -721,16 +726,18 @@ const Index = () => {
                               disabled={isVoting || selectedTopic.isClosed}
                               whileHover={{ y: -6, shadow: "0 25px 50px -12px rgba(0, 0, 0, 0.08)" }}
                               whileTap={{ rotateX: idx === 0 ? -5 : 5, rotateY: idx === 0 ? 5 : -5, scale: 0.98 }}
-                              className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}
+                              className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}
                             >
-                              {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl mb-6" />}
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-xl font-black">{opt.label}</h3>
+                              <div className="relative mb-6">
+                                {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl" />}
                                 {isSelected && (
-                                  <div className="h-6 w-6 rounded-full bg-black text-white flex items-center justify-center shrink-0">
-                                    <Check size={14} strokeWidth={3} />
+                                  <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/80 backdrop-blur-sm text-white flex items-center justify-center z-10 shadow-lg">
+                                    <Check size={18} strokeWidth={3} />
                                   </div>
                                 )}
+                              </div>
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-xl font-black">{opt.label}</h3>
                               </div>
                               <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
                               <div className="mt-auto h-2 rounded-full bg-gray-100 overflow-hidden">
