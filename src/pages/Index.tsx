@@ -23,18 +23,14 @@ const BallotAnimation = ({ color }: { color: string }) => (
     className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none bg-white/40 backdrop-blur-[1px]"
   >
     <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Urn / Box */}
       <motion.div 
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="absolute bottom-2 w-16 h-12 border-2 rounded-lg bg-white shadow-lg flex flex-col items-center"
         style={{ borderColor: color }}
       >
-        {/* Slot */}
         <div className="w-10 h-1 bg-gray-200 rounded-full mt-2" />
       </motion.div>
-
-      {/* Ballot Paper */}
       <motion.div
         initial={{ y: -60, opacity: 0, rotate: -10 }}
         animate={{ 
@@ -51,8 +47,6 @@ const BallotAnimation = ({ color }: { color: string }) => (
         <div className="w-full h-0.5 bg-gray-100" />
         <div className="w-2/3 h-0.5 bg-gray-100" />
       </motion.div>
-
-      {/* Success Ring */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: [0, 1.5, 2], opacity: [0, 0.4, 0] }}
@@ -144,9 +138,8 @@ const Index = () => {
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
 
-  // Featured topics logic: use topics marked as featured, or first 4 for testing
-  const featuredTopics = topicsData.filter(t => t.isFeatured).slice(0, 4);
-  const displayFeaturedTopics = featuredTopics.length > 0 ? featuredTopics : topicsData.slice(0, 4);
+  // Featured topics logic: ONLY topics marked as featured in admin
+  const featuredTopics = topicsData.filter(t => t.isFeatured);
   
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = isTopicsLoading;
@@ -341,7 +334,6 @@ const Index = () => {
     }
   }, [selectedTopicId, scrollMainToTop]);
 
-  // Скрол до панела за аргументи при отваряне
   useEffect(() => {
     if (isComposerOpen && composerRef.current) {
       const timer = setTimeout(() => {
@@ -427,10 +419,9 @@ const Index = () => {
                 </AnimatePresence>
               </header>
 
-              {/* Featured Slider - Desktop Only */}
-              {!isMobile && !isTopicsLoading && displayFeaturedTopics.length > 0 && (
+              {!isMobile && !isTopicsLoading && featuredTopics.length > 0 && (
                 <FeaturedSlider 
-                  topics={displayFeaturedTopics} 
+                  topics={featuredTopics} 
                   onTopicClick={handleOpenTopic} 
                 />
               )}

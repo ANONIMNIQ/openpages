@@ -156,20 +156,7 @@ export async function fetchPublishedTopicsWithArguments() {
     `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
     { headers: getSupabaseHeaders(), cache: "no-store" }
   );
-  if (!topicsResponse.ok) {
-    const topicsError = await extractSupabaseError(topicsResponse);
-    const missingExtendedColumns = ["content_type", "content_data", "sort_order", "custom_tag", "is_featured"].some((column) =>
-      topicsError.toLowerCase().includes(column)
-    );
-    if (missingExtendedColumns) {
-      topicsResponse = await fetch(
-        `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&published=eq.true&order=created_at.desc`,
-        { headers: getSupabaseHeaders(), cache: "no-store" }
-      );
-    } else {
-      throw new Error(`Failed to load topics (${topicsResponse.status})`);
-    }
-  }
+  
   if (!topicsResponse.ok) throw new Error(`Failed to load topics (${topicsResponse.status})`);
   const topics = (await topicsResponse.json()) as DbTopic[];
 
@@ -206,16 +193,13 @@ export async function fetchPublishedTopicsWithArguments() {
     const voteOptions = toVoteOptions(topic, votesByTopic[topic.id] ?? {});
     const totalVotes = voteOptions.reduce((sum, option) => sum + option.votes, 0);
     const parsedTag = parseStoredTag(topic.custom_tag);
-    const tag =
-      contentType === "poll"
-        ? "Анкета"
-        : contentType === "vs"
-          ? "VS"
-          : parsedTag.label ?? null;
-    const tagIcon =
-      contentType === "debate"
-        ? parsedTag.icon
-        : null;
+    
+    // Logic for tag display
+    let tag = parsedTag.label ?? null;
+    if (contentType === "poll") tag = "АНКЕТА";
+    if (contentType === "vs") tag = "VS";
+    
+    const tagIcon = contentType === "debate" ? parsedTag.icon : null;
 
     return {
       id: topic.id,
@@ -253,9 +237,7 @@ export async function fetchPublicMenuFilters() {
     { headers: getSupabaseHeaders() }
   );
 
-  if (!response.ok) {
-    return null;
-  }
+  if (!response.ok) return null;
 
   const rows = (await response.json()) as Array<{
     id: string;
@@ -299,9 +281,7 @@ export async function createPublicArgument(input: {
     }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to create argument (${response.status})`);
-  }
+  if (!response.ok) throw new Error(`Failed to create argument (${response.status})`);
 
   const rows = (await response.json()) as DbArgument[];
   return rows[0] ?? null;
@@ -327,9 +307,7 @@ export async function voteOnContent(input: { topicId: string; optionId: string; 
     }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to vote (${response.status})`);
-  }
+  if (!response.ok) throw new Error(`Failed to vote (${response.status})`);
 
   return (await response.json()) as Array<{ topic_id: string; option_id: string; voter_key: string }>;
 }
@@ -347,21 +325,14 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
   for (const key of candidateKeys) {
     const probeResponse = await fetch(
       `${supabaseUrl}/rest/v1/content_votes?select=voter_key&topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}&limit=1`,
-      {
-        headers: getSupabaseHeaders(),
-        cache: "no-store",
-      }
+      { headers: getSupabaseHeaders(), cache: "no-store" }
     );
-    if (!probeResponse.ok) {
-      throw new Error(`Failed to verify vote before removal (${probeResponse.status})`);
-    }
+    if (!probeResponse.ok) throw new Error(`Failed to verify vote before removal (${probeResponse.status})`);
     const rows = (await probeResponse.json()) as Array<{ voter_key: string }>;
     if (rows.length > 0) existingKeys.push(key);
   }
 
-  if (existingKeys.length === 0) {
-    return false;
-  }
+  if (existingKeys.length === 0) return false;
 
   const optionIdOnUnvote = `__unvoted__${Date.now()}`;
   for (const key of existingKeys) {
@@ -373,14 +344,10 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
           ...getSupabaseHeaders(),
           Prefer: "return=representation",
         },
-        body: JSON.stringify({
-          option_id: optionIdOnUnvote,
-        }),
+        body: JSON.stringify({ option_id: optionIdOnUnvote }),
       }
     );
-    if (!updateResponse.ok) {
-      throw new Error(`Failed to remove vote (${updateResponse.status})`);
-    }
+    if (!updateResponse.ok) throw new Error(`Failed to remove vote (${updateResponse.status})`);
     const updated = (await updateResponse.json()) as Array<{ topic_id: string }>;
     if (updated.length === 0) continue;
     return true;
