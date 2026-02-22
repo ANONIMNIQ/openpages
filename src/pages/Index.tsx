@@ -466,7 +466,7 @@ const Index = () => {
                       )}
                       
                       <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
-                        {selectedTopic.pollAllowMultiple ? 'Гласувай за 1 или повече' : 'Гласувай за 1'}
+                        {selectedTopic.pollAllowMultiple ? 'ИЗБЕРИ 1 ИЛИ ПОВЕЧЕ ОТГОВОРА' : 'ИЗБЕРИ ЕДИН ОТГОВОР'}
                       </div>
 
                       <div className="grid grid-cols-1 gap-3">
@@ -487,10 +487,10 @@ const Index = () => {
                                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mt-1">
                                       {isSelected ? (
                                         <span className="text-black flex items-center gap-1">
-                                          <Check size={10} strokeWidth={4} /> Твоят глас
+                                          <Check size={10} strokeWidth={4} /> ТВОЯТ ГЛАС
                                         </span>
                                       ) : (
-                                        <span className="text-gray-400">Гласувай</span>
+                                        <span className="text-gray-400">ГЛАСУВАЙ</span>
                                       )}
                                     </div>
                                   </div>
@@ -509,6 +509,9 @@ const Index = () => {
                     </div>
                   ) : selectedTopic.contentType === 'vs' ? (
                     <div className="space-y-8">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+                        ИЗБЕРИ ЕДИН ОТГОВОР
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {selectedTopic.voteOptions.map((opt, idx) => {
                           const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
@@ -523,10 +526,10 @@ const Index = () => {
                               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4">
                                 {isSelected ? (
                                   <span className="text-black flex items-center gap-1">
-                                    <Check size={10} strokeWidth={4} /> Твоят глас
+                                    <Check size={10} strokeWidth={4} /> ТВОЯТ ГЛАС
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400">Гласувай</span>
+                                  <span className="text-gray-400">ГЛАСУВАЙ</span>
                                 )}
                               </div>
                               <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
