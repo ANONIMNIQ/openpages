@@ -149,8 +149,6 @@ const Index = () => {
     if (topic) {
       setIsDetailOpening(true);
       navigate(buildTopicPath(topic.id, topic.title));
-      // Скролването се управлява от useEffect при смяна на темата, 
-      // за да изчака анимацията на изчезване на списъка.
       setTimeout(() => setIsDetailOpening(false), 500);
     }
   };
@@ -311,10 +309,8 @@ const Index = () => {
     }
   }, [votedOptionIdsByTopic]);
 
-  // Управление на скрола при отваряне на тема
   useEffect(() => {
     if (selectedTopicId) {
-      // Изчакваме анимацията на излизане (exit) на списъка (0.4s) да приключи
       const timer = setTimeout(() => {
         scrollMainToTop();
       }, 400);
@@ -496,7 +492,7 @@ const Index = () => {
                   <ArrowLeft size={14} /> Обратно към списъка
                 </motion.button>
 
-                <motion.header variants={detailItem} className="mb-16">
+                <motion.header variants={detailItem} className="mb-12">
                   {isDetailContentLoading ? (
                     <div>
                       <Skeleton className="h-5 w-24 mb-8" />
@@ -525,6 +521,55 @@ const Index = () => {
                   )}
                 </motion.header>
 
+                <AnimatePresence>
+                  {isComposerOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, y: -20 }}
+                      animate={{ opacity: 1, height: 'auto', y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: -20 }}
+                      className="mb-12 overflow-hidden"
+                    >
+                      <div className="bg-[#fafafa] border border-gray-100 rounded-2xl p-6">
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => setComposerType('pro')}
+                              className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-black text-lg transition-all ${composerType === 'pro' ? 'bg-emerald-500 scale-110 shadow-lg shadow-emerald-500/20' : 'bg-gray-200 hover:bg-emerald-400'}`}
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={() => setComposerType('con')}
+                              className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-black text-lg transition-all ${composerType === 'con' ? 'bg-rose-500 scale-110 shadow-lg shadow-rose-500/20' : 'bg-gray-200 hover:bg-rose-400'}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button onClick={() => setIsComposerOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <X size={18} />
+                          </button>
+                        </div>
+                        <form onSubmit={handlePublishComment} className="space-y-4">
+                          <textarea
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-sm"
+                            placeholder={`Напиши своя аргумент ${composerType === 'pro' ? 'ЗА' : 'ПРОТИВ'} анонимно...`}
+                            required
+                          />
+                          <button
+                            type="submit"
+                            disabled={isPublishingArgument}
+                            className={`w-full h-11 rounded-full font-bold uppercase text-[10px] tracking-widest text-white transition-colors ${composerType === 'pro' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`}
+                          >
+                            {isPublishingArgument ? 'Публикуване...' : 'Публикувай аргумента'}
+                          </button>
+                        </form>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <motion.div variants={detailItem}>
                   {selectedTopic?.contentType === 'debate' ? (
                     <div className="space-y-12">
@@ -533,6 +578,7 @@ const Index = () => {
                         type="pro" 
                         arguments={proArgumentsWithIds} 
                         onCreateArgument={() => { setComposerType('pro'); setIsComposerOpen(true); }}
+                        isCreateActive={isComposerOpen && composerType === 'pro'}
                         collapseAllSignal={collapseAllSignal}
                         onCollapseAllRequest={handleCollapseAllStacks}
                         globalFocusedStackType={activeCommentStackType}
@@ -543,6 +589,7 @@ const Index = () => {
                         type="con" 
                         arguments={conArgumentsWithIds} 
                         onCreateArgument={() => { setComposerType('con'); setIsComposerOpen(true); }}
+                        isCreateActive={isComposerOpen && composerType === 'con'}
                         collapseAllSignal={collapseAllSignal}
                         onCollapseAllRequest={handleCollapseAllStacks}
                         globalFocusedStackType={activeCommentStackType}
@@ -727,38 +774,6 @@ const Index = () => {
                   ) : null}
                 </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {isComposerOpen && (
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              className="fixed inset-x-0 bottom-0 z-50 bg-white border-t p-8 max-w-2xl mx-auto shadow-2xl rounded-t-3xl"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-black uppercase text-xs tracking-widest">Нов аргумент {composerType === 'pro' ? 'ЗА' : 'ПРОТИВ'}</h3>
-                <button onClick={() => setIsComposerOpen(false)}><X size={20} /></button>
-              </div>
-              <form onSubmit={handlePublishComment} className="space-y-4">
-                <textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className="w-full h-40 p-4 border rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none"
-                  placeholder="Напиши мнението си анонимно..."
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={isPublishingArgument}
-                  className={`w-full h-12 rounded-full font-bold uppercase text-[10px] tracking-widest text-white ${composerType === 'pro' ? 'bg-emerald-600' : 'bg-rose-600'}`}
-                >
-                  {isPublishingArgument ? 'Публикуване...' : 'Публикувай'}
-                </button>
-              </form>
             </motion.div>
           )}
         </AnimatePresence>
