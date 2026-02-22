@@ -67,19 +67,16 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
           const diff = index - currentIndex;
           const isActive = diff === 0;
           
-          // Enhanced spreading logic:
-          // xOffset: Larger multiplier for more "peeking"
-          // rotate: Slight rotation based on position in stack
-          // yOffset: Slight lift for background cards
-          
-          const xOffset = diff * 42; 
-          const rotate = diff * 2.5;
+          // Tightened spreading logic
+          const xOffset = diff * 30; 
+          const rotate = diff * 2;
           const yOffset = Math.abs(diff) * 4;
-          const scale = 1 - Math.abs(diff) * 0.06;
+          const scale = 1 - Math.abs(diff) * 0.05;
           const zIndex = 20 - Math.abs(diff);
-          const opacity = 1 - Math.abs(diff) * 0.25;
+          const opacity = 1 - Math.abs(diff) * 0.15;
           
-          const isVisible = Math.abs(diff) <= 2;
+          // Show more cards in the stack
+          const isVisible = Math.abs(diff) <= 4;
 
           const metric = (() => {
             if (topic.contentType === 'debate') {
@@ -128,9 +125,14 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
               className="absolute w-full max-w-[90%] h-full"
             >
               <div className={`
-                bg-white border border-gray-100 rounded-[2rem] h-full overflow-hidden transition-shadow duration-500
+                relative bg-white border border-gray-100 rounded-[2rem] h-full overflow-hidden transition-shadow duration-500
                 ${isActive ? 'shadow-[0_15px_45px_rgba(0,0,0,0.07)]' : 'shadow-sm'}
               `}>
+                {/* White overlay for non-active cards */}
+                <div 
+                  className={`absolute inset-0 bg-white z-10 transition-opacity duration-500 ${isActive ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} 
+                />
+                
                 <TopicCard
                   title={topic.title}
                   description={topic.description}
