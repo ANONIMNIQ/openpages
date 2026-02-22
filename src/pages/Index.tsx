@@ -317,16 +317,14 @@ const Index = () => {
                       </h1>
                       <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">Твоето анонимно мнение за актуалните теми на деня</p>
                     </div>
-                    {isMobile && (
-                      <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-50 rounded-full">
-                        {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                      </button>
-                    )}
+                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+                      {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                   </div>
                   <AnimatePresence>
-                    {(isMenuOpen || !isMobile) && (
+                    {isMenuOpen && (
                       <motion.div 
-                        initial={isMobile ? { opacity: 0, height: 0 } : { opacity: 1 }} 
+                        initial={{ opacity: 0, height: 0 }} 
                         animate={{ opacity: 1, height: 'auto' }} 
                         exit={{ opacity: 0, height: 0 }} 
                         className="flex flex-wrap gap-2 mt-6 overflow-hidden"
