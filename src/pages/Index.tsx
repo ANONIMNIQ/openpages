@@ -27,7 +27,7 @@ const Index = () => {
   const [isCollapsingStacks, setIsCollapsingStacks] = useState(false);
   const [activeCommentStackType, setActiveCommentStackType] = useState<'pro' | 'con' | null>(null);
   const [isTopicsLoading, setIsTopicsLoading] = useState(true);
-  const [topicsVisibleCount, setTopicsVisibleCount] = useState(5);
+  const [topicsVisibleCount, setTopicsVisibleCount] = useState(6);
   const [isBootBarComplete, setIsBootBarComplete] = useState(false);
   const [isListSkeletonHold, setIsListSkeletonHold] = useState(false);
   const [isDetailOpening, setIsDetailOpening] = useState(false);
@@ -133,7 +133,7 @@ const Index = () => {
 
   const handleBackToList = () => {
     resetTopicViewState();
-    setTopicsVisibleCount(5);
+    setTopicsVisibleCount(6);
     setIsDetailOpening(false);
     if (detailOpenTimeoutRef.current !== null) {
       window.clearTimeout(detailOpenTimeoutRef.current);
@@ -397,7 +397,7 @@ const Index = () => {
         if (!canceled && remoteTopics) {
           topicsDataSignatureRef.current = JSON.stringify(remoteTopics);
           setTopicsData(remoteTopics);
-          setTopicsVisibleCount(5);
+          setTopicsVisibleCount(6);
         }
         if (!canceled) {
           setMenuFilters(
@@ -465,7 +465,7 @@ const Index = () => {
   }, [isTopicsLoading, syncTopicsData]);
 
   useEffect(() => {
-    setTopicsVisibleCount(5);
+    setTopicsVisibleCount(6);
   }, [activeMenuFilterId]);
 
   useEffect(() => {
@@ -673,7 +673,7 @@ const Index = () => {
                   </AnimatePresence>
                 </header>
 
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:grid-flow-row-dense">
                   {showListSkeleton ? (
                     Array.from({ length: 3 }).map((_, idx) => (
                       <div key={`topic-skeleton-${idx}`} className="border-b border-gray-100 py-10 pr-6 rounded-xl px-4">
@@ -693,10 +693,10 @@ const Index = () => {
                       </div>
                     ))
                   ) : filteredTopics.length === 0 ? (
-                    <div className="py-12 text-sm text-gray-400">
+                    <div className="py-12 text-sm text-gray-400 md:col-span-2">
                       Няма налично съдържание за избрания филтър.
                     </div>
-                  ) : visibleTopics.map(topic => {
+                  ) : visibleTopics.map((topic, index) => {
                     const defaultMetric = (() => {
                       const proCount = topic.pro.length;
                       const conCount = topic.con.length;
@@ -724,30 +724,38 @@ const Index = () => {
                     const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
                     const hasVoted = (votedOptionIdsByTopic[topic.id] ?? []).length > 0;
 
+                    // Layout logic based on index % 6
+                    const isFeatured = index % 6 === 0;
+                    const isTall = index % 6 === 4;
+                    const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
+
                     return (
-                      <TopicCard
-                        key={topic.id}
-                        title={topic.title}
-                        description={topic.description}
-                        tag={topic.tag}
-                        tagIcon={topic.tagIcon}
-                        argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
-                        countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
-                        contentType={topic.contentType}
-                        dominantSide={metric.dominantSide}
-                        dominantPercent={metric.dominantPercent}
-                        dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
-                        dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
-                        onClick={() => handleOpenTopic(topic.id)}
-                        hasVoted={hasVoted}
-                        isClosed={topic.isClosed}
-                      />
+                      <div key={topic.id} className={gridClasses}>
+                        <TopicCard
+                          title={topic.title}
+                          description={topic.description}
+                          tag={topic.tag}
+                          tagIcon={topic.tagIcon}
+                          argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
+                          countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
+                          contentType={topic.contentType}
+                          dominantSide={metric.dominantSide}
+                          dominantPercent={metric.dominantPercent}
+                          dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
+                          dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
+                          onClick={() => handleOpenTopic(topic.id)}
+                          hasVoted={hasVoted}
+                          isClosed={topic.isClosed}
+                          isCompact={!isFeatured}
+                          isTall={isTall}
+                        />
+                      </div>
                     );
                   })}
                   {!isTopicsLoading && hasMoreTopics && filteredTopics.length > topicsVisibleCount ? (
-                    <div className="pt-5 flex justify-center">
+                    <div className="pt-5 flex justify-center md:col-span-2">
                       <button
-                        onClick={() => setTopicsVisibleCount((prev) => prev + 5)}
+                        onClick={() => setTopicsVisibleCount((prev) => prev + 6)}
                         className="h-10 px-5 rounded-full border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:border-black hover:text-black transition-colors"
                       >
                         Зареди още теми
@@ -1018,7 +1026,7 @@ const Index = () => {
                                   {selectedTopic.voteOptions.map((option, idx) => {
                                     const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
                                     const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                    const isOptionCelebrating =
+                                    const isOption celebrating =
                                       voteFx?.type === 'poll' &&
                                       voteFx.topicId === selectedTopic.id &&
                                       voteFx.optionId === option.id;

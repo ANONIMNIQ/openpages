@@ -20,6 +20,8 @@ interface TopicCardProps {
   onClick: () => void;
   hasVoted?: boolean;
   isClosed?: boolean;
+  isCompact?: boolean;
+  isTall?: boolean;
 }
 
 const TopicCard: React.FC<TopicCardProps> = ({
@@ -37,6 +39,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
   onClick,
   hasVoted = false,
   isClosed = false,
+  isCompact = false,
+  isTall = false,
 }) => {
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const [canHover, setCanHover] = useState(false);
@@ -48,7 +52,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
   const resolvedMetricStyle = contentType === 'poll' && dominantColor ? { color: dominantColor } : undefined;
   const CounterIcon = contentType === 'vs' ? Swords : contentType === 'poll' ? BarChart3 : MessageSquare;
 
-  // Резултатите се показват винаги за дебати и VS, но за анкети само ако е гласувано или е приключила
   const showResults = contentType !== 'poll' || hasVoted || isClosed;
 
   useEffect(() => {
@@ -71,6 +74,66 @@ const TopicCard: React.FC<TopicCardProps> = ({
     media.addEventListener('change', sync);
     return () => media.removeEventListener('change', sync);
   }, []);
+
+  if (isCompact) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={canHover ? { y: -8 } : undefined}
+        onClick={onClick}
+        className={`
+          cursor-pointer bg-white border border-gray-100 p-6 rounded-2xl flex flex-col h-full transition-all duration-300
+          ${canHover ? 'hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] group' : ''}
+          ${isTall ? 'justify-between' : ''}
+        `}
+      >
+        <div>
+          {tag || isClosed ? (
+            <div className="flex items-center gap-2 mb-3">
+              {isClosed ? (
+                <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider rounded-sm">
+                  КРАЙ
+                </span>
+              ) : tag ? (
+                <span className="px-1.5 py-0.5 bg-black text-white text-[8px] font-black uppercase tracking-wider rounded-sm">
+                  {tag}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+          
+          <h2 className={`text-lg font-black leading-tight mb-4 transition-all duration-300 ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
+            {title}
+          </h2>
+        </div>
+
+        <div className="mt-auto pt-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+              <CounterIcon size={12} /> {argumentsCount}
+            </div>
+            <div 
+              className={`text-[9px] font-black uppercase tracking-widest ${showResults ? (resolvedMetricStyle ? '' : accentText) : 'text-gray-400'}`} 
+              style={showResults ? resolvedMetricStyle : undefined}
+            >
+              {showResults ? `${animatedPercent}%` : "ГЛАСУВАЙ"}
+            </div>
+          </div>
+          <div className="h-1 rounded-full bg-gray-50 overflow-hidden">
+            <motion.div
+              className={`h-full ${resolvedBarStyle ? '' : accentBar}`}
+              style={resolvedBarStyle}
+              initial={{ width: 0 }}
+              animate={{ width: showResults ? `${dominantPercent}%` : 0 }}
+              transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+            />
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
