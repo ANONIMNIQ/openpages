@@ -62,12 +62,12 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
         </div>
       </div>
 
-      <div className="relative h-[230px] w-full flex justify-center items-center perspective-1000">
+      {/* Increased height to 280px for better padding management */}
+      <div className="relative h-[280px] w-full flex justify-center items-center perspective-1000">
         {topics.map((topic, index) => {
           const diff = index - currentIndex;
           const isActive = diff === 0;
           
-          // Tightened spreading logic
           const xOffset = diff * 30; 
           const rotate = diff * 2;
           const yOffset = Math.abs(diff) * 4;
@@ -75,7 +75,6 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
           const zIndex = 20 - Math.abs(diff);
           const opacity = 1 - Math.abs(diff) * 0.15;
           
-          // Show more cards in the stack
           const isVisible = Math.abs(diff) <= 4;
 
           const metric = (() => {
@@ -128,7 +127,6 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
                 relative bg-white border border-gray-100 rounded-[2rem] h-full overflow-hidden transition-shadow duration-500
                 ${isActive ? 'shadow-[0_15px_45px_rgba(0,0,0,0.07)]' : 'shadow-sm'}
               `}>
-                {/* White overlay for non-active cards */}
                 <div 
                   className={`absolute inset-0 bg-white z-10 transition-opacity duration-500 ${isActive ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} 
                 />
