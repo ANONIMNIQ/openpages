@@ -119,14 +119,23 @@ export async function fetchAdminData(accessToken: string) {
   if (!supabaseUrl) throw new Error("Supabase is not configured");
   const headers = getSupabaseHeaders(accessToken);
 
-  const topicsResponse = await fetch(
+  let topicsResponse = await fetch(
     `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&order=sort_order.asc.nullslast,created_at.desc`,
     { headers }
   );
-  
   if (!topicsResponse.ok) {
     const topicsError = await extractSupabaseError(topicsResponse);
-    throw new Error(`Неуспешно зареждане на темите: ${topicsError}`);
+    const missingExtendedColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
+      topicsError.toLowerCase().includes(column)
+    );
+    if (missingExtendedColumns) {
+      topicsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&order=created_at.desc`,
+        { headers }
+      );
+    } else {
+      throw new Error(`Неуспешно зареждане на темите: ${topicsError}`);
+    }
   }
 
   const [argumentsResponse, commentsResponse, menuFiltersResponse] = await Promise.all([
@@ -140,7 +149,10 @@ export async function fetchAdminData(accessToken: string) {
       headers,
     }),
   ]);
-
+  if (!topicsResponse.ok) {
+    const topicsRetryError = await extractSupabaseError(topicsResponse);
+    throw new Error(`Неуспешно зареждане на темите: ${topicsRetryError}`);
+  }
   if (!argumentsResponse.ok) {
     const argumentsError = await extractSupabaseError(argumentsResponse);
     throw new Error(`Неуспешно зареждане на аргументите: ${argumentsError}`);
@@ -158,108 +170,6 @@ export async function fetchAdminData(accessToken: string) {
   };
 }
 
-export async function createTopicWithArguments(input: {
-  accessToken: string;
-  title: string;
-  description: string;
-  customTag?: string;
-  contentType?: ContentType;
-  contentData?: Record<string, unknown> | null;
-  proArguments: string[];
-  conArguments: string[];
-  isFeatured?: boolean;
-}) {
-  const supabaseUrl = getSupabaseUrl();
-  if (!supabaseUrl) throw new Error("Supabase is not configured");
-
-  const topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
-    method: "POST",
-    headers: {
-      ...getSupabaseHeaders(input.accessToken),
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify({
-      title: input.title,
-      description: input.description,
-      content_type: input.contentType ?? "debate",
-      content_data: input.contentData ?? null,
-      custom_tag: input.customTag?.trim() || null,
-      published: true,
-      is_featured: input.isFeatured ?? false,
-    }),
-  });
-
-  if (!topicResponse.ok) {
-    const error = await extractSupabaseError(topicResponse);
-    throw new Error(`Неуспешно създаване на тема: ${error}`);
-  }
-
-  const createdTopics = (await topicResponse.json()) as AdminTopic[];
-  const topic = createdTopics[0];
-  if (!topic) throw new Error("Неуспешно създаване на тема: празен отговор.");
-
-  const payload = [
-    ...input.proArguments.map((text) => ({ topic_id: topic.id, side: "pro", text, author: "Анонимен" })),
-    ...input.conArguments.map((text) => ({ topic_id: topic.id, side: "con", text, author: "Анонимен" })),
-  ];
-
-  if ((input.contentType ?? "debate") === "debate" && payload.length > 0) {
-    const argsResponse = await fetch(`${supabaseUrl}/rest/v1/arguments`, {
-      method: "POST",
-      headers: getSupabaseHeaders(input.accessToken),
-      body: JSON.stringify(payload),
-    });
-    if (!argsResponse.ok) {
-      const argsError = await extractSupabaseError(argsResponse);
-      throw new Error(`Темата е създадена, но аргументите не бяха записани: ${argsError}`);
-    }
-  }
-}
-
-export async function updateTopic(
-  accessToken: string,
-  topicId: string,
-  input: {
-    title: string;
-    description: string;
-    customTag?: string;
-    contentType?: ContentType;
-    contentData?: Record<string, unknown> | null;
-    sortOrder?: number | null;
-    published: boolean;
-    isFeatured: boolean;
-  }
-) {
-  const supabaseUrl = getSupabaseUrl();
-  if (!supabaseUrl) throw new Error("Supabase is not configured");
-
-  const payload = {
-    title: input.title,
-    description: input.description,
-    custom_tag: input.customTag?.trim() || null,
-    content_type: input.contentType ?? "debate",
-    content_data: input.contentData ?? null,
-    sort_order: input.sortOrder ?? null,
-    published: input.published,
-    is_featured: input.isFeatured,
-  };
-
-  const response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
-    method: "PATCH",
-    headers: {
-      ...getSupabaseHeaders(accessToken),
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const error = await extractSupabaseError(response);
-    throw new Error(`Неуспешно редактиране на тема: ${error}`);
-  }
-}
-
-// ... останалите методи остават непроменени
 export async function createMenuFilter(input: {
   accessToken: string;
   label: string;
@@ -360,6 +270,93 @@ export async function reorderMenuFilters(accessToken: string, orderedIds: string
   }
 }
 
+export async function createTopicWithArguments(input: {
+  accessToken: string;
+  title: string;
+  description: string;
+  customTag?: string;
+  contentType?: ContentType;
+  contentData?: Record<string, unknown> | null;
+  proArguments: string[];
+  conArguments: string[];
+  isFeatured?: boolean;
+}) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+
+  const baseTopicPayload = {
+    title: input.title,
+    description: input.description,
+    content_type: input.contentType ?? "debate",
+    content_data: input.contentData ?? null,
+    published: true,
+    is_featured: input.isFeatured ?? false,
+  };
+  const customTagValue = input.customTag?.trim() ? input.customTag.trim() : null;
+
+  let topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
+    method: "POST",
+    headers: {
+      ...getSupabaseHeaders(input.accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      ...baseTopicPayload,
+      custom_tag: customTagValue,
+    }),
+  });
+
+  // Backward compatibility if production DB still misses newer columns.
+  if (!topicResponse.ok) {
+    const insertError = await extractSupabaseError(topicResponse);
+    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
+      insertError.toLowerCase().includes(column)
+    );
+
+    if (missingTopicColumns) {
+      topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
+        method: "POST",
+        headers: {
+          ...getSupabaseHeaders(input.accessToken),
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          title: input.title,
+          description: input.description,
+          published: true,
+        }),
+      });
+    } else {
+      throw new Error(`Неуспешно създаване на тема: ${insertError}`);
+    }
+  }
+
+  if (!topicResponse.ok) {
+    const retryError = await extractSupabaseError(topicResponse);
+    throw new Error(`Неуспешно създаване на тема: ${retryError}`);
+  }
+  const createdTopics = (await topicResponse.json()) as AdminTopic[];
+  const topic = createdTopics[0];
+  if (!topic) throw new Error("Неуспешно създаване на тема: празен отговор.");
+
+  const payload = [
+    ...input.proArguments.map((text) => ({ topic_id: topic.id, side: "pro", text, author: "Анонимен" })),
+    ...input.conArguments.map((text) => ({ topic_id: topic.id, side: "con", text, author: "Анонимен" })),
+  ];
+
+  if ((input.contentType ?? "debate") === "debate" && payload.length > 0) {
+    const argsResponse = await fetch(`${supabaseUrl}/rest/v1/arguments`, {
+      method: "POST",
+      headers: getSupabaseHeaders(input.accessToken),
+      body: JSON.stringify(payload),
+    });
+    if (!argsResponse.ok) {
+      const argsError = await extractSupabaseError(argsResponse);
+      throw new Error(`Темата е създадена, но аргументите не бяха записани: ${argsError}`);
+    }
+  }
+}
+
 export async function deleteArgument(accessToken: string, argumentId: string) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
@@ -431,6 +428,67 @@ export async function updateComment(
   if (!response.ok) {
     const error = await extractSupabaseError(response);
     throw new Error(`Неуспешно редактиране на коментар: ${error}`);
+  }
+}
+
+export async function updateTopic(
+  accessToken: string,
+  topicId: string,
+  input: {
+    title: string;
+    description: string;
+    customTag?: string;
+    contentType?: ContentType;
+    contentData?: Record<string, unknown> | null;
+    sortOrder?: number | null;
+    published: boolean;
+    isFeatured: boolean;
+  }
+) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) throw new Error("Supabase is not configured");
+  let response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
+    method: "PATCH",
+    headers: {
+      ...getSupabaseHeaders(accessToken),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      title: input.title,
+      description: input.description,
+      custom_tag: input.customTag?.trim() ? input.customTag.trim() : null,
+      content_type: input.contentType ?? "debate",
+      content_data: input.contentData ?? null,
+      sort_order: input.sortOrder ?? null,
+      published: input.published,
+      is_featured: input.isFeatured,
+    }),
+  });
+  if (!response.ok) {
+    const updateError = await extractSupabaseError(response);
+    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
+      updateError.toLowerCase().includes(column)
+    );
+    if (missingTopicColumns) {
+      response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
+        method: "PATCH",
+        headers: {
+          ...getSupabaseHeaders(accessToken),
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          title: input.title,
+          description: input.description,
+          published: input.published,
+        }),
+      });
+    } else {
+      throw new Error(`Неуспешно редактиране на тема: ${updateError}`);
+    }
+  }
+  if (!response.ok) {
+    const retryError = await extractSupabaseError(response);
+    throw new Error(`Неуспешно редактиране на тема: ${retryError}`);
   }
 }
 
