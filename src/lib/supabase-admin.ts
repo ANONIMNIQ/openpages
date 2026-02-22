@@ -119,23 +119,14 @@ export async function fetchAdminData(accessToken: string) {
   if (!supabaseUrl) throw new Error("Supabase is not configured");
   const headers = getSupabaseHeaders(accessToken);
 
-  let topicsResponse = await fetch(
+  const topicsResponse = await fetch(
     `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&order=sort_order.asc.nullslast,created_at.desc`,
     { headers }
   );
+
   if (!topicsResponse.ok) {
     const topicsError = await extractSupabaseError(topicsResponse);
-    const missingExtendedColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
-      topicsError.toLowerCase().includes(column)
-    );
-    if (missingExtendedColumns) {
-      topicsResponse = await fetch(
-        `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&order=created_at.desc`,
-        { headers }
-      );
-    } else {
-      throw new Error(`Неуспешно зареждане на темите: ${topicsError}`);
-    }
+    throw new Error(`Неуспешно зареждане на темите: ${topicsError}`);
   }
 
   const [argumentsResponse, commentsResponse, menuFiltersResponse] = await Promise.all([
@@ -149,10 +140,7 @@ export async function fetchAdminData(accessToken: string) {
       headers,
     }),
   ]);
-  if (!topicsResponse.ok) {
-    const topicsRetryError = await extractSupabaseError(topicsResponse);
-    throw new Error(`Неуспешно зареждане на темите: ${topicsRetryError}`);
-  }
+
   if (!argumentsResponse.ok) {
     const argumentsError = await extractSupabaseError(argumentsResponse);
     throw new Error(`Неуспешно зареждане на аргументите: ${argumentsError}`);
@@ -284,57 +272,30 @@ export async function createTopicWithArguments(input: {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
 
-  const baseTopicPayload = {
-    title: input.title,
-    description: input.description,
-    content_type: input.contentType ?? "debate",
-    content_data: input.contentData ?? null,
-    published: true,
-    is_featured: input.isFeatured ?? false,
-  };
   const customTagValue = input.customTag?.trim() ? input.customTag.trim() : null;
 
-  let topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
+  const topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
     method: "POST",
     headers: {
       ...getSupabaseHeaders(input.accessToken),
       Prefer: "return=representation",
     },
     body: JSON.stringify({
-      ...baseTopicPayload,
+      title: input.title,
+      description: input.description,
       custom_tag: customTagValue,
+      content_type: input.contentType ?? "debate",
+      content_data: input.contentData ?? null,
+      published: true,
+      is_featured: input.isFeatured ?? false,
     }),
   });
 
-  // Backward compatibility if production DB still misses newer columns.
   if (!topicResponse.ok) {
     const insertError = await extractSupabaseError(topicResponse);
-    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
-      insertError.toLowerCase().includes(column)
-    );
-
-    if (missingTopicColumns) {
-      topicResponse = await fetch(`${supabaseUrl}/rest/v1/topics`, {
-        method: "POST",
-        headers: {
-          ...getSupabaseHeaders(input.accessToken),
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          title: input.title,
-          description: input.description,
-          published: true,
-        }),
-      });
-    } else {
-      throw new Error(`Неуспешно създаване на тема: ${insertError}`);
-    }
+    throw new Error(`Неуспешно създаване на тема: ${insertError}`);
   }
 
-  if (!topicResponse.ok) {
-    const retryError = await extractSupabaseError(topicResponse);
-    throw new Error(`Неуспешно създаване на тема: ${retryError}`);
-  }
   const createdTopics = (await topicResponse.json()) as AdminTopic[];
   const topic = createdTopics[0];
   if (!topic) throw new Error("Неуспешно създаване на тема: празен отговор.");
@@ -447,7 +408,8 @@ export async function updateTopic(
 ) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
-  let response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
     method: "PATCH",
     headers: {
       ...getSupabaseHeaders(accessToken),
@@ -464,31 +426,10 @@ export async function updateTopic(
       is_featured: input.isFeatured,
     }),
   });
+
   if (!response.ok) {
     const updateError = await extractSupabaseError(response);
-    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
-      updateError.toLowerCase().includes(column)
-    );
-    if (missingTopicColumns) {
-      response = await fetch(`${supabaseUrl}/rest/v1/topics?id=eq.${topicId}`, {
-        method: "PATCH",
-        headers: {
-          ...getSupabaseHeaders(accessToken),
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          title: input.title,
-          description: input.description,
-          published: input.published,
-        }),
-      });
-    } else {
-      throw new Error(`Неуспешно редактиране на тема: ${updateError}`);
-    }
-  }
-  if (!response.ok) {
-    const retryError = await extractSupabaseError(response);
-    throw new Error(`Неуспешно редактиране на тема: ${retryError}`);
+    throw new Error(`Неуспешно редактиране на тема: ${updateError}`);
   }
 }
 
