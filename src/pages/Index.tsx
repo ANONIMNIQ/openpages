@@ -273,6 +273,16 @@ const Index = () => {
     });
   };
 
+  const handlePollMouseMove = (e: React.MouseEvent) => {
+    if (!pollPieTooltip || !pollPieWrapRef.current) return;
+    const rect = pollPieWrapRef.current.getBoundingClientRect();
+    setPollPieTooltip(prev => prev ? {
+      ...prev,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    } : null);
+  };
+
   useEffect(() => {
     let canceled = false;
     const load = async () => {
@@ -605,7 +615,11 @@ const Index = () => {
                           <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Резултати</div>
                           <div className="flex flex-col md:flex-row items-center gap-8">
                             <div ref={pollPieWrapRef} className="relative">
-                              <svg viewBox="0 0 200 200" className="h-40 w-40 drop-shadow-xl">
+                              <svg 
+                                viewBox="0 0 200 200" 
+                                className="h-40 w-40 drop-shadow-xl"
+                                onMouseMove={handlePollMouseMove}
+                              >
                                 {(() => {
                                   const enriched = selectedTopic.voteOptions.map((opt, idx) => ({
                                     ...opt,
@@ -638,7 +652,10 @@ const Index = () => {
                                 })()}
                               </svg>
                               {pollPieTooltip && (
-                                <div className="absolute z-50 bg-black text-white text-[10px] font-bold px-2 py-1 rounded pointer-events-none" style={{ left: pollPieTooltip.x, top: pollPieTooltip.y }}>
+                                <div 
+                                  className="absolute z-50 bg-black text-white text-[10px] font-bold px-2 py-1 rounded pointer-events-none whitespace-nowrap shadow-xl" 
+                                  style={{ left: pollPieTooltip.x + 10, top: pollPieTooltip.y + 10 }}
+                                >
                                   {pollPieTooltip.label}: {pollPieTooltip.percent}%
                                 </div>
                               )}
@@ -655,6 +672,16 @@ const Index = () => {
                           </div>
                         </div>
                       )}
+                      
+                      <div className="text-center py-4">
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 block mb-2">
+                          {(votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 ? 'Твоят глас' : 'Гласувай с бутон'}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          {selectedTopic.pollAllowMultiple ? 'Можеш да избереш повече от един отговор' : 'Избери само един отговор'}
+                        </span>
+                      </div>
+
                       <div className="grid grid-cols-1 gap-3">
                         {selectedTopic.voteOptions.map((opt, idx) => {
                           const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
@@ -700,14 +727,6 @@ const Index = () => {
                             </button>
                           );
                         })}
-                      </div>
-                      <div className="text-center pt-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 block mb-2">
-                          {(votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 ? 'Твоят глас' : 'Гласувай с бутон'}
-                        </span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                          {selectedTopic.pollAllowMultiple ? 'Можеш да избереш повече от един отговор' : 'Избери само един отговор'}
-                        </span>
                       </div>
                     </div>
                   ) : selectedTopic?.contentType === 'vs' ? (
