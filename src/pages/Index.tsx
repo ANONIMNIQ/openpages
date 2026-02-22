@@ -114,19 +114,17 @@ const Index = () => {
   };
 
   const handleOpenTopic = (topicId: string) => {
-    resetTopicViewState();
-    if (detailOpenTimeoutRef.current !== null) {
-      window.clearTimeout(detailOpenTimeoutRef.current);
-    }
-    setIsDetailOpening(true);
-    setSelectedTopicId(topicId);
-    detailOpenTimeoutRef.current = window.setTimeout(() => {
-      setIsDetailOpening(false);
-      detailOpenTimeoutRef.current = null;
-    }, 620);
-    scheduleScrollDetailToTop();
     const topic = topicsData.find((item) => item.id === topicId);
     if (topic) {
+      resetTopicViewState();
+      if (detailOpenTimeoutRef.current !== null) {
+        window.clearTimeout(detailOpenTimeoutRef.current);
+      }
+      setIsDetailOpening(true);
+      detailOpenTimeoutRef.current = window.setTimeout(() => {
+        setIsDetailOpening(false);
+        detailOpenTimeoutRef.current = null;
+      }, 620);
       navigate(buildTopicPath(topic.id, topic.title));
     }
   };
@@ -470,18 +468,25 @@ const Index = () => {
 
   useEffect(() => {
     if (isTopicsLoading) return;
+    
     const topicIdFromPath = parseTopicIdFromRef(topicRef);
-    if (topicIdFromPath) {
-      const existingTopic = topicsData.find((topic) => topic.id === topicIdFromPath);
+    const queryTopicId = new URLSearchParams(location.search).get('topic');
+    const targetTopicId = topicIdFromPath || queryTopicId;
+
+    if (targetTopicId) {
+      const existingTopic = topicsData.find((topic) => topic.id === targetTopicId);
       if (!existingTopic) {
         navigate('/', { replace: true });
         return;
       }
-      const isNewDetailOpen = selectedTopicId !== topicIdFromPath;
-      if (isNewDetailOpen) {
+
+      if (selectedTopicId !== targetTopicId) {
         resetTopicViewState();
-        setIsDetailOpening(false);
-        setSelectedTopicId(topicIdFromPath);
+        // Only reset isDetailOpening if we're not already in an opening animation
+        if (!isDetailOpening) {
+          setIsDetailOpening(false);
+        }
+        setSelectedTopicId(targetTopicId);
         scheduleScrollDetailToTop();
       }
 
@@ -492,30 +497,12 @@ const Index = () => {
       return;
     }
 
-    const queryTopicId = new URLSearchParams(location.search).get('topic');
-    if (queryTopicId) {
-      const existingTopic = topicsData.find((topic) => topic.id === queryTopicId);
-      if (existingTopic) {
-        const isNewDetailOpen = selectedTopicId !== existingTopic.id;
-        if (isNewDetailOpen) {
-          resetTopicViewState();
-          setIsDetailOpening(false);
-          setSelectedTopicId(existingTopic.id);
-          scheduleScrollDetailToTop();
-        }
-        navigate(buildTopicPath(existingTopic.id, existingTopic.title), { replace: true });
-        return;
-      }
-      navigate('/', { replace: true });
-      return;
-    }
-
     if (selectedTopicId !== null) {
       resetTopicViewState();
       setIsDetailOpening(false);
       setSelectedTopicId(null);
     }
-  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId]);
+  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId, isDetailOpening]);
 
   useEffect(() => {
     return () => {
@@ -991,7 +978,6 @@ const Index = () => {
                                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                                 {normalized.map((option) => (
                                                   <button
-                                                    key={`legend-${option.id}`}
                                                     onClick={() => {
                                                       if (selectedTopic.isClosed) return;
                                                       setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
