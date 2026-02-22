@@ -296,7 +296,7 @@ const CardStack: React.FC<CardStackProps> = ({
         marginBottom: isOtherStackFocused ? 0 : 48,
       }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className={`w-full max-w-md overflow-visible ${isOtherStackFocused ? 'pointer-events-none' : ''}`}
+      className={`w-full max-w-md mx-auto overflow-visible ${isOtherStackFocused ? 'pointer-events-none' : ''}`}
     >
       <AnimatePresence initial={false}>
         {!isCommentFocusMode && (
@@ -368,8 +368,6 @@ const CardStack: React.FC<CardStackProps> = ({
             const shouldSlideOutLeft = isCommentFocusMode && cardId !== focusedCardId;
             const isStackIntroCard = isIntroPhase && isStackMode && !isCommentFocusMode;
             
-            // В стек режим картите са една върху друга с отместване
-            // В разгънат режим са просто в списък (gap-4 от контейнера)
             return (
               <React.Fragment key={cardId}>
                 <AnimatePresence>

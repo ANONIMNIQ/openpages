@@ -556,7 +556,7 @@ const Index = () => {
                       exit={{ opacity: 0, height: 0, y: -20 }}
                       className="mb-12 overflow-hidden"
                     >
-                      <div className="bg-[#fafafa] border border-gray-100 rounded-2xl p-6">
+                      <div className="w-full max-w-md mx-auto bg-[#fafafa] border border-gray-100 rounded-2xl p-6">
                         <div className="flex justify-between items-center mb-6">
                           <div className="flex gap-3">
                             <button
