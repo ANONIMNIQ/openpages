@@ -75,18 +75,19 @@ const TopicCard: React.FC<TopicCardProps> = ({
     return () => media.removeEventListener('change', sync);
   }, []);
 
-  if (isCompact) {
+  // "Tall" cards should now look like the featured frameless ones
+  const isBoxed = isCompact && !isTall;
+
+  if (isBoxed) {
     return (
       <motion.div
         layout
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={canHover ? { y: -8 } : undefined}
         onClick={onClick}
         className={`
           cursor-pointer bg-white border border-gray-100 p-6 rounded-2xl flex flex-col h-full transition-all duration-300
           ${canHover ? 'hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] group' : ''}
-          ${isTall ? 'justify-between' : ''}
         `}
       >
         <div>
@@ -140,59 +141,62 @@ const TopicCard: React.FC<TopicCardProps> = ({
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={canHover ? { x: 10 } : undefined}
       onClick={onClick}
-      className={`cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''}`}
+      className={`cursor-pointer border-b border-gray-100 py-10 pr-6 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''} ${isTall ? 'h-full flex flex-col justify-between' : ''}`}
     >
-      {tag || isClosed ? (
-        <div className="flex items-center gap-3 mb-4">
-          {isClosed ? (
-            <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-              ПРИКЛЮЧИЛА АНКЕТА
-            </span>
-          ) : tag ? (
-            <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-              {tagIcon ? `${tagIcon} ${tag}` : tag}
-            </span>
-          ) : null}
-          <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:w-12 group-hover:bg-black' : ''}`} />
-        </div>
-      ) : null}
-      
-      <h2 className={`text-2xl font-black leading-tight mb-4 transition-colors ${canHover ? 'group-hover:text-gray-800' : ''}`}>
-        {title}
-      </h2>
-      
-      <p className="text-sm text-gray-500 mb-6 line-clamp-2 max-w-md leading-relaxed">
-        {description}
-      </p>
-      
-      <div className="flex items-center justify-between gap-6 mb-4">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-          <CounterIcon size={14} /> {argumentsCount} {countLabel}
-        </div>
-        <div 
-          className={`text-[10px] font-black uppercase tracking-widest ${showResults ? (resolvedMetricStyle ? '' : accentText) : 'text-gray-400'}`} 
-          style={showResults ? resolvedMetricStyle : undefined}
-        >
-          {isClosed ? (
-            <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
-          ) : showResults ? (
-            <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
-          ) : (
-            "ГЛАСУВАЙ"
-          )}
-        </div>
+      <div>
+        {tag || isClosed ? (
+          <div className="flex items-center gap-3 mb-4">
+            {isClosed ? (
+              <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                ПРИКЛЮЧИЛА АНКЕТА
+              </span>
+            ) : tag ? (
+              <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                {tagIcon ? `${tagIcon} ${tag}` : tag}
+              </span>
+            ) : null}
+            <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:w-12 group-hover:bg-black' : ''}`} />
+          </div>
+        ) : null}
+        
+        <h2 className={`text-2xl font-black leading-tight mb-4 transition-colors ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
+          {title}
+        </h2>
+        
+        <p className="text-sm text-gray-500 mb-6 line-clamp-3 max-w-md leading-relaxed">
+          {description}
+        </p>
       </div>
+      
+      <div className="mt-auto">
+        <div className="flex items-center justify-between gap-6 mb-4">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            <CounterIcon size={14} /> {argumentsCount} {countLabel}
+          </div>
+          <div 
+            className={`text-[10px] font-black uppercase tracking-widest ${showResults ? (resolvedMetricStyle ? '' : accentText) : 'text-gray-400'}`} 
+            style={showResults ? resolvedMetricStyle : undefined}
+          >
+            {isClosed ? (
+              <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
+            ) : showResults ? (
+              <>{(dominantLabel ?? accentLabel)} {animatedPercent}%</>
+            ) : (
+              "ГЛАСУВАЙ"
+            )}
+          </div>
+        </div>
 
-      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-        <motion.div
-          className={`h-full ${resolvedBarStyle ? '' : accentBar}`}
-          style={resolvedBarStyle}
-          initial={{ width: 0 }}
-          animate={{ width: showResults ? `${dominantPercent}%` : 0 }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-        />
+        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+          <motion.div
+            className={`h-full ${resolvedBarStyle ? '' : accentBar}`}
+            style={resolvedBarStyle}
+            initial={{ width: 0 }}
+            animate={{ width: showResults ? `${dominantPercent}%` : 0 }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+          />
+        </div>
       </div>
     </motion.div>
   );
