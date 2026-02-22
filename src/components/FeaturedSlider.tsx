@@ -8,10 +8,11 @@ import TopicCard from './TopicCard';
 
 interface FeaturedSliderProps {
   topics: PublishedTopic[];
+  votedTopicIds: string[];
   onTopicClick: (id: string) => void;
 }
 
-const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick }) => {
+const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, votedTopicIds, onTopicClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (topics.length === 0) return null;
@@ -76,6 +77,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
           const opacity = 1 - Math.abs(diff) * 0.15;
           
           const isVisible = Math.abs(diff) <= 4;
+          const hasVoted = votedTopicIds.includes(topic.id);
 
           const metric = (() => {
             if (topic.contentType === 'debate') {
@@ -145,7 +147,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
                   dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
                   onClick={() => onTopicClick(topic.id)}
                   isTall={true}
-                  hasVoted={false}
+                  hasVoted={hasVoted}
                   isClosed={topic.isClosed}
                 />
               </div>

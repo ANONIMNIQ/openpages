@@ -403,7 +403,11 @@ const Index = () => {
                       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                       className="overflow-hidden"
                     >
-                      <FeaturedSlider topics={featuredTopics} onTopicClick={handleOpenTopic} />
+                      <FeaturedSlider 
+                        topics={featuredTopics} 
+                        votedTopicIds={Object.keys(votedOptionIdsByTopic).filter(id => votedOptionIdsByTopic[id]?.length > 0)}
+                        onTopicClick={handleOpenTopic} 
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
