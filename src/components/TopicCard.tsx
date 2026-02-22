@@ -110,15 +110,22 @@ const TopicCard: React.FC<TopicCardProps> = ({
         </div>
 
         <div className="mt-auto pt-4">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-400 shrink-0">
               <CounterIcon size={12} /> {argumentsCount}
             </div>
             <div 
-              className={`text-[9px] font-black uppercase tracking-widest ${showResults ? (resolvedMetricStyle ? '' : accentText) : 'text-gray-400'}`} 
+              className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest min-w-0 ${showResults ? (resolvedMetricStyle ? '' : accentText) : 'text-gray-400'}`} 
               style={showResults ? resolvedMetricStyle : undefined}
             >
-              {showResults ? `${animatedPercent}%` : "ГЛАСУВАЙ"}
+              {showResults ? (
+                <>
+                  <span className="truncate text-[8px] opacity-80 max-w-[60px]">{dominantLabel ?? accentLabel}</span>
+                  <span className="shrink-0">{animatedPercent}%</span>
+                </>
+              ) : (
+                "ГЛАСУВАЙ"
+              )}
             </div>
           </div>
           <div className="h-1 rounded-full bg-gray-50 overflow-hidden">
