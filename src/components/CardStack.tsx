@@ -450,25 +450,15 @@ const CardStack: React.FC<CardStackProps> = ({
                       animate={{ opacity: 1, height: 'auto', y: 0 }}
                       exit={{ opacity: 0, height: 0, y: 12 }}
                       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                      className="mt-3 border border-gray-100 rounded-xl p-4 md:p-5 bg-white overflow-hidden"
+                      className="mt-3 bg-[#fafafa] border border-gray-100 rounded-2xl p-6 overflow-hidden"
                     >
-                      <div className="flex items-center justify-end mb-3">
-                        <button
-                          onClick={handleCloseCommentFocus}
-                          className="h-8 w-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-black hover:bg-gray-100 transition-colors"
-                          aria-label="Затвори панела за коментари"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-
-                      <form ref={commentFormRef} onSubmit={handleCommentSubmit} className="space-y-4">
-                        <div className="flex items-center justify-center gap-3">
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="flex gap-3">
                           <button
                             type="button"
                             onClick={() => setCommentType('pro')}
-                            className={`h-10 w-10 rounded-full border text-lg font-black inline-flex items-center justify-center transition-colors ${
-                              commentType === 'pro' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500'
+                            className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-black text-lg transition-all ${
+                              commentType === 'pro' ? 'bg-emerald-500 scale-110 shadow-lg shadow-emerald-500/20' : 'bg-gray-200 hover:bg-emerald-400'
                             }`}
                             aria-label="Коментар За"
                           >
@@ -477,39 +467,48 @@ const CardStack: React.FC<CardStackProps> = ({
                           <button
                             type="button"
                             onClick={() => setCommentType('con')}
-                            className={`h-10 w-10 rounded-full border text-lg font-black inline-flex items-center justify-center transition-colors ${
-                              commentType === 'con' ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-500'
+                            className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-black text-lg transition-all ${
+                              commentType === 'con' ? 'bg-rose-500 scale-110 shadow-lg shadow-rose-500/20' : 'bg-gray-200 hover:bg-rose-400'
                             }`}
                             aria-label="Коментар Против"
                           >
-                            -
+                            +
                           </button>
                         </div>
+                        <button
+                          onClick={handleCloseCommentFocus}
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          aria-label="Затвори панела за коментари"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
 
+                      <form ref={commentFormRef} onSubmit={handleCommentSubmit} className="space-y-4">
                         <textarea
                           value={commentDraft}
                           onChange={(e) => setCommentDraft(e.target.value)}
                           placeholder="Напиши коментар към този аргумент..."
-                          className="w-full min-h-28 resize-none rounded-xl border border-gray-200 px-4 py-3 text-base md:text-sm text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition"
+                          className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
                           required
                         />
 
                         <button
                           type="submit"
-                          className={`block mx-auto h-10 px-5 rounded-full text-white text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${focusButtonTone}`}
+                          className={`w-full h-11 rounded-full font-bold uppercase text-[10px] tracking-widest text-white transition-colors ${focusButtonTone}`}
                         >
-                          Публикувай
+                          Публикувай коментара
                         </button>
                       </form>
 
-                      <div className="mt-5 pt-4 border-t border-gray-100 space-y-3">
+                      <div className="mt-8 pt-6 border-t border-gray-100 space-y-3">
                         {(commentsByCard[focusedCardId] ?? []).length > 0 ? (
                           <>
                             {(commentsByCard[focusedCardId] ?? [])
                               .slice(0, commentsVisibleCountByCard[focusedCardId] ?? 5)
                               .map((comment) => (
-                            <div key={comment.id} className="rounded-lg border border-gray-100 bg-[#fcfcfc] px-3 py-2.5">
-                              <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${comment.type === 'pro' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            <div key={comment.id} className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${comment.type === 'pro' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {comment.type === 'pro' ? 'За' : 'Против'}
                               </p>
                               <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
@@ -529,7 +528,7 @@ const CardStack: React.FC<CardStackProps> = ({
                             )}
                           </>
                         ) : (
-                          <p className="text-sm text-gray-400">Все още няма коментари към този аргумент.</p>
+                          <p className="text-sm text-gray-400 text-center py-4">Все още няма коментари към този аргумент.</p>
                         )}
                       </div>
                     </motion.div>
