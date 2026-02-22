@@ -80,11 +80,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
   if (isBoxed) {
     return (
       <motion.div
-        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={onClick}
         className={`
-          cursor-pointer bg-white border border-gray-100 p-6 rounded-2xl flex flex-col h-full transition-all duration-300
+          cursor-pointer bg-white border border-gray-100 p-6 rounded-2xl flex flex-col h-full
           ${canHover ? 'hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] group' : ''}
         `}
       >
@@ -103,7 +102,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
             </div>
           ) : null}
           
-          <h2 className={`text-lg font-black leading-tight mb-4 transition-all duration-300 line-clamp-2 min-h-[3rem] ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
+          <h2 className={`text-lg font-black leading-tight mb-4 line-clamp-2 min-h-[3rem] ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
             {title}
           </h2>
         </div>
@@ -143,11 +142,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       onClick={onClick}
       className={`
-        cursor-pointer rounded-xl transition-all duration-300
+        cursor-pointer rounded-xl
         ${isTall ? 'h-full flex flex-col pt-2 pb-6 px-6' : 'border-b border-gray-100 py-10 px-4'}
         ${canHover ? 'group' : ''}
       `}
@@ -164,11 +162,11 @@ const TopicCard: React.FC<TopicCardProps> = ({
                 {tagIcon ? `${tagIcon} ${tag}` : tag}
               </span>
             ) : null}
-            <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:bg-black' : ''}`} />
+            <div className={`h-[1px] w-8 bg-gray-100 ${canHover ? 'group-hover:bg-black' : ''}`} />
           </div>
         ) : null}
         
-        <h2 className={`text-2xl font-black leading-tight mb-4 transition-colors ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
+        <h2 className={`text-2xl font-black leading-tight mb-4 ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
           {title}
         </h2>
         
