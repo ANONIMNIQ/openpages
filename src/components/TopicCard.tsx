@@ -77,6 +77,30 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
   const isBoxed = isCompact && !isTall;
 
+  // Helper to render the badge
+  const renderBadge = (compact: boolean) => {
+    if (!tag && !isClosed) return null;
+    
+    const badgeClasses = compact 
+      ? "px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm"
+      : "px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] rounded-sm";
+
+    return (
+      <div className={`flex items-center gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
+        {isClosed ? (
+          <span className={`${badgeClasses} bg-rose-600 text-white`}>
+            {compact ? 'КРАЙ' : 'ПРИКЛЮЧИЛА АНКЕТА'}
+          </span>
+        ) : tag ? (
+          <span className={`${badgeClasses} bg-black text-white`}>
+            {tagIcon ? `${tagIcon} ${tag}` : tag}
+          </span>
+        ) : null}
+        {!compact && <div className={`h-[1px] w-8 bg-gray-100 ${canHover ? 'group-hover:bg-black' : ''}`} />}
+      </div>
+    );
+  };
+
   if (isBoxed) {
     return (
       <motion.div
@@ -88,20 +112,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
         `}
       >
         <div className="flex-1">
-          {tag || isClosed ? (
-            <div className="flex items-center gap-2 mb-3">
-              {isClosed ? (
-                <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[8px] font-black uppercase tracking-wider rounded-sm">
-                  КРАЙ
-                </span>
-              ) : tag ? (
-                <span className="px-1.5 py-0.5 bg-black text-white text-[8px] font-black uppercase tracking-wider rounded-sm">
-                  {tag}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-          
+          {renderBadge(true)}
           <h2 className={`text-lg font-black leading-tight mb-4 line-clamp-2 min-h-[3rem] ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
             {title}
           </h2>
@@ -151,20 +162,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
       `}
     >
       <div className="flex-1">
-        {tag || isClosed ? (
-          <div className="flex items-center gap-3 mb-4">
-            {isClosed ? (
-              <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                ПРИКЛЮЧИЛА АНКЕТА
-              </span>
-            ) : tag ? (
-              <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
-                {tagIcon ? `${tagIcon} ${tag}` : tag}
-              </span>
-            ) : null}
-            <div className={`h-[1px] w-8 bg-gray-100 ${canHover ? 'group-hover:bg-black' : ''}`} />
-          </div>
-        ) : null}
+        {renderBadge(false)}
         
         <h2 className={`text-2xl font-black leading-tight mb-4 ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
           {title}
