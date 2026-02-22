@@ -5,6 +5,7 @@ import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import TopicCardSkeleton from '@/components/TopicCardSkeleton';
 import FeaturedSlider from '@/components/FeaturedSlider';
+import Sidebar from '@/components/Sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check } from 'lucide-react';
@@ -291,7 +292,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
-      <main ref={mainRef} className="flex-1 border-r border-gray-100 h-screen overflow-y-auto relative overflow-x-hidden">
+      {!isMobile && <Sidebar />}
+      <main ref={mainRef} className={`flex-1 border-r border-gray-100 h-screen overflow-y-auto relative overflow-x-hidden ${!isMobile ? 'pl-16' : ''}`}>
         <AnimatePresence mode="popLayout" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
@@ -314,16 +316,23 @@ const Index = () => {
                       </h1>
                       <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">Твоето анонимно мнение за актуалните теми на деня</p>
                     </div>
-                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-50 rounded-full">
-                      {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
+                    {isMobile && (
+                      <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-50 rounded-full">
+                        {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                      </button>
+                    )}
                   </div>
                   <AnimatePresence>
-                    {isMenuOpen && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-wrap gap-2 mt-6 overflow-hidden">
-                        <button onClick={() => setActiveMenuFilterId('all')} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border ${activeMenuFilterId === 'all' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>Всички</button>
+                    {(isMenuOpen || !isMobile) && (
+                      <motion.div 
+                        initial={isMobile ? { opacity: 0, height: 0 } : { opacity: 1 }} 
+                        animate={{ opacity: 1, height: 'auto' }} 
+                        exit={{ opacity: 0, height: 0 }} 
+                        className="flex flex-wrap gap-2 mt-6 overflow-hidden"
+                      >
+                        <button onClick={() => setActiveMenuFilterId('all')} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${activeMenuFilterId === 'all' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black hover:text-black'}`}>Всички</button>
                         {menuFilters.map(f => (
-                          <button key={f.id} onClick={() => setActiveMenuFilterId(f.id)} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border ${activeMenuFilterId === f.id ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{f.label}</button>
+                          <button key={f.id} onClick={() => setActiveMenuFilterId(f.id)} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${activeMenuFilterId === f.id ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black hover:text-black'}`}>{f.label}</button>
                         ))}
                       </motion.div>
                     )}
