@@ -394,9 +394,19 @@ const Index = () => {
                   </AnimatePresence>
                 </header>
 
-                {!isTopicsLoading && featuredTopics.length > 0 && (
-                  <FeaturedSlider topics={featuredTopics} onTopicClick={handleOpenTopic} />
-                )}
+                <AnimatePresence>
+                  {!isTopicsLoading && featuredTopics.length > 0 && activeMenuFilterId === 'all' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginBottom: 40 }}
+                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <FeaturedSlider topics={featuredTopics} onTopicClick={handleOpenTopic} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:grid-flow-row-dense">
                   {isTopicsLoading ? (
@@ -471,7 +481,7 @@ const Index = () => {
                   ) : (
                     <>
                       <div className="flex items-center gap-3 mb-8">
-                        {selectedTopic.isClosed ? <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">ПРИКЛЮЧИЛА АНКЕТА</span> : selectedTopic.tag ? <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">{selectedTopic.tag}</span> : null}
+                        {selectedTopic.isClosed ? <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">ПРИКЛЮЧИЛА АНКЕТА</span> : selectedTopic.tag ? <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.15em] rounded-sm">{selectedTopic.tag}</span> : null}
                         <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest"><ShieldCheck size={12} /> 100% Анонимно</div>
                       </div>
                       <h1 className="text-3xl font-black mb-6">{selectedTopic.title}</h1>
