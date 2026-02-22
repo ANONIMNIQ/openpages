@@ -81,8 +81,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
     return (
       <motion.div
         layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         onClick={onClick}
         className={`
           cursor-pointer bg-white border border-gray-100 p-6 rounded-2xl flex flex-col h-full transition-all duration-300
@@ -145,8 +145,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       onClick={onClick}
       className={`
         cursor-pointer rounded-xl transition-all duration-300
