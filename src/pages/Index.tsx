@@ -464,6 +464,11 @@ const Index = () => {
                           </div>
                         </div>
                       )}
+                      
+                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+                        {selectedTopic.pollAllowMultiple ? 'Гласувай за 1 или повече' : 'Гласувай за 1'}
+                      </div>
+
                       <div className="grid grid-cols-1 gap-3">
                         {selectedTopic.voteOptions.map((opt, idx) => {
                           const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
@@ -477,7 +482,18 @@ const Index = () => {
                                   <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0" style={{ borderColor: color }}>
                                     {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><Check size={12} strokeWidth={4} style={{ color }} /></motion.div>}
                                   </div>
-                                  <span className="font-bold text-sm">{opt.label}</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-sm">{opt.label}</span>
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mt-1">
+                                      {isSelected ? (
+                                        <span className="text-black flex items-center gap-1">
+                                          <Check size={10} strokeWidth={4} /> Твоят глас
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-400">Гласувай</span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-4">
                                   {hasVoted && <span className="text-xs font-black">{percent}%</span>}
@@ -503,7 +519,16 @@ const Index = () => {
                                 {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl" />}
                                 {isSelected && <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/80 text-white flex items-center justify-center z-10"><Check size={18} strokeWidth={3} /></div>}
                               </div>
-                              <h3 className="text-xl font-black mb-2">{opt.label}</h3>
+                              <h3 className="text-xl font-black mb-1">{opt.label}</h3>
+                              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4">
+                                {isSelected ? (
+                                  <span className="text-black flex items-center gap-1">
+                                    <Check size={10} strokeWidth={4} /> Твоят глас
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">Гласувай</span>
+                                )}
+                              </div>
                               <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
                               <div className="mt-auto h-2 rounded-full bg-gray-100 overflow-hidden">
                                 <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
