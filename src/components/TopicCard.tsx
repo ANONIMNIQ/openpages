@@ -72,8 +72,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
     if (!tag && !isClosed) return null;
     
     const badgeClasses = compact 
-      ? "px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm"
-      : "px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] rounded-sm";
+      ? "px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-sm flex items-center gap-1.5"
+      : "px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.15em] rounded-sm flex items-center gap-2";
 
     return (
       <div className={`flex items-center gap-2 ${compact ? 'mb-3' : 'mb-4'}`}>
@@ -83,7 +83,8 @@ const TopicCard: React.FC<TopicCardProps> = ({
           </span>
         ) : tag ? (
           <span className={`${badgeClasses} bg-black text-white`}>
-            {tagIcon ? `${tagIcon} ${tag}` : tag}
+            {tagIcon && <span className="text-[1.2em] leading-none opacity-90">{tagIcon}</span>}
+            <span>{tag}</span>
           </span>
         ) : null}
         {!compact && <div className="h-[1px] w-8 bg-gray-100 group-hover:bg-black transition-colors" />}

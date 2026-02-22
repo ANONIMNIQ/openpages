@@ -254,26 +254,33 @@ const Index = () => {
     } : null);
   };
 
-  useEffect(() => {
-    let canceled = false;
-    const load = async () => {
-      setIsTopicsLoading(true);
-      try {
-        const [remoteTopics, remoteMenuFilters] = await Promise.all([
-          fetchPublishedTopicsWithArguments(),
-          fetchPublicMenuFilters(),
-        ]);
-        if (!canceled) {
-          if (remoteTopics) setTopicsData(remoteTopics);
-          if (remoteMenuFilters) setMenuFilters(remoteMenuFilters);
-        }
-      } finally {
-        if (!canceled) setIsTopicsLoading(false);
-      }
-    };
-    load();
-    return () => { canceled = true; };
+  const loadData = useCallback(async () => {
+    try {
+      const [remoteTopics, remoteMenuFilters] = await Promise.all([
+        fetchPublishedTopicsWithArguments(),
+        fetchPublicMenuFilters(),
+      ]);
+      if (remoteTopics) setTopicsData(remoteTopics);
+      if (remoteMenuFilters) setMenuFilters(remoteMenuFilters);
+    } catch (e) {
+      console.warn("Silent background update failed");
+    } finally {
+      setIsTopicsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+    
+    // Live Updates Interval
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        loadData();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

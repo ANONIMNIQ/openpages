@@ -399,7 +399,8 @@ const CardStack: React.FC<CardStackProps> = ({
                 value={argumentDraft}
                 onChange={(e) => setArgumentDraft(e.target.value)}
                 placeholder="Напиши своя аргумент тук..."
-                className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
+                className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm min-h-[16px]"
+                style={{ fontSize: '16px' }}
                 required
               />
 
@@ -582,6 +583,7 @@ const CardStack: React.FC<CardStackProps> = ({
                           onChange={(e) => setCommentDraft(e.target.value)}
                           placeholder="Напиши коментар към този аргумент..."
                           className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
+                          style={{ fontSize: '16px' }}
                           required
                         />
 
