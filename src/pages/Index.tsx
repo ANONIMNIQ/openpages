@@ -121,11 +121,13 @@ const Index = () => {
         window.clearTimeout(detailOpenTimeoutRef.current);
       }
       setIsDetailOpening(true);
+      setSelectedTopicId(topicId);
       detailOpenTimeoutRef.current = window.setTimeout(() => {
         setIsDetailOpening(false);
         detailOpenTimeoutRef.current = null;
       }, 620);
       navigate(buildTopicPath(topic.id, topic.title));
+      scheduleScrollDetailToTop(100);
     }
   };
 
@@ -380,7 +382,7 @@ const Index = () => {
     setIsListSkeletonHold(true);
     const timeoutId = window.setTimeout(() => setIsListSkeletonHold(false), 520);
     return () => {
-      window.clearTimeout(timeoutId);
+      window.clearTimeout(introTimeoutId);
     };
   }, [isBootBarComplete]);
 
@@ -482,10 +484,6 @@ const Index = () => {
 
       if (selectedTopicId !== targetTopicId) {
         resetTopicViewState();
-        // Only reset isDetailOpening if we're not already in an opening animation
-        if (!isDetailOpening) {
-          setIsDetailOpening(false);
-        }
         setSelectedTopicId(targetTopicId);
         scheduleScrollDetailToTop();
       }
@@ -502,7 +500,7 @@ const Index = () => {
       setIsDetailOpening(false);
       setSelectedTopicId(null);
     }
-  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId, isDetailOpening]);
+  }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId]);
 
   useEffect(() => {
     return () => {
@@ -522,7 +520,7 @@ const Index = () => {
         ref={mainRef}
         className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${showBootLoader ? 'overflow-hidden' : `${mainOverflowClass} overflow-x-hidden`} ${showBootLoader ? 'bg-gray-100' : 'bg-white'} relative`}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {!selectedTopicId ? (
             showBootLoader ? (
               <motion.div
@@ -978,6 +976,7 @@ const Index = () => {
                                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                                 {normalized.map((option) => (
                                                   <button
+                                                    key={`legend-${option.id}`}
                                                     onClick={() => {
                                                       if (selectedTopic.isClosed) return;
                                                       setExplodedPollOptionId((prev) => (prev === option.id ? null : option.id));
