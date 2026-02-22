@@ -12,6 +12,7 @@ import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const BallotAnimation = ({ color }: { color: string }) => (
   <motion.div
@@ -90,6 +91,7 @@ const EmojiBurst = ({ token }: { token: number }) => {
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const { topicRef } = useParams<{ topicRef?: string }>();
   
   const selectedTopicId = parseTopicIdFromRef(topicRef);
@@ -427,7 +429,11 @@ const Index = () => {
                     const isTall = i % 6 === 4;
                     return (
                       <div key={i} className={isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : ''}>
-                        <TopicCardSkeleton isCompact={!isFeatured} isFeatured={isFeatured} isTall={isTall} />
+                        <TopicCardSkeleton 
+                          isCompact={isMobile ? false : !isFeatured} 
+                          isFeatured={isMobile ? true : isFeatured} 
+                          isTall={isMobile ? false : isTall} 
+                        />
                       </div>
                     );
                   })
@@ -481,8 +487,8 @@ const Index = () => {
                         dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
                         dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
                         onClick={() => handleOpenTopic(topic.id)}
-                        isCompact={!isFeatured}
-                        isTall={isTall}
+                        isCompact={isMobile ? false : !isFeatured}
+                        isTall={isMobile ? false : isTall}
                         hasVoted={(votedOptionIdsByTopic[topic.id] ?? []).length > 0}
                         isClosed={topic.isClosed}
                       />
