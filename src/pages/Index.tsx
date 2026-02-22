@@ -5,7 +5,6 @@ import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import TopicCardSkeleton from '@/components/TopicCardSkeleton';
 import FeaturedSlider from '@/components/FeaturedSlider';
-import Sidebar from '@/components/Sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check } from 'lucide-react';
@@ -292,8 +291,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
-      {!isMobile && <Sidebar />}
-      <main ref={mainRef} className={`flex-1 border-r border-gray-100 h-screen overflow-y-auto relative overflow-x-hidden ${!isMobile ? 'pl-16' : ''}`}>
+      <main ref={mainRef} className="flex-1 border-r border-gray-100 h-screen overflow-y-auto relative overflow-x-hidden">
         <AnimatePresence mode="popLayout" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
@@ -304,7 +302,7 @@ const Index = () => {
               transition={slideTransition}
               className="w-full"
             >
-              <div className="max-w-2xl mx-auto px-8 md:px-12 py-16">
+              <div className="max-w-2xl px-8 md:px-12 py-16">
                 <header className="mb-8">
                   <div className="flex justify-between items-start">
                     <div>
@@ -316,30 +314,23 @@ const Index = () => {
                       </h1>
                       <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">Твоето анонимно мнение за актуалните теми на деня</p>
                     </div>
-                    {isMobile && (
-                      <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-50 rounded-full">
-                        {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                      </button>
-                    )}
+                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-gray-50 rounded-full">
+                      {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                   </div>
                   <AnimatePresence>
-                    {(isMenuOpen || !isMobile) && (
-                      <motion.div 
-                        initial={isMobile ? { opacity: 0, height: 0 } : { opacity: 1 }} 
-                        animate={{ opacity: 1, height: 'auto' }} 
-                        exit={{ opacity: 0, height: 0 }} 
-                        className="flex flex-wrap gap-2 mt-6 overflow-hidden"
-                      >
-                        <button onClick={() => setActiveMenuFilterId('all')} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${activeMenuFilterId === 'all' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black hover:text-black'}`}>Всички</button>
+                    {isMenuOpen && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-wrap gap-2 mt-6 overflow-hidden">
+                        <button onClick={() => setActiveMenuFilterId('all')} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border ${activeMenuFilterId === 'all' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>Всички</button>
                         {menuFilters.map(f => (
-                          <button key={f.id} onClick={() => setActiveMenuFilterId(f.id)} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${activeMenuFilterId === f.id ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black hover:text-black'}`}>{f.label}</button>
+                          <button key={f.id} onClick={() => setActiveMenuFilterId(f.id)} className={`h-8 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest border ${activeMenuFilterId === f.id ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{f.label}</button>
                         ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </header>
 
-                {!isMobile && !isTopicsLoading && featuredTopics.length > 0 && (
+                {!isTopicsLoading && featuredTopics.length > 0 && (
                   <FeaturedSlider topics={featuredTopics} onTopicClick={handleOpenTopic} />
                 )}
 
@@ -405,7 +396,7 @@ const Index = () => {
               transition={slideTransition}
               className="w-full"
             >
-              <div className="max-w-2xl mx-auto px-8 md:px-12 py-16">
+              <div className="max-w-2xl px-8 md:px-12 py-16">
                 <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
                   <ArrowLeft size={14} /> Обратно към списъка
                 </motion.button>
