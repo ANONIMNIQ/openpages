@@ -5,7 +5,7 @@ import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import TopicCardSkeleton from '@/components/TopicCardSkeleton';
 import FeaturedSlider from '@/components/FeaturedSlider';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check } from 'lucide-react';
 import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, unvoteOnContent, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
@@ -14,6 +14,55 @@ import { showError, showSuccess } from '@/utils/toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// 3D Tilt Card for VS mode
+const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; isSelected?: boolean }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+      }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-sm cursor-pointer ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100 hover:shadow-2xl'}`}
+    >
+      <div style={{ transform: "translateZ(50px)" }} className="h-full flex flex-col">
+        {children}
+      </div>
+    </motion.div>
+  );
+};
 
 const BallotAnimation = ({ color }: { color: string }) => (
   <motion.div
@@ -131,10 +180,18 @@ const Index = () => {
   
   const isDetailContentLoading = !selectedTopic && !!selectedTopicId;
 
-  const scrollMainToTop = useCallback(() => {
-    if (mainRef.current) mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, []);
+  // Optimized Scroll Control
+  useEffect(() => {
+    if (!mainRef.current) return;
+    
+    // Slight delay to allow the exit animation to start smoothly
+    // before jumping the scroll container to the top
+    const timer = setTimeout(() => {
+      mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [selectedTopicId]);
 
   const handleOpenTopic = (topicId: string) => {
     const topic = topicsData.find((item) => item.id === topicId);
@@ -145,7 +202,6 @@ const Index = () => {
 
   const handleBackToList = () => {
     navigate('/');
-    scrollMainToTop();
   };
 
   const handleCollapseAllStacks = () => {
@@ -293,7 +349,7 @@ const Index = () => {
     <div className="min-h-screen bg-[#F2F2F2] flex font-sans selection:bg-black selection:text-white">
       <main 
         ref={mainRef} 
-        className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm"
+        className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm scroll-smooth"
       >
         <AnimatePresence mode="popLayout" initial={false}>
           {!selectedTopicId ? (
@@ -426,7 +482,7 @@ const Index = () => {
                 </header>
 
                 {!isDetailContentLoading && selectedTopic && (
-                  <div>
+                  <div className="perspective-1000">
                     {selectedTopic.contentType === 'debate' ? (
                       <div className="space-y-12">
                         <CardStack 
@@ -566,9 +622,9 @@ const Index = () => {
                             const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
                             const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
                             return (
-                              <motion.button key={opt.id} onClick={() => handleVote(opt.id)} disabled={isVoting || selectedTopic.isClosed} whileHover={{ y: -6 }} className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-sm ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}>
+                              <TiltCard key={opt.id} onClick={() => handleVote(opt.id)} isSelected={isSelected}>
                                 <div className="relative mb-6">
-                                  {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl" />}
+                                  {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl shadow-lg" />}
                                   {isSelected && <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/80 text-white flex items-center justify-center z-10"><Check size={18} strokeWidth={3} /></div>}
                                 </div>
                                 <h3 className="text-xl font-black mb-1">{opt.label}</h3>
@@ -586,7 +642,7 @@ const Index = () => {
                                   <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                 </div>
                                 <AnimatePresence>{voteFx?.optionId === opt.id && <EmojiBurst token={voteFx.token} />}</AnimatePresence>
-                              </motion.button>
+                              </TiltCard>
                             );
                           })}
                         </div>
