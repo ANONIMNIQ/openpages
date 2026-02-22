@@ -18,7 +18,6 @@ const Index = () => {
   const location = useLocation();
   const { topicRef } = useParams<{ topicRef?: string }>();
   
-  // Синхронизираме избраната тема директно с URL адреса
   const selectedTopicId = parseTopicIdFromRef(topicRef);
   
   const [topicsData, setTopicsData] = useState<PublishedTopic[]>([]);
@@ -216,7 +215,6 @@ const Index = () => {
     });
   };
 
-  // Първоначално зареждане на данни
   useEffect(() => {
     let canceled = false;
     const load = async () => {
@@ -242,13 +240,11 @@ const Index = () => {
     return () => { canceled = true; };
   }, []);
 
-  // BootLoader таймер
   useEffect(() => {
     const timer = setTimeout(() => setIsBootBarComplete(true), 2300);
     return () => clearTimeout(timer);
   }, []);
 
-  // Запазване на гласовете в localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('open-pages-voted-options', JSON.stringify(votedOptionIdsByTopic));
@@ -410,12 +406,29 @@ const Index = () => {
                   const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
                   
                   // Изчисляване на метрики за визуализация
-                  const proCount = topic.pro.length;
-                  const conCount = topic.con.length;
-                  const total = Math.max(proCount + conCount, 1);
-                  const proShare = Math.round((proCount / total) * 100);
-                  const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
-                  const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
+                  const metric = (() => {
+                    if (topic.contentType === 'debate') {
+                      const proCount = topic.pro.length;
+                      const conCount = topic.con.length;
+                      const total = Math.max(proCount + conCount, 1);
+                      const proShare = Math.round((proCount / total) * 100);
+                      const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
+                      const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
+                      return { dominantSide, dominantPercent };
+                    } else {
+                      if (topic.voteOptions.length === 0) return { dominantSide: 'pro' as const, dominantPercent: 0 };
+                      const sorted = [...topic.voteOptions].sort((a, b) => b.votes - a.votes);
+                      const top = sorted[0];
+                      const dominantPercent = topic.totalVotes > 0 ? Math.round((top.votes / topic.totalVotes) * 100) : 0;
+                      const topIndex = topic.voteOptions.findIndex(o => o.id === top.id);
+                      return {
+                        dominantSide: 'pro' as const,
+                        dominantPercent,
+                        dominantLabel: top.label,
+                        dominantColor: topic.contentType === 'poll' ? (top.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][topIndex % 5]) : undefined
+                      };
+                    }
+                  })();
 
                   return (
                     <div key={topic.id} className={gridClasses}>
@@ -427,11 +440,15 @@ const Index = () => {
                         argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
                         countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
                         contentType={topic.contentType}
-                        dominantSide={dominantSide}
-                        dominantPercent={dominantPercent}
+                        dominantSide={metric.dominantSide}
+                        dominantPercent={metric.dominantPercent}
+                        dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
+                        dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
                         onClick={() => handleOpenTopic(topic.id)}
                         isCompact={!isFeatured}
                         isTall={isTall}
+                        hasVoted={(votedOptionIdsByTopic[topic.id] ?? []).length > 0}
+                        isClosed={topic.isClosed}
                       />
                     </div>
                   );
@@ -577,37 +594,89 @@ const Index = () => {
                         </div>
                       )}
                       <div className="grid grid-cols-1 gap-3">
-                        {selectedTopic.voteOptions.map(opt => (
-                          <button
-                            key={opt.id}
-                            onClick={() => handleVote(opt.id)}
-                            disabled={isVoting || selectedTopic.isClosed}
-                            className={`w-full p-4 border rounded-xl text-left transition-all flex justify-between items-center ${votedOptionIdsByTopic[selectedTopic.id]?.includes(opt.id) ? 'border-black bg-black/5' : 'hover:border-black'}`}
-                          >
-                            <span className="font-bold">{opt.label}</span>
-                            <span className="text-xs text-gray-400">{opt.votes} гласа</span>
-                          </button>
-                        ))}
+                        {selectedTopic.voteOptions.map((opt, idx) => {
+                          const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
+                          const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
+                          const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
+                          const color = opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                          
+                          return (
+                            <button
+                              key={opt.id}
+                              onClick={() => handleVote(opt.id)}
+                              disabled={isVoting || selectedTopic.isClosed}
+                              className={`relative w-full p-4 border rounded-xl text-left transition-all overflow-hidden ${isSelected ? 'border-black bg-black/5' : 'hover:border-black'}`}
+                            >
+                              <div className="relative z-10 flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-4 w-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: color }}>
+                                    {isSelected && <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />}
+                                  </div>
+                                  <span className="font-bold">{opt.label}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  {hasVoted && <span className="text-xs font-black">{percent}%</span>}
+                                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{opt.votes} гласа</span>
+                                </div>
+                              </div>
+                              {hasVoted && (
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${percent}%` }}
+                                  className="absolute left-0 top-0 h-full opacity-10 pointer-events-none"
+                                  style={{ backgroundColor: color }}
+                                />
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : selectedTopic?.contentType === 'vs' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {selectedTopic.voteOptions.map((opt, idx) => (
-                        <motion.button
-                          key={opt.id}
-                          onClick={() => handleVote(opt.id)}
-                          disabled={isVoting || selectedTopic.isClosed}
-                          whileHover={{ y: -4 }}
-                          className={`relative rounded-2xl border p-6 text-left transition-all min-h-[28rem] flex flex-col ${votedOptionIdsByTopic[selectedTopic.id]?.includes(opt.id) ? 'border-black ring-2 ring-black/10' : 'border-gray-100'}`}
-                        >
-                          {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-xl mb-6" />}
-                          <h3 className="text-xl font-black mb-2">{opt.label}</h3>
-                          <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
-                          <div className="mt-auto h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                            <div className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${selectedTopic.totalVotes > 0 ? (opt.votes / selectedTopic.totalVotes) * 100 : 0}%` }} />
-                          </div>
-                        </motion.button>
-                      ))}
+                      {selectedTopic.voteOptions.map((opt, idx) => {
+                        const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
+                        const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
+                        const isOptionCelebrating = voteFx?.optionId === opt.id;
+
+                        return (
+                          <motion.button
+                            key={opt.id}
+                            onClick={() => handleVote(opt.id)}
+                            disabled={isVoting || selectedTopic.isClosed}
+                            whileHover={{ y: -4 }}
+                            className={`relative rounded-2xl border p-6 text-left transition-all min-h-[28rem] flex flex-col ${isSelected ? 'border-black ring-2 ring-black/10' : 'border-gray-100'}`}
+                          >
+                            {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-xl mb-6" />}
+                            <h3 className="text-xl font-black mb-2">{opt.label}</h3>
+                            <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
+                            <div className="mt-auto h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percent}%` }}
+                                className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                              />
+                            </div>
+                            <AnimatePresence>
+                              {isOptionCelebrating && (
+                                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                  {Array.from({ length: 12 }).map((_, i) => (
+                                    <motion.span
+                                      key={i}
+                                      initial={{ opacity: 0, scale: 0, y: 0 }}
+                                      animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0.5], y: -100, x: (i - 6) * 20 }}
+                                      transition={{ duration: 1, delay: i * 0.05 }}
+                                      className="text-2xl absolute"
+                                    >
+                                      {['🔥', '✨', '👏', '🎉'][i % 4]}
+                                    </motion.span>
+                                  ))}
+                                </div>
+                              )}
+                            </AnimatePresence>
+                          </motion.button>
+                        );
+                      })}
                     </div>
                   ) : null}
                 </motion.div>
