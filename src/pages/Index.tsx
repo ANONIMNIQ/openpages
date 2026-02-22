@@ -18,30 +18,45 @@ const BallotAnimation = ({ color }: { color: string }) => (
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+    className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none bg-white/40 backdrop-blur-[1px]"
   >
-    <div className="relative w-16 h-16">
+    <div className="relative w-24 h-24 flex items-center justify-center">
+      {/* Urn / Box */}
       <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="absolute bottom-0 left-0 right-0 h-2 bg-black/10 rounded-full"
-      />
-      <motion.div
-        initial={{ y: -40, opacity: 0, rotate: -5 }}
-        animate={{ y: 10, opacity: [0, 1, 1, 0], rotate: 0 }}
-        transition={{ duration: 0.8, ease: "circIn" }}
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-10 bg-white border-2 rounded-sm shadow-sm flex items-center justify-center"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="absolute bottom-2 w-16 h-12 border-2 rounded-lg bg-white shadow-lg flex flex-col items-center"
         style={{ borderColor: color }}
       >
-        <div className="w-4 h-0.5 bg-gray-100 mb-1" />
-        <div className="w-4 h-0.5 bg-gray-100" />
+        {/* Slot */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mt-2" />
       </motion.div>
+
+      {/* Ballot Paper */}
+      <motion.div
+        initial={{ y: -60, opacity: 0, rotate: -10 }}
+        animate={{ 
+          y: [ -60, 0, 5 ], 
+          opacity: [0, 1, 1, 0], 
+          rotate: [ -10, 0, 0 ],
+          scale: [ 1, 1, 0.8 ]
+        }}
+        transition={{ duration: 1.2, times: [0, 0.6, 0.8, 1], ease: "easeInOut" }}
+        className="absolute top-2 w-8 h-10 bg-white border shadow-md rounded-sm flex flex-col gap-1 p-1.5 z-10"
+        style={{ borderColor: color }}
+      >
+        <div className="w-full h-0.5 bg-gray-100" />
+        <div className="w-full h-0.5 bg-gray-100" />
+        <div className="w-2/3 h-0.5 bg-gray-100" />
+      </motion.div>
+
+      {/* Success Ring */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [0, 1.5, 2], opacity: [0, 0.5, 0] }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-4 rounded-full"
-        style={{ backgroundColor: color }}
+        animate={{ scale: [0, 1.5, 2], opacity: [0, 0.4, 0] }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+        className="absolute w-20 h-20 rounded-full border-4"
+        style={{ borderColor: color }}
       />
     </div>
   </motion.div>
@@ -110,6 +125,7 @@ const Index = () => {
   
   const mainRef = useRef<HTMLElement | null>(null);
   const pollPieWrapRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const filteredTopics = (() => {
@@ -318,6 +334,16 @@ const Index = () => {
     }
   }, [selectedTopicId, scrollMainToTop]);
 
+  // Скрол до панела за аргументи при отваряне
+  useEffect(() => {
+    if (isComposerOpen && composerRef.current) {
+      const timer = setTimeout(() => {
+        composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isComposerOpen]);
+
   const detailStagger = {
     hidden: {},
     show: {
@@ -524,6 +550,7 @@ const Index = () => {
                 <AnimatePresence>
                   {isComposerOpen && (
                     <motion.div
+                      ref={composerRef}
                       initial={{ opacity: 0, height: 0, y: -20 }}
                       animate={{ opacity: 1, height: 'auto', y: 0 }}
                       exit={{ opacity: 0, height: 0, y: -20 }}
@@ -553,7 +580,7 @@ const Index = () => {
                           <textarea
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
-                            className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-sm"
+                            className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
                             placeholder={`Напиши своя аргумент ${composerType === 'pro' ? 'ЗА' : 'ПРОТИВ'} анонимно...`}
                             required
                           />
