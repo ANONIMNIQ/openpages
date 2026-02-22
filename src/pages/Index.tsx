@@ -20,14 +20,12 @@ const BallotAnimation = ({ color }: { color: string }) => (
     exit={{ opacity: 0 }}
     className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
   >
-    {/* Урната (слота) */}
     <div className="relative w-16 h-16">
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="absolute bottom-0 left-0 right-0 h-2 bg-black/10 rounded-full"
       />
-      {/* Бюлетината */}
       <motion.div
         initial={{ y: -40, opacity: 0, rotate: -5 }}
         animate={{ y: 10, opacity: [0, 1, 1, 0], rotate: 0 }}
@@ -38,7 +36,6 @@ const BallotAnimation = ({ color }: { color: string }) => (
         <div className="w-4 h-0.5 bg-gray-100 mb-1" />
         <div className="w-4 h-0.5 bg-gray-100" />
       </motion.div>
-      {/* Ефект на потъване */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: [0, 1.5, 2], opacity: [0, 0.5, 0] }}
@@ -49,6 +46,31 @@ const BallotAnimation = ({ color }: { color: string }) => (
     </div>
   </motion.div>
 );
+
+const EmojiBurst = ({ token }: { token: number }) => {
+  const emojis = ['🔥', '✨', '👏', '🎉', '❤️', '👍', '🌟', '🚀'];
+  return (
+    <div className="absolute inset-0 pointer-events-none z-50">
+      {Array.from({ length: 20 }).map((_, i) => (
+        <motion.span
+          key={`${token}-${i}`}
+          initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+          animate={{ 
+            opacity: [0, 1, 1, 0], 
+            scale: [0, 1.5, 1, 0.5], 
+            y: -250 - Math.random() * 200, 
+            x: (Math.random() - 0.5) * 400,
+            rotate: (Math.random() - 0.5) * 90
+          }}
+          transition={{ duration: 1.5, ease: "easeOut", delay: Math.random() * 0.1 }}
+          className="text-3xl absolute left-1/2 top-1/2"
+        >
+          {emojis[i % emojis.length]}
+        </motion.span>
+      ))}
+    </div>
+  );
+};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -226,7 +248,7 @@ const Index = () => {
       
       if (!isToggleOff) {
         setVoteFx({ topicId: selectedTopic.id, optionId, type: selectedTopic.contentType, token: Date.now() });
-        setTimeout(() => setVoteFx(null), 1500);
+        setTimeout(() => setVoteFx(null), 2000);
       }
     } catch (error) {
       console.warn('Vote failed', error);
@@ -571,6 +593,11 @@ const Index = () => {
                     </div>
                   ) : selectedTopic?.contentType === 'poll' ? (
                     <div className="space-y-8">
+                      <div className="text-center mb-4">
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">
+                          {(votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 ? 'Твоят глас' : 'Гласувай с бутон'}
+                        </span>
+                      </div>
                       {((votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 || selectedTopic.isClosed) && (
                         <div className="relative rounded-2xl border border-gray-100 bg-[#fafafa] p-6">
                           <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Резултати</div>
@@ -672,56 +699,57 @@ const Index = () => {
                           );
                         })}
                       </div>
+                      <div className="text-center pt-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          {selectedTopic.pollAllowMultiple ? 'Можеш да избереш повече от един отговор' : 'Избери само един отговор'}
+                        </span>
+                      </div>
                     </div>
                   ) : selectedTopic?.contentType === 'vs' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {selectedTopic.voteOptions.map((opt, idx) => {
-                        const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
-                        const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
-                        const isOptionCelebrating = voteFx?.optionId === opt.id;
-                        const color = idx === 0 ? '#10b981' : '#f43f5e';
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {selectedTopic.voteOptions.map((opt, idx) => {
+                          const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
+                          const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
+                          const isOptionCelebrating = voteFx?.optionId === opt.id;
+                          const color = idx === 0 ? '#10b981' : '#f43f5e';
 
-                        return (
-                          <motion.button
-                            key={opt.id}
-                            onClick={() => handleVote(opt.id)}
-                            disabled={isVoting || selectedTopic.isClosed}
-                            whileHover={{ y: -4 }}
-                            className={`relative rounded-2xl border p-6 text-left transition-all min-h-[28rem] flex flex-col hover:shadow-2xl hover:shadow-black/5 ${isSelected ? 'border-black ring-2 ring-black/10' : 'border-gray-100'}`}
-                          >
-                            {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-xl mb-6" />}
-                            <h3 className="text-xl font-black mb-2">{opt.label}</h3>
-                            <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
-                            <div className="mt-auto h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percent}%` }}
-                                className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
-                              />
-                            </div>
-                            <AnimatePresence>
-                              {isOptionCelebrating && (
-                                <>
-                                  <BallotAnimation color={color} />
-                                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                    {Array.from({ length: 12 }).map((_, i) => (
-                                      <motion.span
-                                        key={i}
-                                        initial={{ opacity: 0, scale: 0, y: 0 }}
-                                        animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0.5], y: -100, x: (i - 6) * 20 }}
-                                        transition={{ duration: 1, delay: i * 0.05 }}
-                                        className="text-2xl absolute"
-                                      >
-                                        {['🔥', '✨', '👏', '🎉'][i % 4]}
-                                      </motion.span>
-                                    ))}
+                          return (
+                            <motion.button
+                              key={opt.id}
+                              onClick={() => handleVote(opt.id)}
+                              disabled={isVoting || selectedTopic.isClosed}
+                              whileHover={{ y: -6, shadow: "0 25px 50px -12px rgba(0, 0, 0, 0.08)" }}
+                              whileTap={{ rotateX: idx === 0 ? -5 : 5, rotateY: idx === 0 ? 5 : -5, scale: 0.98 }}
+                              className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-[0_20px_50px_rgba(0,0,0,0.03)] ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}
+                            >
+                              {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl mb-6" />}
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-xl font-black">{opt.label}</h3>
+                                {isSelected && (
+                                  <div className="h-6 w-6 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+                                    <Check size={14} strokeWidth={3} />
                                   </div>
-                                </>
-                              )}
-                            </AnimatePresence>
-                          </motion.button>
-                        );
-                      })}
+                                )}
+                              </div>
+                              <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
+                              <div className="mt-auto h-2 rounded-full bg-gray-100 overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${percent}%` }}
+                                  className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} 
+                                />
+                              </div>
+                              <AnimatePresence>
+                                {isOptionCelebrating && <EmojiBurst token={voteFx?.token ?? 0} />}
+                              </AnimatePresence>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                      <div className="text-center">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Избери само един отговор</span>
+                      </div>
                     </div>
                   ) : null}
                 </motion.div>
