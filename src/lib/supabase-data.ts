@@ -11,6 +11,7 @@ export interface DbTopic {
   content_data?: Record<string, unknown> | null;
   sort_order?: number | null;
   published: boolean;
+  is_featured?: boolean;
   created_at?: string;
 }
 
@@ -46,6 +47,7 @@ export interface PublishedTopic {
   contentData?: Record<string, unknown> | null;
   pollAllowMultiple?: boolean;
   isClosed?: boolean;
+  isFeatured: boolean;
   argumentsCount: number;
   pro: DbArgument[];
   con: DbArgument[];
@@ -151,12 +153,12 @@ export async function fetchPublishedTopicsWithArguments() {
   if (!supabaseUrl) return null;
 
   let topicsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
+    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
     { headers: getSupabaseHeaders(), cache: "no-store" }
   );
   if (!topicsResponse.ok) {
     const topicsError = await extractSupabaseError(topicsResponse);
-    const missingExtendedColumns = ["content_type", "content_data", "sort_order", "custom_tag"].some((column) =>
+    const missingExtendedColumns = ["content_type", "content_data", "sort_order", "custom_tag", "is_featured"].some((column) =>
       topicsError.toLowerCase().includes(column)
     );
     if (missingExtendedColumns) {
@@ -231,6 +233,7 @@ export async function fetchPublishedTopicsWithArguments() {
         contentType === "poll"
           ? Boolean((topic.content_data as { isClosed?: boolean } | null)?.isClosed)
           : false,
+      isFeatured: topic.is_featured ?? false,
       argumentsCount: topicArgs.length,
       pro,
       con,

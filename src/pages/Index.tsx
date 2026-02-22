@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import TopicCardSkeleton from '@/components/TopicCardSkeleton';
+import FeaturedSlider from '@/components/FeaturedSlider';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check } from 'lucide-react';
@@ -142,6 +143,10 @@ const Index = () => {
   
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
+
+  // Featured topics logic: use topics marked as featured, or first 4 for testing
+  const featuredTopics = topicsData.filter(t => t.isFeatured).slice(0, 4);
+  const displayFeaturedTopics = featuredTopics.length > 0 ? featuredTopics : topicsData.slice(0, 4);
   
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = isTopicsLoading;
@@ -421,6 +426,14 @@ const Index = () => {
                   )}
                 </AnimatePresence>
               </header>
+
+              {/* Featured Slider - Desktop Only */}
+              {!isMobile && !isTopicsLoading && displayFeaturedTopics.length > 0 && (
+                <FeaturedSlider 
+                  topics={displayFeaturedTopics} 
+                  onTopicClick={handleOpenTopic} 
+                />
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:grid-flow-row-dense">
                 {showListSkeleton ? (

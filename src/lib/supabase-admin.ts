@@ -26,6 +26,7 @@ export interface AdminTopic {
   content_data?: Record<string, unknown> | null;
   sort_order?: number | null;
   published: boolean;
+  is_featured: boolean;
   created_at?: string;
 }
 
@@ -119,12 +120,12 @@ export async function fetchAdminData(accessToken: string) {
   const headers = getSupabaseHeaders(accessToken);
 
   let topicsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,created_at&order=sort_order.asc.nullslast,created_at.desc`,
+    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&order=sort_order.asc.nullslast,created_at.desc`,
     { headers }
   );
   if (!topicsResponse.ok) {
     const topicsError = await extractSupabaseError(topicsResponse);
-    const missingExtendedColumns = ["custom_tag", "content_type", "content_data", "sort_order"].some((column) =>
+    const missingExtendedColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
       topicsError.toLowerCase().includes(column)
     );
     if (missingExtendedColumns) {
@@ -278,6 +279,7 @@ export async function createTopicWithArguments(input: {
   contentData?: Record<string, unknown> | null;
   proArguments: string[];
   conArguments: string[];
+  isFeatured?: boolean;
 }) {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) throw new Error("Supabase is not configured");
@@ -288,6 +290,7 @@ export async function createTopicWithArguments(input: {
     content_type: input.contentType ?? "debate",
     content_data: input.contentData ?? null,
     published: true,
+    is_featured: input.isFeatured ?? false,
   };
   const customTagValue = input.customTag?.trim() ? input.customTag.trim() : null;
 
@@ -306,7 +309,7 @@ export async function createTopicWithArguments(input: {
   // Backward compatibility if production DB still misses newer columns.
   if (!topicResponse.ok) {
     const insertError = await extractSupabaseError(topicResponse);
-    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order"].some((column) =>
+    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
       insertError.toLowerCase().includes(column)
     );
 
@@ -317,7 +320,11 @@ export async function createTopicWithArguments(input: {
           ...getSupabaseHeaders(input.accessToken),
           Prefer: "return=representation",
         },
-        body: JSON.stringify(baseTopicPayload),
+        body: JSON.stringify({
+          title: input.title,
+          description: input.description,
+          published: true,
+        }),
       });
     } else {
       throw new Error(`Неуспешно създаване на тема: ${insertError}`);
@@ -435,6 +442,7 @@ export async function updateTopic(
     contentData?: Record<string, unknown> | null;
     sortOrder?: number | null;
     published: boolean;
+    isFeatured: boolean;
   }
 ) {
   const supabaseUrl = getSupabaseUrl();
@@ -453,11 +461,12 @@ export async function updateTopic(
       content_data: input.contentData ?? null,
       sort_order: input.sortOrder ?? null,
       published: input.published,
+      is_featured: input.isFeatured,
     }),
   });
   if (!response.ok) {
     const updateError = await extractSupabaseError(response);
-    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order"].some((column) =>
+    const missingTopicColumns = ["custom_tag", "content_type", "content_data", "sort_order", "is_featured"].some((column) =>
       updateError.toLowerCase().includes(column)
     );
     if (missingTopicColumns) {

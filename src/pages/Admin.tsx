@@ -139,6 +139,7 @@ const Admin = () => {
   const [vsRightName, setVsRightName] = useState("");
   const [vsLeftImage, setVsLeftImage] = useState("");
   const [vsRightImage, setVsRightImage] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false);
 
   const [topics, setTopics] = useState<AdminTopic[]>([]);
   const [argumentsList, setArgumentsList] = useState<AdminArgument[]>([]);
@@ -159,6 +160,7 @@ const Admin = () => {
   const [editVsLeftImage, setEditVsLeftImage] = useState("");
   const [editVsRightImage, setEditVsRightImage] = useState("");
   const [editPublished, setEditPublished] = useState(true);
+  const [editIsFeatured, setEditIsFeatured] = useState(false);
   const [dragTopicId, setDragTopicId] = useState<string | null>(null);
   const [menuFilterLabel, setMenuFilterLabel] = useState("");
   const [menuFilterType, setMenuFilterType] = useState<"content_type" | "tag">("content_type");
@@ -235,6 +237,7 @@ const Admin = () => {
     setVsRightName("");
     setVsLeftImage("");
     setVsRightImage("");
+    setIsFeatured(false);
   };
 
   const getCreateContentData = () => {
@@ -315,6 +318,7 @@ const Admin = () => {
         contentData: payloadContentData,
         proArguments: contentType === "debate" ? proArguments : [],
         conArguments: contentType === "debate" ? conArguments : [],
+        isFeatured,
       });
 
       resetCreateForm();
@@ -445,6 +449,7 @@ const Admin = () => {
     setEditCustomTag(parsedTag.label);
     setEditCustomTagIcon(parsedTag.icon);
     setEditPublished(topic.published);
+    setEditIsFeatured(topic.is_featured);
 
     if (type === "poll") {
       const poll = asPollData(topic.content_data);
@@ -504,6 +509,7 @@ const Admin = () => {
     setEditVsLeftImage("");
     setEditVsRightImage("");
     setEditPublished(true);
+    setEditIsFeatured(false);
   };
 
   const onSaveTopic = async (topicId: string) => {
@@ -527,6 +533,7 @@ const Admin = () => {
         contentData: getEditContentData(),
         sortOrder: targetTopic?.sort_order ?? null,
         published: editPublished,
+        isFeatured: editIsFeatured,
       });
       await loadAdminData(session.accessToken);
       setMessage("Съдържанието е редактирано.");
@@ -1045,10 +1052,16 @@ const Admin = () => {
                         <input value={editVsRightImage} onChange={(e) => setEditVsRightImage(e.target.value)} placeholder="URL/данни за снимка 2" className="h-10 rounded-lg border border-gray-200 px-3 md:col-span-2" />
                       </div>
                     ) : null}
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input type="checkbox" checked={editPublished} onChange={(e) => setEditPublished(e.target.checked)} />
-                      Публикувано
-                    </label>
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={editPublished} onChange={(e) => setEditPublished(e.target.checked)} />
+                        Публикувано
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-emerald-700 font-bold">
+                        <input type="checkbox" checked={editIsFeatured} onChange={(e) => setEditIsFeatured(e.target.checked)} />
+                        На фокус (слайдър)
+                      </label>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => void onSaveTopic(topic.id)} className="h-8 px-4 rounded-full border border-emerald-200 text-emerald-700 text-xs font-bold" disabled={loading}>Запази</button>
                       <button onClick={cancelEditTopic} className="h-8 px-4 rounded-full border border-gray-200 text-gray-700 text-xs font-bold" disabled={loading}>Отказ</button>
@@ -1056,7 +1069,10 @@ const Admin = () => {
                   </div>
                 ) : (
                   <>
-                    <p className="text-xs text-gray-500 mb-1">{topic.published ? "Публикувано" : "Чернова"} · {contentLabel(topic)}</p>
+                    <p className="text-xs text-gray-500 mb-1">
+                      {topic.published ? "Публикувано" : "Чернова"} · {contentLabel(topic)}
+                      {topic.is_featured ? " · НА ФОКУС" : ""}
+                    </p>
                     <p className="text-sm font-bold text-gray-900 mb-1">{topic.title}</p>
                     <p className="text-sm text-gray-700 mb-3">{topic.description}</p>
                     <div className="flex items-center gap-2">
@@ -1200,6 +1216,11 @@ const Admin = () => {
                 <input value={vsRightImage} onChange={(e) => setVsRightImage(e.target.value)} placeholder="URL/данни за снимка 2 (по избор)" className="w-full h-11 rounded-xl border border-gray-200 px-4" />
               </div>
             ) : null}
+
+            <label className="flex items-center gap-2 text-sm text-emerald-700 font-bold">
+              <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
+              На фокус (слайдър)
+            </label>
 
             <button type="submit" disabled={loading} className="h-11 px-6 rounded-full bg-black text-white text-sm font-bold disabled:opacity-50">
               {loading ? "Запис..." : "Публикувай"}
