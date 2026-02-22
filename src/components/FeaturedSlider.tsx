@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import type { PublishedTopic } from '@/lib/supabase-data';
@@ -13,36 +13,27 @@ interface FeaturedSliderProps {
 
 const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-
-  useEffect(() => {
-    if (!isAutoPlaying || topics.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % topics.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [isAutoPlaying, topics.length]);
 
   if (topics.length === 0) return null;
 
   const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsAutoPlaying(false);
-    setCurrentIndex((prev) => (prev + 1) % topics.length);
+    if (currentIndex < topics.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    }
   };
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsAutoPlaying(false);
-    setCurrentIndex((prev) => (prev - 1 + topics.length) % topics.length);
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+    }
   };
 
-  // We show up to 3 cards
-  const visibleIndices = [
-    currentIndex,
-    (currentIndex + 1) % topics.length,
-    (currentIndex + 2) % topics.length,
-  ].slice(0, Math.min(topics.length, 3));
+  // Show the current card + up to 3 cards behind it
+  const visibleIndices = topics
+    .slice(currentIndex, currentIndex + 4)
+    .map((_, i) => currentIndex + i);
 
   return (
     <div className="relative w-full mb-12 pt-2">
@@ -53,13 +44,23 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
         <div className="flex gap-1.5">
           <button 
             onClick={handlePrev}
-            className="h-7 w-7 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors bg-white"
+            disabled={currentIndex === 0}
+            className={`h-7 w-7 rounded-full border flex items-center justify-center transition-colors bg-white ${
+              currentIndex === 0 
+                ? 'border-gray-50 text-gray-200 cursor-not-allowed' 
+                : 'border-gray-100 text-gray-400 hover:text-black hover:border-black'
+            }`}
           >
             <ChevronLeft size={14} />
           </button>
           <button 
             onClick={handleNext}
-            className="h-7 w-7 rounded-full border border-gray-100 flex items-center justify-center text-gray-400 hover:text-black hover:border-black transition-colors bg-white"
+            disabled={currentIndex === topics.length - 1}
+            className={`h-7 w-7 rounded-full border flex items-center justify-center transition-colors bg-white ${
+              currentIndex === topics.length - 1 
+                ? 'border-gray-50 text-gray-200 cursor-not-allowed' 
+                : 'border-gray-100 text-gray-400 hover:text-black hover:border-black'
+            }`}
           >
             <ChevronRight size={14} />
           </button>
@@ -67,19 +68,24 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
       </div>
 
       <div className="relative h-[280px] w-full flex justify-center">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="popLayout" initial={false}>
           {visibleIndices.map((topicIndex, stackIndex) => {
             const topic = topics[topicIndex];
             const isTop = stackIndex === 0;
             
-            // Stagger logic: 
-            // stack 0: center (x: 0)
-            // stack 1: right (x: 30)
-            // stack 2: left (x: -30)
-            const xOffset = stackIndex === 0 ? 0 : (stackIndex === 1 ? 30 : -30);
-            const yOffset = stackIndex * 8;
+            // Peeking logic for up to 3 cards behind:
+            // Index 0: Center
+            // Index 1: Peeks Right
+            // Index 2: Peeks Left
+            // Index 3: Peeks Right (further)
+            const offsets = [0, 35, -35, 20];
+            const rotations = [0, 3, -3, 1.5];
+            const yOffsets = [0, 10, 20, 30];
+            
+            const xOffset = offsets[stackIndex] || 0;
+            const yOffset = yOffsets[stackIndex] || stackIndex * 10;
             const scale = 1 - stackIndex * 0.06;
-            const rotate = stackIndex === 0 ? 0 : (stackIndex === 1 ? 2 : -2);
+            const rotate = rotations[stackIndex] || 0;
 
             const metric = (() => {
               if (topic.contentType === 'debate') {
@@ -108,20 +114,25 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
             return (
               <motion.div
                 key={topic.id}
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                initial={false}
                 animate={{ 
-                  opacity: 1 - stackIndex * 0.2, 
+                  opacity: 1 - stackIndex * 0.25, 
                   x: xOffset, 
                   y: yOffset,
                   scale: scale,
                   rotate: rotate,
                   zIndex: 10 - stackIndex,
                 }}
-                exit={{ opacity: 0, scale: 0.8, y: 20, transition: { duration: 0.3 } }}
+                exit={{ 
+                  opacity: 0, 
+                  x: -100, 
+                  scale: 0.8, 
+                  transition: { duration: 0.3 } 
+                }}
                 transition={{ 
                   type: "spring",
                   stiffness: 260,
-                  damping: 25,
+                  damping: 28,
                   mass: 1
                 }}
                 className="absolute top-0 w-full max-w-[92%] h-full"
