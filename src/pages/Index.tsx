@@ -485,7 +485,16 @@ const Index = () => {
                   ) : (
                     <>
                       <div className="flex items-center gap-3 mb-8">
-                        {selectedTopic.isClosed ? <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">ПРИКЛЮЧИЛА АНКЕТА</span> : selectedTopic.tag ? <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.15em] rounded-sm">{selectedTopic.tag}</span> : null}
+                        {selectedTopic.isClosed ? (
+                          <span className="px-2 py-1 bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-sm">
+                            ПРИКЛЮЧИЛА АНКЕТА
+                          </span>
+                        ) : selectedTopic.tag ? (
+                          <span className="px-2 py-1 bg-black text-white text-[9px] font-black uppercase tracking-[0.15em] rounded-sm flex items-center gap-1.5">
+                            {selectedTopic.tagIcon && <span className="text-[1.1em] opacity-90">{selectedTopic.tagIcon}</span>}
+                            <span>{selectedTopic.tag}</span>
+                          </span>
+                        ) : null}
                         <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase tracking-widest"><ShieldCheck size={12} /> 100% Анонимно</div>
                       </div>
                       <h1 className="text-3xl font-black mb-6">{selectedTopic.title}</h1>

@@ -136,7 +136,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   let ogTitle = "Open pages";
   let ogDescription = "ТВОЕТО АНОНИМНО МНЕНИЕ ЗА АКТУАЛНИТЕ ТЕМИ НА ДЕНЯ";
-  let ogTag = "OPEN PAGES";
   let ogUrl = url.toString();
 
   const topicId = extractTopicId(url);
@@ -145,20 +144,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (topic) {
       ogTitle = clamp(topic.title, 80);
       ogDescription = clamp(topic.description, 180);
-      ogTag =
-        topic.content_type === "poll"
-          ? "АНКЕТА"
-          : topic.content_type === "vs"
-          ? "VS"
-            : clamp(topic.custom_tag || "ТЕЗА", 28).toUpperCase();
       const slug = slugify(topic.title);
       ogUrl = slug ? `${url.origin}/t/${topic.id}--${slug}` : `${url.origin}/t/${topic.id}`;
     }
   }
 
-  const ogImage = `${url.origin}/api/og-image?title=${encodeURIComponent(ogTitle)}&description=${encodeURIComponent(
-    ogDescription
-  )}&tag=${encodeURIComponent(ogTag)}`;
+  // Use the static branding image as requested
+  const ogImage = `${url.origin}/og-image.png`;
 
   let html = await response.text();
   html = replaceMeta(html, 'property="og:title"', ogTitle);
