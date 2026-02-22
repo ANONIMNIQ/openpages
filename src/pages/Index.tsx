@@ -17,10 +17,7 @@ const Index = () => {
   const location = useLocation();
   const { topicRef } = useParams<{ topicRef?: string }>();
   
-  // Инициализираме selectedTopicId директно от URL, за да избегнем празен екран при зареждане
-  const initialTopicId = parseTopicIdFromRef(topicRef);
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(initialTopicId);
-  
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [topicsData, setTopicsData] = useState<PublishedTopic[]>([]);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerType, setComposerType] = useState<'pro' | 'con'>('pro');
@@ -71,9 +68,7 @@ const Index = () => {
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
   
-  // Показваме BootLoader само ако сме на началната страница и още не е заредило
   const showBootLoader = !selectedTopicId && !isBootBarComplete && location.pathname === '/';
-  
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = !showBootLoader && (isTopicsLoading || isListSkeletonHold);
   
@@ -512,17 +507,6 @@ const Index = () => {
     }
   }, [isTopicsLoading, topicRef, location.pathname, location.search, topicsData, navigate, selectedTopicId]);
 
-  useEffect(() => {
-    return () => {
-      if (detailOpenTimeoutRef.current !== null) {
-        window.clearTimeout(detailOpenTimeoutRef.current);
-      }
-      if (delayedScrollToTopTimeoutRef.current !== null) {
-        window.clearTimeout(delayedScrollToTopTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
       {/* Main Content Column - Starts from the very left */}
@@ -532,234 +516,241 @@ const Index = () => {
       >
         <AnimatePresence mode="wait">
           {!selectedTopicId ? (
-            showBootLoader ? (
-              <motion.div
-                key="list-loader"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="relative w-full h-full overflow-hidden bg-gray-100"
-              >
+            <motion.div
+              key="list-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full h-full"
+            >
+              {showBootLoader ? (
                 <motion.div
-                  initial={{ width: '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-y-0 left-0 bg-white overflow-hidden"
+                  key="list-loader"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative w-full h-full overflow-hidden bg-gray-100"
                 >
                   <motion.div
                     initial={{ width: '0%' }}
-                    animate={{ width: ['0%', '100%', '100%'] }}
-                    transition={{ duration: 1.82, times: [0, 0.69, 1], ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute left-0 bottom-0 h-full z-20 pointer-events-none overflow-visible"
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-y-0 left-0 bg-white overflow-hidden"
                   >
-                    <div className="absolute left-0 bottom-0 h-[6px] w-full bg-black z-10" />
                     <motion.div
-                      initial={{ x: 0, opacity: 1 }}
-                      animate={{ x: [0, 0, 360], opacity: [1, 1, 1, 0] }}
-                      transition={{ duration: 1.82, times: [0, 0.69, 0.94, 1], ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute right-0 bottom-0 z-20"
-                      style={{ transform: 'translateX(4px)' }}
+                      initial={{ width: '0%' }}
+                      animate={{ width: ['0%', '100%', '100%'] }}
+                      transition={{ duration: 1.82, times: [0, 0.69, 1], ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute left-0 bottom-0 h-full z-20 pointer-events-none overflow-visible"
                     >
-                      <div className="relative h-screen w-[clamp(150px,20vw,260px)]">
-                        <svg
-                          viewBox="16 17 66 65"
-                          preserveAspectRatio="xMidYMax meet"
-                          className="h-full w-full"
-                          style={{ transform: 'scaleX(-1)', transformOrigin: 'center bottom' }}
-                          aria-hidden="true"
-                        >
-                          <path
-                            fill="#000000"
-                            d="M82.1,20.2l-2.3-2.3c-0.2-0.2-0.5-0.2-0.7,0l-3.9,3.9l-0.6-0.6c-0.2-0.2-0.5-0.2-0.7,0c0,0,0,0,0,0L40.2,54.9l-2.4,2.4l0,0l-2.4,2.4l0,0l-4.8,4.8l0,0l-2.4,2.4l0,0l-2.4,2.4l-6.2,10.4L18,81.3c-0.2,0.2-0.2,0.5,0,0.7s0.5,0.2,0.7,0l1.8-1.8l10.4-6.1l2.4-2.4l0,0l2.4-2.4l0,0l4.8-4.8l0,0l2.4-2.4l0,0l2.4-2.4l31.6-31.7l0.7,0.7L65.7,40.7c-0.2,0.2-0.2,0.5,0,0.7s0.5,0.2,0.7,0l12.1-12.1c0.2-0.2,0.2-0.5,0-0.7c0,0,0,0,0,0l-1.1-1.1l1.3-1.3c0.2-0.2,0.2-0.5,0-0.7c0,0,0,0,0,0l-0.6-0.6l3.9-3.9C82.2,20.7,82.2,20.4,82.1,20.2z M21.5,78.5l4.8-8.1l3.3,3.3L21.5,78.5z M30.4,73L27,69.6l1.7-1.7l3.5,3.5L30.4,73z M32.9,70.6l-3.5-3.5l1.7-1.7l3.5,3.5L32.9,70.6z M35.2,68.2l-3.5-3.5l1.7-1.7l3.5,3.5L35.2,68.2z M37.6,65.8l-3.5-3.5l1.7-1.7l3.5,3.5L37.6,65.8z M40,63.5L36.5,60l1.7-1.7l3.5,3.5L40,63.5z M42.4,61.1l-3.5-3.5l1.7-1.7l3.5,3.5L42.4,61.1z M76.4,27.1L76.4,27.1L44.8,58.7l-0.4-0.4l32-32c0.1-0.1,0.1-0.3,0-0.4l-1.1-1.1c-0.1-0.1-0.2-0.1-0.3-0.1s-0.1,0.2-0.1,0.4c0,0,0,0,0.1,0.1l1,1L44,57.9l-2.7-2.7l32.9-32.9l0.6,0.6l2.3,2.3l0.6,0.6L76.4,27.1z M77.5,24.1L77,23.7l3-3c0.1-0.1,0.1-0.3,0-0.4L79.7,20c-0.1-0.1-0.3-0.1-0.3,0.1c-0.1,0.1-0.1,0.2,0,0.3l0.2,0.1l-2.9,2.9l-0.8-0.8l3.6-3.6l1.6,1.6L77.5,24.1z"
-                          />
-                        </svg>
-                      </div>
+                      <div className="absolute left-0 bottom-0 h-[6px] w-full bg-black z-10" />
+                      <motion.div
+                        initial={{ x: 0, opacity: 1 }}
+                        animate={{ x: [0, 0, 360], opacity: [1, 1, 1, 0] }}
+                        transition={{ duration: 1.82, times: [0, 0.69, 0.94, 1], ease: [0.22, 1, 0.36, 1] }}
+                        className="absolute right-0 bottom-0 z-20"
+                        style={{ transform: 'translateX(4px)' }}
+                      >
+                        <div className="relative h-screen w-[clamp(150px,20vw,260px)]">
+                          <svg
+                            viewBox="16 17 66 65"
+                            preserveAspectRatio="xMidYMax meet"
+                            className="h-full w-full"
+                            style={{ transform: 'scaleX(-1)', transformOrigin: 'center bottom' }}
+                            aria-hidden="true"
+                          >
+                            <path
+                              fill="#000000"
+                              d="M82.1,20.2l-2.3-2.3c-0.2-0.2-0.5-0.2-0.7,0l-3.9,3.9l-0.6-0.6c-0.2-0.2-0.5-0.2-0.7,0c0,0,0,0,0,0L40.2,54.9l-2.4,2.4l0,0l-2.4,2.4l0,0l-4.8,4.8l0,0l-2.4,2.4l0,0l-2.4,2.4l-6.2,10.4L18,81.3c-0.2,0.2-0.2,0.5,0,0.7s0.5,0.2,0.7,0l1.8-1.8l10.4-6.1l2.4-2.4l0,0l2.4-2.4l0,0l4.8-4.8l0,0l2.4-2.4l0,0l2.4-2.4l31.6-31.7l0.7,0.7L65.7,40.7c-0.2,0.2-0.2,0.5,0,0.7s0.5,0.2,0.7,0l12.1-12.1c0.2-0.2,0.2-0.5,0-0.7c0,0,0,0,0,0l-1.1-1.1l1.3-1.3c0.2-0.2,0.2-0.5,0-0.7c0,0,0,0,0,0l-0.6-0.6l3.9-3.9C82.2,20.7,82.2,20.4,82.1,20.2z M21.5,78.5l4.8-8.1l3.3,3.3L21.5,78.5z M30.4,73L27,69.6l1.7-1.7l3.5,3.5L30.4,73z M32.9,70.6l-3.5-3.5l1.7-1.7l3.5,3.5L32.9,70.6z M35.2,68.2l-3.5-3.5l1.7-1.7l3.5,3.5L35.2,68.2z M37.6,65.8l-3.5-3.5l1.7-1.7l3.5,3.5L37.6,65.8z M40,63.5L36.5,60l1.7-1.7l3.5,3.5L40,63.5z M42.4,61.1l-3.5-3.5l1.7-1.7l3.5,3.5L42.4,61.1z M76.4,27.1L76.4,27.1L44.8,58.7l-0.4-0.4l32-32c0.1-0.1,0.1-0.3,0-0.4l-1.1-1.1c-0.1-0.1-0.2-0.1-0.3-0.1s-0.1,0.2-0.1,0.4c0,0,0,0,0.1,0.1l1,1L44,57.9l-2.7-2.7l32.9-32.9l0.6,0.6l2.3,2.3l0.6,0.6L76.4,27.1z M77.5,24.1L77,23.7l3-3c0.1-0.1,0.1-0.3,0-0.4L79.7,20c-0.1-0.1-0.3-0.1-0.3,0.1c-0.1,0.1-0.1,0.2,0,0.3l0.2,0.1l-2.9,2.9l-0.8-0.8l3.6-3.6l1.6,1.6L77.5,24.1z"
+                            />
+                          </svg>
+                        </div>
+                      </motion.div>
                     </motion.div>
                   </motion.div>
+                  <motion.div
+                    initial={{ scaleY: 0, opacity: 0 }}
+                    animate={{ scaleY: [0, 0, 0.006, 1, 1], opacity: [0, 0, 1, 1, 0] }}
+                    transition={{ duration: 2.08, times: [0, 0.69, 0.7, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0 bg-black origin-bottom z-[15] pointer-events-none"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.65 }}
+                    animate={{ opacity: [0, 0, 1, 1, 0], scale: [0.65, 0.65, 1, 1.04, 0.9] }}
+                    transition={{ duration: 2.08, times: [0, 0.7, 0.82, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none"
+                  >
+                    <span className="inline-flex h-44 w-44 items-center justify-center rounded-full bg-black text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                      <Pencil size={86} />
+                    </span>
+                  </motion.div>
                 </motion.div>
+              ) : (
                 <motion.div
-                  initial={{ scaleY: 0, opacity: 0 }}
-                  animate={{ scaleY: [0, 0, 0.006, 1, 1], opacity: [0, 0, 1, 1, 0] }}
-                  transition={{ duration: 2.08, times: [0, 0.69, 0.7, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-0 bg-black origin-bottom z-[15] pointer-events-none"
-                />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.65 }}
-                  animate={{ opacity: [0, 0, 1, 1, 0], scale: [0.65, 0.65, 1, 1.04, 0.9] }}
-                  transition={{ duration: 2.08, times: [0, 0.7, 0.82, 0.93, 1], ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none"
+                  key="list-content"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
                 >
-                  <span className="inline-flex h-44 w-44 items-center justify-center rounded-full bg-black text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
-                    <Pencil size={86} />
-                  </span>
-                </motion.div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="list"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
-              >
-                <header className="mb-8">
-                  <div className="flex justify-between items-start">
-                    <div>
-                    <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
-                      <motion.span
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
-                        animate={{ scale: [1, 1.08, 1, 1], rotate: [0, 0, 360, 360] }}
-                        transition={{ duration: 2.2, times: [0, 0.28, 0.7, 1], repeat: Infinity, repeatDelay: 3.1 }}
-                        aria-label="Open pages logo"
+                  <header className="mb-8">
+                    <div className="flex justify-between items-start">
+                      <div>
+                      <h1 className="text-4xl font-black tracking-tighter mb-4 flex items-center leading-none">
+                        <motion.span
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black text-white mr-[-3px] shrink-0"
+                          animate={{ scale: [1, 1.08, 1, 1], rotate: [0, 0, 360, 360] }}
+                          transition={{ duration: 2.2, times: [0, 0.28, 0.7, 1], repeat: Infinity, repeatDelay: 3.1 }}
+                          aria-label="Open pages logo"
+                        >
+                          <Pencil size={16} />
+                        </motion.span>
+                        <span className="inline-block leading-none -translate-y-[2px]">pen pages</span>
+                      </h1>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
+                        Твоето анонимно мнение за актуалните теми на деня
+                      </p>
+                      </div>
+                      <button
+                        onClick={() => setIsMenuOpen((prev) => !prev)}
+                        className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+                        aria-label={isMenuOpen ? 'Затвори меню' : 'Отвори меню'}
                       >
-                        <Pencil size={16} />
-                      </motion.span>
-                      <span className="inline-block leading-none -translate-y-[2px]">pen pages</span>
-                    </h1>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
-                      Твоето анонимно мнение за актуалните теми на деня
-                    </p>
+                        {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setIsMenuOpen((prev) => !prev)}
-                      className="p-2 hover:bg-gray-50 rounded-full transition-colors"
-                      aria-label={isMenuOpen ? 'Затвори меню' : 'Отвори меню'}
-                    >
-                      {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
-                  </div>
-                  <AnimatePresence initial={false}>
-                    {isMenuOpen ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8, height: 0 }}
-                        animate={{ opacity: 1, y: 0, height: 'auto' }}
-                        exit={{ opacity: 0, y: -8, height: 0 }}
-                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden mt-4"
-                      >
-                        <div className="flex flex-wrap gap-2 pb-1">
-                          <button
-                            onClick={() => setActiveMenuFilterId('all')}
-                            className={`h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
-                              activeMenuFilterId === 'all'
-                                ? 'border-black bg-black text-white'
-                                : 'border-gray-200 text-gray-500 hover:text-black hover:border-black'
-                            }`}
-                          >
-                            Всички
-                          </button>
-                          {menuFilters.filter((item) => item.active).map((filter) => (
+                    <AnimatePresence initial={false}>
+                      {isMenuOpen ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, height: 0 }}
+                          animate={{ opacity: 1, y: 0, height: 'auto' }}
+                          exit={{ opacity: 0, y: -8, height: 0 }}
+                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                          className="overflow-hidden mt-4"
+                        >
+                          <div className="flex flex-wrap gap-2 pb-1">
                             <button
-                              key={filter.id}
-                              onClick={() => setActiveMenuFilterId(filter.id)}
+                              onClick={() => setActiveMenuFilterId('all')}
                               className={`h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
-                                activeMenuFilterId === filter.id
+                                activeMenuFilterId === 'all'
                                   ? 'border-black bg-black text-white'
                                   : 'border-gray-200 text-gray-500 hover:text-black hover:border-black'
                               }`}
                             >
-                              {filter.label}
+                              Всички
                             </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                </header>
+                            {menuFilters.filter((item) => item.active).map((filter) => (
+                              <button
+                                key={filter.id}
+                                onClick={() => setActiveMenuFilterId(filter.id)}
+                                className={`h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
+                                  activeMenuFilterId === filter.id
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-gray-200 text-gray-500 hover:text-black hover:border-black'
+                                }`}
+                              >
+                                {filter.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:grid-flow-row-dense">
-                  {showListSkeleton ? (
-                    Array.from({ length: 6 }).map((_, index) => {
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:grid-flow-row-dense">
+                    {showListSkeleton ? (
+                      Array.from({ length: 6 }).map((_, index) => {
+                        const isFeatured = index % 6 === 0;
+                        const isTall = index % 6 === 4;
+                        const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
+                        return (
+                          <div key={`skeleton-${index}`} className={gridClasses}>
+                            <TopicCardSkeleton 
+                              isFeatured={isFeatured} 
+                              isTall={isTall} 
+                              isCompact={!isFeatured} 
+                            />
+                          </div>
+                        );
+                      })
+                    ) : filteredTopics.length === 0 ? (
+                      <div className="py-12 text-sm text-gray-400 md:col-span-2">
+                        Няма налично съдържание за избрания филтър.
+                      </div>
+                    ) : visibleTopics.map((topic, index) => {
+                      const defaultMetric = (() => {
+                        const proCount = topic.pro.length;
+                        const conCount = topic.con.length;
+                        const total = Math.max(proCount + conCount, 1);
+                        const proShare = Math.round((proCount / total) * 100);
+                        const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
+                        const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
+                        return { dominantSide, dominantPercent };
+                      })();
+                      const voteMetric = (() => {
+                        if (topic.voteOptions.length === 0) return null;
+                        const sorted = [...topic.voteOptions].sort((a, b) => b.votes - a.votes);
+                        const top = sorted[0];
+                        if (!top) return null;
+                        const topIndex = topic.voteOptions.findIndex((option) => option.id === top.id);
+                        const fallbackPollColor = ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][Math.max(topIndex, 0) % 5];
+                        const dominantPercent = topic.totalVotes > 0 ? Math.round((top.votes / topic.totalVotes) * 100) : 0;
+                        return {
+                          dominantSide: topic.contentType === 'vs' ? (top.id === 'left' ? 'pro' : 'con') : 'pro' as 'pro' | 'con',
+                          dominantPercent,
+                          dominantLabel: top.label,
+                          dominantColor: topic.contentType === 'poll' ? (top.color ?? fallbackPollColor) : undefined,
+                        };
+                      })();
+                      const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
+                      const hasVoted = (votedOptionIdsByTopic[topic.id] ?? []).length > 0;
+
                       const isFeatured = index % 6 === 0;
                       const isTall = index % 6 === 4;
                       const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
+
                       return (
-                        <div key={`skeleton-${index}`} className={gridClasses}>
-                          <TopicCardSkeleton 
-                            isFeatured={isFeatured} 
-                            isTall={isTall} 
-                            isCompact={!isFeatured} 
+                        <div key={topic.id} className={gridClasses}>
+                          <TopicCard
+                            title={topic.title}
+                            description={topic.description}
+                            tag={topic.tag}
+                            tagIcon={topic.tagIcon}
+                            argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
+                            countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
+                            contentType={topic.contentType}
+                            dominantSide={metric.dominantSide}
+                            dominantPercent={metric.dominantPercent}
+                            dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
+                            dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
+                            onClick={() => handleOpenTopic(topic.id)}
+                            hasVoted={hasVoted}
+                            isClosed={topic.isClosed}
+                            isCompact={!isFeatured}
+                            isTall={isTall}
                           />
                         </div>
                       );
-                    })
-                  ) : filteredTopics.length === 0 ? (
-                    <div className="py-12 text-sm text-gray-400 md:col-span-2">
-                      Няма налично съдържание за избрания филтър.
-                    </div>
-                  ) : visibleTopics.map((topic, index) => {
-                    const defaultMetric = (() => {
-                      const proCount = topic.pro.length;
-                      const conCount = topic.con.length;
-                      const total = Math.max(proCount + conCount, 1);
-                      const proShare = Math.round((proCount / total) * 100);
-                      const dominantSide: 'pro' | 'con' = proShare >= 50 ? 'pro' : 'con';
-                      const dominantPercent = dominantSide === 'pro' ? proShare : 100 - proShare;
-                      return { dominantSide, dominantPercent };
-                    })();
-                    const voteMetric = (() => {
-                      if (topic.voteOptions.length === 0) return null;
-                      const sorted = [...topic.voteOptions].sort((a, b) => b.votes - a.votes);
-                      const top = sorted[0];
-                      if (!top) return null;
-                      const topIndex = topic.voteOptions.findIndex((option) => option.id === top.id);
-                      const fallbackPollColor = ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][Math.max(topIndex, 0) % 5];
-                      const dominantPercent = topic.totalVotes > 0 ? Math.round((top.votes / topic.totalVotes) * 100) : 0;
-                      return {
-                        dominantSide: topic.contentType === 'vs' ? (top.id === 'left' ? 'pro' : 'con') : 'pro' as 'pro' | 'con',
-                        dominantPercent,
-                        dominantLabel: top.label,
-                        dominantColor: topic.contentType === 'poll' ? (top.color ?? fallbackPollColor) : undefined,
-                      };
-                    })();
-                    const metric = topic.contentType === 'debate' ? defaultMetric : (voteMetric ?? defaultMetric);
-                    const hasVoted = (votedOptionIdsByTopic[topic.id] ?? []).length > 0;
-
-                    // Layout logic based on index % 6
-                    const isFeatured = index % 6 === 0;
-                    const isTall = index % 6 === 4;
-                    const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
-
-                    return (
-                      <div key={topic.id} className={gridClasses}>
-                        <TopicCard
-                          title={topic.title}
-                          description={topic.description}
-                          tag={topic.tag}
-                          tagIcon={topic.tagIcon}
-                          argumentsCount={topic.contentType === 'debate' ? topic.argumentsCount : topic.totalVotes}
-                          countLabel={topic.contentType === 'debate' ? 'аргумента' : 'гласа'}
-                          contentType={topic.contentType}
-                          dominantSide={metric.dominantSide}
-                          dominantPercent={metric.dominantPercent}
-                          dominantLabel={'dominantLabel' in metric ? metric.dominantLabel : undefined}
-                          dominantColor={'dominantColor' in metric ? metric.dominantColor : undefined}
-                          onClick={() => handleOpenTopic(topic.id)}
-                          hasVoted={hasVoted}
-                          isClosed={topic.isClosed}
-                          isCompact={!isFeatured}
-                          isTall={isTall}
-                        />
+                    })}
+                    {!isTopicsLoading && hasMoreTopics && filteredTopics.length > topicsVisibleCount ? (
+                      <div className="pt-5 flex justify-center md:col-span-2">
+                        <button
+                          onClick={() => setTopicsVisibleCount((prev) => prev + 6)}
+                          className="h-10 px-5 rounded-full border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:border-black hover:text-black transition-colors"
+                        >
+                          Зареди още теми
+                        </button>
                       </div>
-                    );
-                  })}
-                  {!isTopicsLoading && hasMoreTopics && filteredTopics.length > topicsVisibleCount ? (
-                    <div className="pt-5 flex justify-center md:col-span-2">
-                      <button
-                        onClick={() => setTopicsVisibleCount((prev) => prev + 6)}
-                        className="h-10 px-5 rounded-full border border-gray-200 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:border-black hover:text-black transition-colors"
-                      >
-                        Зареди още теми
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </motion.div>
-            )
+                    ) : null}
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
           ) : (
             <motion.div 
-              key="detail"
+              key="detail-container"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
