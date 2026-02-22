@@ -62,8 +62,8 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
         </div>
       </div>
 
-      {/* Increased height to 280px for better padding management */}
-      <div className="relative h-[280px] w-full flex justify-center items-center perspective-1000">
+      {/* Height optimized to 320px to prevent clipping */}
+      <div className="relative h-[320px] w-full flex justify-center items-center perspective-1000">
         {topics.map((topic, index) => {
           const diff = index - currentIndex;
           const isActive = diff === 0;

@@ -138,14 +138,14 @@ const TopicCard: React.FC<TopicCardProps> = ({
   return (
     <motion.div
       onClick={onClick}
-      className={`cursor-pointer rounded-xl group transition-all ${isTall ? 'h-full flex flex-col p-10' : 'border-b border-gray-100 py-10 px-4'}`}
+      className={`cursor-pointer rounded-xl group transition-all ${isTall ? 'h-full flex flex-col pt-7 pb-8 px-8' : 'border-b border-gray-100 py-10 px-4'}`}
     >
       <div className="flex-1">
         {renderBadge(false)}
-        <h2 className={`${isTall ? 'text-xl' : 'text-2xl'} font-black leading-tight mb-4 group-hover:underline decoration-2 underline-offset-4`}>
+        <h2 className={`${isTall ? 'text-lg' : 'text-2xl'} font-black leading-tight mb-4 group-hover:underline decoration-2 underline-offset-4`}>
           {title}
         </h2>
-        <p className={`${isTall ? 'text-xs' : 'text-sm'} text-gray-500 mb-6 line-clamp-4 max-w-2xl leading-relaxed`}>
+        <p className={`${isTall ? 'text-xs line-clamp-3' : 'text-sm line-clamp-4'} text-gray-500 mb-6 max-w-2xl leading-relaxed`}>
           {description}
         </p>
       </div>
