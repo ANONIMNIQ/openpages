@@ -16,7 +16,11 @@ const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { topicRef } = useParams<{ topicRef?: string }>();
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  
+  // Инициализираме selectedTopicId директно от URL, за да избегнем празен екран при зареждане
+  const initialTopicId = parseTopicIdFromRef(topicRef);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(initialTopicId);
+  
   const [topicsData, setTopicsData] = useState<PublishedTopic[]>([]);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerType, setComposerType] = useState<'pro' | 'con'>('pro');
@@ -66,9 +70,13 @@ const Index = () => {
   })();
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
-  const showBootLoader = !selectedTopicId && !isBootBarComplete;
+  
+  // Показваме BootLoader само ако сме на началната страница и още не е заредило
+  const showBootLoader = !selectedTopicId && !isBootBarComplete && location.pathname === '/';
+  
   const isDetailContentLoading = isDetailOpening || !selectedTopic;
   const showListSkeleton = !showBootLoader && (isTopicsLoading || isListSkeletonHold);
+  
   const proArgumentsWithIds = (selectedTopic?.pro ?? []).map((arg, idx) => ({
     ...arg,
     id: arg.id ?? `topic-${selectedTopic?.id}-pro-${idx}`,
@@ -77,12 +85,14 @@ const Index = () => {
     ...arg,
     id: arg.id ?? `topic-${selectedTopic?.id}-con-${idx}`,
   }));
+
   const scrollDetailToTop = () => {
     if (mainRef.current) {
       mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
+
   const scheduleScrollDetailToTop = (delay = 260) => {
     if (delayedScrollToTopTimeoutRef.current !== null) {
       window.clearTimeout(delayedScrollToTopTimeoutRef.current);
@@ -382,7 +392,7 @@ const Index = () => {
     setIsListSkeletonHold(true);
     const timeoutId = window.setTimeout(() => setIsListSkeletonHold(false), 520);
     return () => {
-      window.clearTimeout(introTimeoutId);
+      window.clearTimeout(timeoutId);
     };
   }, [isBootBarComplete]);
 
@@ -520,7 +530,7 @@ const Index = () => {
         ref={mainRef}
         className={`flex-1 max-w-2xl border-r border-gray-100 h-screen ${showBootLoader ? 'overflow-hidden' : `${mainOverflowClass} overflow-x-hidden`} ${showBootLoader ? 'bg-gray-100' : 'bg-white'} relative`}
       >
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {!selectedTopicId ? (
             showBootLoader ? (
               <motion.div
