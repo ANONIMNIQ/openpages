@@ -236,6 +236,32 @@ const Index = () => {
     } catch { console.warn('Vote failed'); } finally { setIsVoting(false); }
   };
 
+  const handlePollSliceHover = (
+    event: React.MouseEvent<SVGPathElement | SVGCircleElement>,
+    option: { label: string; percent: number; color: string }
+  ) => {
+    const wrap = pollPieWrapRef.current;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    setPollPieTooltip({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      label: option.label,
+      percent: Math.round(option.percent),
+      color: option.color,
+    });
+  };
+
+  const handlePollMouseMove = (e: React.MouseEvent) => {
+    if (!pollPieTooltip || !pollPieWrapRef.current) return;
+    const rect = pollPieWrapRef.current.getBoundingClientRect();
+    setPollPieTooltip(prev => prev ? {
+      ...prev,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    } : null);
+  };
+
   useEffect(() => {
     let canceled = false;
     const load = async () => {
@@ -384,44 +410,109 @@ const Index = () => {
                   ) : selectedTopic.contentType === 'poll' ? (
                     <div className="space-y-8">
                       {((votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 || selectedTopic.isClosed) && (
-                        <div className="rounded-2xl border border-gray-100 bg-[#fafafa] p-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {selectedTopic.voteOptions.map((opt, idx) => (
-                              <div key={opt.id} className="flex items-center gap-2 text-[11px] font-bold">
-                                <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: opt.color || '#000' }} />
-                                <span className="truncate">{opt.label}</span>
-                                <span className="ml-auto text-gray-400">{Math.round(selectedTopic.totalVotes > 0 ? (opt.votes / selectedTopic.totalVotes) * 100 : 0)}%</span>
-                              </div>
-                            ))}
+                        <div className="relative rounded-2xl border border-gray-100 bg-[#fafafa] p-6">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Резултати</div>
+                          <div className="flex flex-col md:flex-row items-center gap-8">
+                            <div ref={pollPieWrapRef} className="relative">
+                              <svg viewBox="0 0 200 200" className="h-40 w-40 drop-shadow-xl" onMouseMove={handlePollMouseMove}>
+                                {(() => {
+                                  const enriched = selectedTopic.voteOptions.map((opt, idx) => ({
+                                    ...opt,
+                                    percent: selectedTopic.totalVotes > 0 ? (opt.votes / selectedTopic.totalVotes) * 100 : 0,
+                                    color: opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5]
+                                  }));
+                                  let startAngle = -Math.PI / 2;
+                                  return enriched.map((opt) => {
+                                    const sliceAngle = (Math.PI * 2 * opt.percent) / 100;
+                                    const endAngle = startAngle + sliceAngle;
+                                    const x1 = 100 + 86 * Math.cos(startAngle);
+                                    const y1 = 100 + 86 * Math.sin(startAngle);
+                                    const x2 = 100 + 86 * Math.cos(endAngle);
+                                    const y2 = 100 + 86 * Math.sin(endAngle);
+                                    const path = opt.percent >= 99.9 ? `M 100 14 A 86 86 0 1 1 99.9 14 Z` : `M 100 100 L ${x1} ${y1} A 86 86 0 ${sliceAngle > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z`;
+                                    const currentStart = startAngle;
+                                    startAngle = endAngle;
+                                    return (
+                                      <motion.path
+                                        key={opt.id}
+                                        d={path}
+                                        fill={opt.color}
+                                        stroke="#fff"
+                                        strokeWidth="2"
+                                        onMouseEnter={(e) => handlePollSliceHover(e, opt)}
+                                        onMouseLeave={() => setPollPieTooltip(null)}
+                                      />
+                                    );
+                                  });
+                                })()}
+                              </svg>
+                              {pollPieTooltip && (
+                                <div className="absolute z-50 bg-black text-white text-[10px] font-bold px-2 py-1 rounded pointer-events-none whitespace-nowrap shadow-xl" style={{ left: pollPieTooltip.x + 10, top: pollPieTooltip.y + 10 }}>
+                                  {pollPieTooltip.label}: {pollPieTooltip.percent}%
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {selectedTopic.voteOptions.map((opt, idx) => (
+                                <div key={opt.id} className="flex items-center gap-2 text-[11px] font-bold">
+                                  <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5] }} />
+                                  <span className="truncate">{opt.label}</span>
+                                  <span className="ml-auto text-gray-400 shrink-0">{Math.round(selectedTopic.totalVotes > 0 ? (opt.votes / selectedTopic.totalVotes) * 100 : 0)}%</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
                       <div className="grid grid-cols-1 gap-3">
-                        {selectedTopic.voteOptions.map((opt) => {
+                        {selectedTopic.voteOptions.map((opt, idx) => {
+                          const hasVoted = (votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0;
                           const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
+                          const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
+                          const color = opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
                           return (
-                            <button key={opt.id} onClick={() => handleVote(opt.id)} disabled={isVoting || selectedTopic.isClosed} className={`p-5 border rounded-2xl text-left transition-all ${isSelected ? 'border-black bg-black/5' : 'border-gray-100'}`}>
-                              <div className="flex justify-between items-center">
-                                <span className="font-bold text-sm">{opt.label}</span>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{opt.votes} гласа</span>
+                            <button key={opt.id} onClick={() => handleVote(opt.id)} disabled={isVoting || selectedTopic.isClosed} className={`relative w-full p-5 border rounded-2xl text-left transition-all overflow-hidden hover:shadow-xl ${isSelected ? 'border-black bg-black/5' : 'border-gray-100'}`}>
+                              <div className="relative z-10 flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                  <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0" style={{ borderColor: color }}>
+                                    {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><Check size={12} strokeWidth={4} style={{ color }} /></motion.div>}
+                                  </div>
+                                  <span className="font-bold text-sm">{opt.label}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  {hasVoted && <span className="text-xs font-black">{percent}%</span>}
+                                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{opt.votes} гласа</span>
+                                </div>
                               </div>
+                              {hasVoted && <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="absolute left-0 top-0 h-full opacity-10 pointer-events-none" style={{ backgroundColor: color }} />}
+                              <AnimatePresence>{voteFx?.optionId === opt.id && <BallotAnimation color={color} />}</AnimatePresence>
                             </button>
                           );
                         })}
                       </div>
                     </div>
                   ) : selectedTopic.contentType === 'vs' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {selectedTopic.voteOptions.map((opt) => {
-                        const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
-                        return (
-                          <button key={opt.id} onClick={() => handleVote(opt.id)} disabled={isVoting || selectedTopic.isClosed} className={`rounded-3xl border p-6 text-left transition-all min-h-[20rem] flex flex-col bg-white ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}>
-                            {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-48 object-cover rounded-2xl mb-4" />}
-                            <h3 className="text-xl font-black mb-2">{opt.label}</h3>
-                            <p className="text-xs font-bold text-gray-400 mt-auto">{opt.votes} гласа</p>
-                          </button>
-                        );
-                      })}
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {selectedTopic.voteOptions.map((opt, idx) => {
+                          const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
+                          const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
+                          return (
+                            <motion.button key={opt.id} onClick={() => handleVote(opt.id)} disabled={isVoting || selectedTopic.isClosed} whileHover={{ y: -6 }} className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-sm ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}>
+                              <div className="relative mb-6">
+                                {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl" />}
+                                {isSelected && <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/80 text-white flex items-center justify-center z-10"><Check size={18} strokeWidth={3} /></div>}
+                              </div>
+                              <h3 className="text-xl font-black mb-2">{opt.label}</h3>
+                              <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
+                              <div className="mt-auto h-2 rounded-full bg-gray-100 overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                              </div>
+                              <AnimatePresence>{voteFx?.optionId === opt.id && <EmojiBurst token={voteFx.token} />}</AnimatePresence>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                 </div>
