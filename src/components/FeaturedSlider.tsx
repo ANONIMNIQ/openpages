@@ -31,7 +31,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
   };
 
   return (
-    <div className="relative w-full mb-12 pt-2">
+    <div className="relative w-full mb-10 pt-2">
       <div className="flex items-center justify-between mb-4 px-1">
         <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">
           На фокус
@@ -62,23 +62,24 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
         </div>
       </div>
 
-      <div className="relative h-[280px] w-full flex justify-center items-center perspective-1000">
+      <div className="relative h-[230px] w-full flex justify-center items-center perspective-1000">
         {topics.map((topic, index) => {
           const diff = index - currentIndex;
           const isActive = diff === 0;
           
-          // Logic for stacking:
-          // diff < 0: Left stack
-          // diff > 0: Right stack
-          // diff = 0: Center
+          // Enhanced spreading logic:
+          // xOffset: Larger multiplier for more "peeking"
+          // rotate: Slight rotation based on position in stack
+          // yOffset: Slight lift for background cards
           
-          const xOffset = diff * 14; // Small offset for peeking
-          const scale = 1 - Math.abs(diff) * 0.04;
+          const xOffset = diff * 42; 
+          const rotate = diff * 2.5;
+          const yOffset = Math.abs(diff) * 4;
+          const scale = 1 - Math.abs(diff) * 0.06;
           const zIndex = 20 - Math.abs(diff);
-          const opacity = 1 - Math.abs(diff) * 0.15;
+          const opacity = 1 - Math.abs(diff) * 0.25;
           
-          // Only show cards that are close to the center to keep it clean
-          const isVisible = Math.abs(diff) <= 3;
+          const isVisible = Math.abs(diff) <= 2;
 
           const metric = (() => {
             if (topic.contentType === 'debate') {
@@ -110,6 +111,8 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
               initial={false}
               animate={{ 
                 x: xOffset,
+                y: yOffset,
+                rotate: rotate,
                 scale: scale,
                 zIndex: zIndex,
                 opacity: isVisible ? opacity : 0,
@@ -118,15 +121,15 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ topics, onTopicClick })
               }}
               transition={{ 
                 type: "spring",
-                stiffness: 300,
-                damping: 30,
+                stiffness: 280,
+                damping: 28,
                 mass: 0.8
               }}
-              className="absolute w-full max-w-[94%] h-full"
+              className="absolute w-full max-w-[90%] h-full"
             >
               <div className={`
                 bg-white border border-gray-100 rounded-[2rem] h-full overflow-hidden transition-shadow duration-500
-                ${isActive ? 'shadow-[0_20px_50px_rgba(0,0,0,0.08)]' : 'shadow-sm'}
+                ${isActive ? 'shadow-[0_15px_45px_rgba(0,0,0,0.07)]' : 'shadow-sm'}
               `}>
                 <TopicCard
                   title={topic.title}
