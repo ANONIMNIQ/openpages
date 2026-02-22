@@ -89,7 +89,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
           ${canHover ? 'hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] group' : ''}
         `}
       >
-        <div>
+        <div className="flex-1">
           {tag || isClosed ? (
             <div className="flex items-center gap-2 mb-3">
               {isClosed ? (
@@ -104,7 +104,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
             </div>
           ) : null}
           
-          <h2 className={`text-lg font-black leading-tight mb-4 transition-all duration-300 ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
+          <h2 className={`text-lg font-black leading-tight mb-4 transition-all duration-300 line-clamp-2 min-h-[3rem] ${canHover ? 'group-hover:underline decoration-2 underline-offset-4' : ''}`}>
             {title}
           </h2>
         </div>
