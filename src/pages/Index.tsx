@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'export default Index;';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -727,8 +727,7 @@ const Index = () => {
                     // Layout logic based on index % 6
                     const isFeatured = index % 6 === 0;
                     const isTall = index % 6 === 4;
-                    // "Tall" card is now col-span-2 to be wider and align perfectly
-                    const gridClasses = (isFeatured || isTall) ? 'md:col-span-2' : '';
+                    const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
 
                     return (
                       <div key={topic.id} className={gridClasses}>

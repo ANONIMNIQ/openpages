@@ -141,9 +141,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={onClick}
-      className={`cursor-pointer border-b border-gray-100 py-10 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''} ${isTall ? 'h-full flex flex-col justify-between' : ''}`}
+      className={`cursor-pointer border-b border-gray-100 py-10 last:border-0 rounded-xl px-4 ${canHover ? 'group' : ''} ${isTall ? 'h-full flex flex-col' : ''}`}
     >
-      <div>
+      <div className="flex-1">
         {tag || isClosed ? (
           <div className="flex items-center gap-3 mb-4">
             {isClosed ? (
@@ -155,7 +155,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
                 {tagIcon ? `${tagIcon} ${tag}` : tag}
               </span>
             ) : null}
-            <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:w-12 group-hover:bg-black' : ''}`} />
+            <div className={`h-[1px] w-8 bg-gray-100 transition-all ${canHover ? 'group-hover:bg-black' : ''}`} />
           </div>
         ) : null}
         
@@ -163,12 +163,12 @@ const TopicCard: React.FC<TopicCardProps> = ({
           {title}
         </h2>
         
-        <p className="text-sm text-gray-500 mb-6 line-clamp-3 max-w-2xl leading-relaxed">
+        <p className="text-sm text-gray-500 mb-6 line-clamp-4 max-w-2xl leading-relaxed">
           {description}
         </p>
       </div>
       
-      <div className="mt-auto">
+      <div className="mt-auto pt-6">
         <div className="flex items-center justify-between gap-6 mb-4">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
             <CounterIcon size={14} /> {argumentsCount} {countLabel}
