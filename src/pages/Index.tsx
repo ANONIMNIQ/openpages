@@ -123,10 +123,7 @@ const Index = () => {
     if (filter.filterType === 'content_type') {
       return topicsData.filter((topic) => topic.contentType === filter.filterValue);
     }
-    // Filter by the raw custom tag label even if the display tag is "АНКЕТА" or "VS"
-    return topicsData.filter((topic) => 
-      (topic.customTagLabel ?? '').toLowerCase() === filter.filterValue.toLowerCase()
-    );
+    return topicsData.filter((topic) => (topic.customTagLabel ?? '').toLowerCase() === filter.filterValue.toLowerCase());
   })();
   
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
@@ -291,17 +288,22 @@ const Index = () => {
     }
   }, [votedOptionIdsByTopic]);
 
+  const slideTransition = {
+    duration: 0.5,
+    ease: [0.22, 1, 0.36, 1]
+  };
+
   return (
     <div className="min-h-screen bg-white flex font-sans selection:bg-black selection:text-white">
-      <main ref={mainRef} className="flex-1 max-w-2xl border-r border-gray-100 h-screen overflow-y-auto relative">
-        <AnimatePresence mode="wait">
+      <main ref={mainRef} className="flex-1 max-w-2xl border-r border-gray-100 h-screen overflow-y-auto relative overflow-x-hidden">
+        <AnimatePresence mode="popLayout" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
               key="list-view" 
-              initial={{ opacity: 0, x: -40 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: 40 }} 
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ x: -100, opacity: 0 }} 
+              animate={{ x: 0, opacity: 1 }} 
+              exit={{ x: -100, opacity: 0 }} 
+              transition={slideTransition}
               className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >
               <header className="mb-8">
@@ -390,10 +392,10 @@ const Index = () => {
           ) : (
             <motion.div 
               key="detail-view" 
-              initial={{ opacity: 0, x: 40 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: -40 }} 
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ x: 100, opacity: 0 }} 
+              animate={{ x: 0, opacity: 1 }} 
+              exit={{ x: 100, opacity: 0 }} 
+              transition={slideTransition}
               className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >
               <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
