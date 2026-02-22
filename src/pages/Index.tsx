@@ -382,7 +382,7 @@ const Index = () => {
     setIsListSkeletonHold(true);
     const timeoutId = window.setTimeout(() => setIsListSkeletonHold(false), 520);
     return () => {
-      window.clearTimeout(introTimeoutId);
+      window.clearTimeout(timeoutId);
     };
   }, [isBootBarComplete]);
 
@@ -1026,7 +1026,7 @@ const Index = () => {
                                   {selectedTopic.voteOptions.map((option, idx) => {
                                     const percent = selectedTopic.totalVotes > 0 ? Math.round((option.votes / selectedTopic.totalVotes) * 100) : 0;
                                     const color = option.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
-                                    const isOption celebrating =
+                                    const isOptionCelebrating =
                                       voteFx?.type === 'poll' &&
                                       voteFx.topicId === selectedTopic.id &&
                                       voteFx.optionId === option.id;
