@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from 'export default Index;';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
 import { motion, AnimatePresence } from 'framer-motion';
