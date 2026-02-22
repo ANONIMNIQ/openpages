@@ -362,7 +362,66 @@ const CardStack: React.FC<CardStackProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Container */}
+      {/* Inline Argument Composer - Always at the top */}
+      <AnimatePresence>
+        {isCreateActive && !isCommentFocusMode && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -12 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -12 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="mb-6 bg-[#fafafa] border border-gray-100 rounded-2xl p-6 overflow-hidden"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-lg ${accentColor}`}>
+                  {type === 'pro' ? '+' : '-'}
+                </div>
+                <div className="flex flex-col">
+                  <h4 className="text-sm font-black">Нов аргумент</h4>
+                  <p className={`text-[9px] font-black uppercase tracking-widest ${textColor}`}>
+                    Ти си {type === 'pro' ? 'ЗА' : 'ПРОТИВ'} тезата
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onCancelCreate}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Затвори"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form ref={argumentFormRef} onSubmit={handleArgumentSubmit} className="space-y-4">
+              <textarea
+                autoFocus
+                value={argumentDraft}
+                onChange={(e) => setArgumentDraft(e.target.value)}
+                placeholder="Напиши своя аргумент тук..."
+                className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
+                required
+              />
+
+              <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                <ShieldCheck size={12} className="text-emerald-500" /> 100% Анонимно
+              </div>
+
+              <button
+                type="submit"
+                disabled={isPublishing || !argumentDraft.trim()}
+                className={`w-full h-11 rounded-full font-bold uppercase text-[10px] tracking-widest text-white transition-colors flex items-center justify-center gap-2 ${accentColor} hover:opacity-90 disabled:opacity-50`}
+              >
+                {isPublishing ? 'Публикуване...' : (
+                  <>Публикувай аргумента <Send size={12} /></>
+                )}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Container for arguments */}
       <motion.div 
         layout="position"
         className="relative flex flex-col"
@@ -396,60 +455,6 @@ const CardStack: React.FC<CardStackProps> = ({
           className={`relative flex flex-col ${!isExpanded && hasArguments ? 'cursor-pointer' : ''} ${isExpanded ? 'gap-4' : ''}`}
           onClick={() => !isExpanded && !isCommentFocusMode && hasArguments && setIsExpanded(true)}
         >
-          {/* Inline Argument Composer */}
-          <AnimatePresence>
-            {isCreateActive && !isCommentFocusMode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, y: -12 }}
-                animate={{ opacity: 1, height: 'auto', y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -12 }}
-                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                className="mb-4 bg-[#fafafa] border border-gray-100 rounded-2xl p-6 overflow-hidden"
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex flex-col">
-                    <h4 className="text-sm font-black">Нов аргумент</h4>
-                    <p className={`text-[9px] font-black uppercase tracking-widest ${textColor}`}>
-                      Ти си {type === 'pro' ? 'ЗА' : 'ПРОТИВ'} тезата
-                    </p>
-                  </div>
-                  <button
-                    onClick={onCancelCreate}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    aria-label="Затвори"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <form ref={argumentFormRef} onSubmit={handleArgumentSubmit} className="space-y-4">
-                  <textarea
-                    autoFocus
-                    value={argumentDraft}
-                    onChange={(e) => setArgumentDraft(e.target.value)}
-                    placeholder="Напиши своя аргумент тук..."
-                    className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
-                    required
-                  />
-
-                  <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                    <ShieldCheck size={12} className="text-emerald-500" /> 100% Анонимно
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isPublishing || !argumentDraft.trim()}
-                    className={`w-full h-11 rounded-full font-bold uppercase text-[10px] tracking-widest text-white transition-colors flex items-center justify-center gap-2 ${accentColor} hover:opacity-90 disabled:opacity-50`}
-                  >
-                    {isPublishing ? 'Публикуване...' : (
-                      <>Публикувай аргумента <Send size={12} /></>
-                    )}
-                  </button>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {orderedDisplayedEntries.map(({ arg, idx, cardId }) => {
             const isStackMode = !isExpanded;
             const shouldSlideOutLeft = isCommentFocusMode && cardId !== focusedCardId;
@@ -559,7 +564,7 @@ const CardStack: React.FC<CardStackProps> = ({
                             }`}
                             aria-label="Коментар Против"
                           >
-                            +
+                            -
                           </button>
                         </div>
                         <button
