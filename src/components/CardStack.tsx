@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArgumentCard from './ArgumentCard';
-import { Pencil, ChevronRight, RefreshCw, ChevronUp, X, ArrowLeft } from 'lucide-react';
+import { Pencil, ChevronRight, RefreshCw, ChevronUp, X, ArrowLeft, Send, ShieldCheck } from 'lucide-react';
 import { createComment, fetchCommentsByArgumentIds } from '@/lib/supabase-comments';
 import { isSupabaseConfigured } from '@/lib/supabase-config';
 
@@ -27,6 +27,8 @@ interface CardStackProps {
   arguments: StackArgument[];
   onCreateArgument?: (type: 'pro' | 'con') => void;
   isCreateActive?: boolean;
+  onPublishArgument?: (text: string) => Promise<void>;
+  onCancelCreate?: () => void;
   collapseAllSignal?: number;
   onCollapseAllRequest?: () => void;
   onRequestScrollTop?: () => void;
@@ -49,6 +51,8 @@ const CardStack: React.FC<CardStackProps> = ({
   arguments: args,
   onCreateArgument,
   isCreateActive = false,
+  onPublishArgument,
+  onCancelCreate,
   collapseAllSignal,
   onCollapseAllRequest,
   onRequestScrollTop,
@@ -62,6 +66,8 @@ const CardStack: React.FC<CardStackProps> = ({
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState('');
+  const [argumentDraft, setArgumentDraft] = useState('');
+  const [isPublishing, setIsPublishing] = useState(false);
   const [commentType, setCommentType] = useState<'pro' | 'con'>(type);
   const [commentsByCard, setCommentsByCard] = useState<Record<string, CommentItem[]>>({});
   const [commentsVisibleCountByCard, setCommentsVisibleCountByCard] = useState<Record<string, number>>({});
@@ -69,6 +75,7 @@ const CardStack: React.FC<CardStackProps> = ({
   const lastHandledCollapseSignalRef = useRef<number | undefined>(collapseAllSignal);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const commentFormRef = useRef<HTMLFormElement | null>(null);
+  const argumentFormRef = useRef<HTMLFormElement | null>(null);
 
   const accentColor = type === 'pro' ? 'bg-emerald-500' : 'bg-rose-500';
   const textColor = type === 'pro' ? 'text-emerald-600' : 'text-rose-600';
@@ -247,6 +254,18 @@ const CardStack: React.FC<CardStackProps> = ({
       });
   }, [commentDraft, commentType, focusedCardId]);
 
+  const handleArgumentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!argumentDraft.trim() || !onPublishArgument) return;
+    setIsPublishing(true);
+    try {
+      await onPublishArgument(argumentDraft.trim());
+      setArgumentDraft('');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const handleCloseCommentFocus = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!focusedCardId) return;
@@ -285,6 +304,16 @@ const CardStack: React.FC<CardStackProps> = ({
     };
   }, [focusedCardId]);
 
+  useEffect(() => {
+    if (!isCreateActive) return;
+    const timeoutId = window.setTimeout(() => {
+      argumentFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 260);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isCreateActive]);
+
   return (
     <motion.div
       layout
@@ -317,12 +346,16 @@ const CardStack: React.FC<CardStackProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCreateArgument?.(type);
+                  if (isCreateActive) {
+                    onCancelCreate?.();
+                  } else {
+                    onCreateArgument?.(type);
+                  }
                 }}
                 className={`p-2 rounded-full text-white ${accentColor} hover:scale-110 transition-transform shadow-lg ${isCreateActive ? 'ring-4 ring-black/10 scale-110' : ''}`}
                 aria-label={type === 'pro' ? 'Добави аргумент За' : 'Добави аргумент Против'}
               >
-                <Pencil size={14} />
+                {isCreateActive ? <X size={14} /> : <Pencil size={14} />}
               </button>
             </div>
           </motion.div>
@@ -363,6 +396,60 @@ const CardStack: React.FC<CardStackProps> = ({
           className={`relative flex flex-col ${!isExpanded && hasArguments ? 'cursor-pointer' : ''} ${isExpanded ? 'gap-4' : ''}`}
           onClick={() => !isExpanded && !isCommentFocusMode && hasArguments && setIsExpanded(true)}
         >
+          {/* Inline Argument Composer */}
+          <AnimatePresence>
+            {isCreateActive && !isCommentFocusMode && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -12 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -12 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-4 bg-[#fafafa] border border-gray-100 rounded-2xl p-6 overflow-hidden"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex flex-col">
+                    <h4 className="text-sm font-black">Нов аргумент</h4>
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${textColor}`}>
+                      Ти си {type === 'pro' ? 'ЗА' : 'ПРОТИВ'} тезата
+                    </p>
+                  </div>
+                  <button
+                    onClick={onCancelCreate}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="Затвори"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form ref={argumentFormRef} onSubmit={handleArgumentSubmit} className="space-y-4">
+                  <textarea
+                    autoFocus
+                    value={argumentDraft}
+                    onChange={(e) => setArgumentDraft(e.target.value)}
+                    placeholder="Напиши своя аргумент тук..."
+                    className="w-full h-32 p-4 bg-white border border-gray-100 rounded-xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base md:text-sm"
+                    required
+                  />
+
+                  <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                    <ShieldCheck size={12} className="text-emerald-500" /> 100% Анонимно
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isPublishing || !argumentDraft.trim()}
+                    className={`w-full h-11 rounded-full font-bold uppercase text-[10px] tracking-widest text-white transition-colors flex items-center justify-center gap-2 ${accentColor} hover:opacity-90 disabled:opacity-50`}
+                  >
+                    {isPublishing ? 'Публикуване...' : (
+                      <>Публикувай аргумента <Send size={12} /></>
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {orderedDisplayedEntries.map(({ arg, idx, cardId }) => {
             const isStackMode = !isExpanded;
             const shouldSlideOutLeft = isCommentFocusMode && cardId !== focusedCardId;
@@ -563,7 +650,7 @@ const CardStack: React.FC<CardStackProps> = ({
             )}
           </AnimatePresence>
 
-          {!isCommentFocusMode && !hasArguments ? (
+          {!isCommentFocusMode && !hasArguments && !isCreateActive ? (
             <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 py-5 text-center">
               <p className="text-xs font-semibold text-gray-400">
                 {type === 'pro' ? 'Все още няма аргументи За.' : 'Все още няма аргументи Против.'}

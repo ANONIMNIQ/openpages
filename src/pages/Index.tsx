@@ -7,11 +7,11 @@ import TopicCardSkeleton from '@/components/TopicCardSkeleton';
 import FeaturedSlider from '@/components/FeaturedSlider';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check, Send } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check } from 'lucide-react';
 import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, unvoteOnContent, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -92,8 +92,6 @@ const Index = () => {
   const [topicsData, setTopicsData] = useState<PublishedTopic[]>([]);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [composerType, setComposerType] = useState<'pro' | 'con'>('pro');
-  const [commentText, setCommentText] = useState('');
-  const [isPublishingArgument, setIsPublishingArgument] = useState(false);
   const [collapseAllSignal, setCollapseAllSignal] = useState(0);
   const [isCollapsingStacks, setIsCollapsingStacks] = useState(false);
   const [activeCommentStackType, setActiveCommentStackType] = useState<'pro' | 'con' | null>(null);
@@ -164,27 +162,22 @@ const Index = () => {
     }, 300);
   };
 
-  const handlePublishComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTopic || selectedTopic.contentType !== 'debate' || !commentText.trim()) return;
-    setIsPublishingArgument(true);
+  const handlePublishArgument = async (text: string) => {
+    if (!selectedTopic || selectedTopic.contentType !== 'debate' || !text.trim()) return;
     try {
       const created = await createPublicArgument({
         topicId: selectedTopic.id,
         side: composerType,
-        text: commentText.trim(),
+        text: text.trim(),
       });
       if (created) {
         const refreshed = await fetchPublishedTopicsWithArguments();
         if (refreshed) setTopicsData(refreshed);
-        setCommentText('');
         setIsComposerOpen(false);
         showSuccess('Аргументът е публикуван');
       }
     } catch {
       showError('Неуспешно публикуване');
-    } finally {
-      setIsPublishingArgument(false);
     }
   };
 
@@ -417,8 +410,32 @@ const Index = () => {
                 <div>
                   {selectedTopic.contentType === 'debate' ? (
                     <div className="space-y-12">
-                      <CardStack title="Аргументи ЗА" type="pro" arguments={selectedTopic.pro} onCreateArgument={() => { setComposerType('pro'); setIsComposerOpen(true); }} isCreateActive={isComposerOpen && composerType === 'pro'} collapseAllSignal={collapseAllSignal} onCollapseAllRequest={handleCollapseAllStacks} globalFocusedStackType={activeCommentStackType} onFocusModeChange={setActiveCommentStackType} />
-                      <CardStack title="Аргументи ПРОТИВ" type="con" arguments={selectedTopic.con} onCreateArgument={() => { setComposerType('con'); setIsComposerOpen(true); }} isCreateActive={isComposerOpen && composerType === 'con'} collapseAllSignal={collapseAllSignal} onCollapseAllRequest={handleCollapseAllStacks} globalFocusedStackType={activeCommentStackType} onFocusModeChange={setActiveCommentStackType} />
+                      <CardStack 
+                        title="Аргументи ЗА" 
+                        type="pro" 
+                        arguments={selectedTopic.pro} 
+                        onCreateArgument={() => { setComposerType('pro'); setIsComposerOpen(true); }} 
+                        isCreateActive={isComposerOpen && composerType === 'pro'} 
+                        onPublishArgument={handlePublishArgument}
+                        onCancelCreate={() => setIsComposerOpen(false)}
+                        collapseAllSignal={collapseAllSignal} 
+                        onCollapseAllRequest={handleCollapseAllStacks} 
+                        globalFocusedStackType={activeCommentStackType} 
+                        onFocusModeChange={setActiveCommentStackType} 
+                      />
+                      <CardStack 
+                        title="Аргументи ПРОТИВ" 
+                        type="con" 
+                        arguments={selectedTopic.con} 
+                        onCreateArgument={() => { setComposerType('con'); setIsComposerOpen(true); }} 
+                        isCreateActive={isComposerOpen && composerType === 'con'} 
+                        onPublishArgument={handlePublishArgument}
+                        onCancelCreate={() => setIsComposerOpen(false)}
+                        collapseAllSignal={collapseAllSignal} 
+                        onCollapseAllRequest={handleCollapseAllStacks} 
+                        globalFocusedStackType={activeCommentStackType} 
+                        onFocusModeChange={setActiveCommentStackType} 
+                      />
                     </div>
                   ) : selectedTopic.contentType === 'poll' ? (
                     <div className="space-y-8">
@@ -563,71 +580,6 @@ const Index = () => {
         </AnimatePresence>
         <MadeWithDyad />
       </main>
-
-      {/* Argument Composer Modal */}
-      <AnimatePresence>
-        {isComposerOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
-            onClick={() => setIsComposerOpen(false)}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20, opacity: 0 }} 
-              animate={{ scale: 1, y: 0, opacity: 1 }} 
-              exit={{ scale: 0.9, y: 20, opacity: 0 }} 
-              className="w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={`h-2 w-full ${composerType === 'pro' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-8">
-                  <div>
-                    <h3 className="text-xl font-black mb-1">Добави аргумент</h3>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${composerType === 'pro' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      Ти си {composerType === 'pro' ? 'ЗА' : 'ПРОТИВ'} тезата
-                    </p>
-                  </div>
-                  <button onClick={() => setIsComposerOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <form onSubmit={handlePublishComment} className="space-y-6">
-                  <textarea
-                    autoFocus
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Напиши своя аргумент тук... Бъди ясен и убедителен."
-                    className="w-full h-48 p-6 bg-gray-50 border border-gray-100 rounded-2xl resize-none focus:ring-2 focus:ring-black/5 outline-none text-base"
-                    required
-                  />
-                  
-                  <div className="flex items-center gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2">
-                    <ShieldCheck size={14} className="text-emerald-500" /> Твоят коментар е напълно анонимен
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isPublishingArgument || !commentText.trim()}
-                    className={`w-full h-14 rounded-full font-black uppercase text-[11px] tracking-[0.2em] text-white transition-all flex items-center justify-center gap-3 shadow-lg ${
-                      composerType === 'pro' 
-                        ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' 
-                        : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
-                    } disabled:opacity-50 disabled:shadow-none`}
-                  >
-                    {isPublishingArgument ? 'Публикуване...' : (
-                      <>Публикувай аргумента <Send size={14} /></>
-                    )}
-                  </button>
-                </form>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
