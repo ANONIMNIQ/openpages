@@ -3,11 +3,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import CardStack from '@/components/CardStack';
 import TopicCard from '@/components/TopicCard';
+import TopicCardSkeleton from '@/components/TopicCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2 } from 'lucide-react';
 import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, unvoteOnContent, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
-import { Skeleton } from '@/components/ui/skeleton';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -675,23 +675,20 @@ const Index = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:grid-flow-row-dense">
                   {showListSkeleton ? (
-                    Array.from({ length: 3 }).map((_, idx) => (
-                      <div key={`topic-skeleton-${idx}`} className="border-b border-gray-100 py-10 pr-6 rounded-xl px-4">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Skeleton className="h-5 w-28 rounded-sm" />
-                          <Skeleton className="h-[1px] w-10" />
+                    Array.from({ length: 6 }).map((_, index) => {
+                      const isFeatured = index % 6 === 0;
+                      const isTall = index % 6 === 4;
+                      const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
+                      return (
+                        <div key={`skeleton-${index}`} className={gridClasses}>
+                          <TopicCardSkeleton 
+                            isFeatured={isFeatured} 
+                            isTall={isTall} 
+                            isCompact={!isFeatured} 
+                          />
                         </div>
-                        <Skeleton className="h-8 w-[82%] mb-3" />
-                        <Skeleton className="h-8 w-[70%] mb-5" />
-                        <Skeleton className="h-4 w-[88%] mb-2" />
-                        <Skeleton className="h-4 w-[62%] mb-6" />
-                        <div className="flex items-center justify-between mb-4">
-                          <Skeleton className="h-4 w-28" />
-                          <Skeleton className="h-4 w-16" />
-                        </div>
-                        <Skeleton className="h-1.5 w-full rounded-full" />
-                      </div>
-                    ))
+                      );
+                    })
                   ) : filteredTopics.length === 0 ? (
                     <div className="py-12 text-sm text-gray-400 md:col-span-2">
                       Няма налично съдържание за избрания филтър.
