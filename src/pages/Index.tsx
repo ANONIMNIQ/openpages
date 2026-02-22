@@ -149,8 +149,9 @@ const Index = () => {
     if (topic) {
       setIsDetailOpening(true);
       navigate(buildTopicPath(topic.id, topic.title));
-      scrollMainToTop();
-      setTimeout(() => setIsDetailOpening(false), 400);
+      // Скролването се управлява от useEffect при смяна на темата, 
+      // за да изчака анимацията на изчезване на списъка.
+      setTimeout(() => setIsDetailOpening(false), 500);
     }
   };
 
@@ -309,6 +310,17 @@ const Index = () => {
       window.localStorage.setItem('open-pages-voted-options', JSON.stringify(votedOptionIdsByTopic));
     }
   }, [votedOptionIdsByTopic]);
+
+  // Управление на скрола при отваряне на тема
+  useEffect(() => {
+    if (selectedTopicId) {
+      // Изчакваме анимацията на излизане (exit) на списъка (0.4s) да приключи
+      const timer = setTimeout(() => {
+        scrollMainToTop();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedTopicId, scrollMainToTop]);
 
   const detailStagger = {
     hidden: {},
@@ -470,9 +482,9 @@ const Index = () => {
           ) : (
             <motion.div
               key="detail-view"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >
               <motion.div variants={detailStagger} initial="hidden" animate="show">
@@ -674,12 +686,12 @@ const Index = () => {
                               disabled={isVoting || selectedTopic.isClosed}
                               whileHover={{ y: -6, shadow: "0 25px 50px -12px rgba(0, 0, 0, 0.08)" }}
                               whileTap={{ 
-                                rotateX: idx === 0 ? -8 : 8, 
-                                rotateY: idx === 0 ? 8 : -8, 
-                                scale: 0.96,
-                                transition: { duration: 0.1 }
+                                rotateX: idx === 0 ? -12 : 12, 
+                                rotateY: idx === 0 ? 12 : -12, 
+                                scale: 0.94,
+                                transition: { duration: 0.1, ease: "easeOut" }
                               }}
-                              style={{ perspective: 1200 }}
+                              style={{ perspective: 1200, transformStyle: 'preserve-3d' }}
                               className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100'}`}
                             >
                               <div className="relative mb-6">
