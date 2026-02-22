@@ -123,7 +123,10 @@ const Index = () => {
     if (filter.filterType === 'content_type') {
       return topicsData.filter((topic) => topic.contentType === filter.filterValue);
     }
-    return topicsData.filter((topic) => (topic.tag ?? '').toLowerCase() === filter.filterValue.toLowerCase());
+    // Filter by the raw custom tag label even if the display tag is "АНКЕТА" or "VS"
+    return topicsData.filter((topic) => 
+      (topic.customTagLabel ?? '').toLowerCase() === filter.filterValue.toLowerCase()
+    );
   })();
   
   const visibleTopics = filteredTopics.slice(0, topicsVisibleCount);
@@ -584,7 +587,7 @@ const Index = () => {
               )}
             </motion.div>
           )}
-        </AnimatePresence>
+        </ AnimatePresence>
         <MadeWithDyad />
       </main>
     </div>

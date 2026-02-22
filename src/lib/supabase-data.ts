@@ -37,12 +37,22 @@ export interface TopicVoteOption {
   votes: number;
 }
 
+export interface PublicMenuFilter {
+  id: string;
+  label: string;
+  filterType: "content_type" | "tag";
+  filterValue: string;
+  sortOrder: number | null;
+  active: boolean;
+}
+
 export interface PublishedTopic {
   id: string;
   title: string;
   description: string;
   tag?: string | null;
   tagIcon?: string | null;
+  customTagLabel?: string | null;
   contentType: ContentType;
   contentData?: Record<string, unknown> | null;
   pollAllowMultiple?: boolean;
@@ -128,7 +138,6 @@ export async function fetchPublishedTopicsWithArguments() {
 
   let topics: DbTopic[] = [];
   
-  // Fetch topics ordered ONLY by sort_order as requested
   const fullSelect = "id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at";
   const response = await fetch(
     `${supabaseUrl}/rest/v1/topics?select=${fullSelect}&published=eq.true&order=sort_order.asc.nullslast`,
@@ -184,7 +193,8 @@ export async function fetchPublishedTopicsWithArguments() {
     
     let tag = parsedTag.label ?? null;
     if (contentType === "poll") tag = "АНКЕТА";
-    if (contentType === "vs") tag = "VS";
+    else if (contentType === "vs") tag = "VS";
+    else if (!tag) tag = "ТЕЗА";
     
     return {
       id: topic.id,
@@ -192,6 +202,7 @@ export async function fetchPublishedTopicsWithArguments() {
       description: topic.description,
       tag,
       tagIcon: contentType === "debate" ? parsedTag.icon : null,
+      customTagLabel: parsedTag.label,
       contentType,
       contentData: topic.content_data ?? null,
       pollAllowMultiple: Boolean((topic.content_data as any)?.allowMultiple),
