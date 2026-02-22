@@ -80,7 +80,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
   if (isBoxed) {
     return (
       <motion.div
-        layout
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onClick={onClick}
@@ -144,7 +143,6 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       onClick={onClick}
