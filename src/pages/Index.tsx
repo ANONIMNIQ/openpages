@@ -386,7 +386,14 @@ const Index = () => {
               )}
             </motion.div>
           ) : (
-            <motion.div key="detail-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16">
+            <motion.div 
+              key="detail-view" 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }} 
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
+            >
               <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
                 <ArrowLeft size={14} /> Обратно към списъка
               </motion.button>
