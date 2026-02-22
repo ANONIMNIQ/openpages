@@ -2,9 +2,9 @@ interface Env {}
 
 const esc = (value: string) =>
   value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
+    .replaceAll("&", "&")
+    .replaceAll("<", "<")
+    .replaceAll(">", ">")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
@@ -14,7 +14,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
   const url = new URL(request.url);
   const title = clampText(url.searchParams.get("title") || "Open pages", 80);
   const description = clampText(
-    url.searchParams.get("description") || "Отворена платформа за анонимни дискусии",
+    url.searchParams.get("description") || "ТВОЕТО АНОНИМНО МНЕНИЕ ЗА АКТУАЛНИТЕ ТЕМИ НА ДЕНЯ",
     180
   );
   const tag = clampText(url.searchParams.get("tag") || "OPEN PAGES", 28);

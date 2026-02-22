@@ -623,7 +623,7 @@ const Index = () => {
                       <span className="inline-block leading-none -translate-y-[2px]">pen pages</span>
                     </h1>
                     <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-bold">
-                      Отворена платформа за анонимни дискусии
+                      Твоето анонимно мнение за актуалните теми на деня
                     </p>
                     </div>
                     <button

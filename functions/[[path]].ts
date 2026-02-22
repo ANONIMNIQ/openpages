@@ -16,9 +16,9 @@ type TopicPreview = {
 
 const htmlEscape = (value: string) =>
   value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
+    .replaceAll("&", "&")
+    .replaceAll("<", "<")
+    .replaceAll(">", ">")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
@@ -135,7 +135,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   if (!contentType.includes("text/html")) return response;
 
   let ogTitle = "Open pages";
-  let ogDescription = "Отворена платформа за анонимни дискусии";
+  let ogDescription = "ТВОЕТО АНОНИМНО МНЕНИЕ ЗА АКТУАЛНИТЕ ТЕМИ НА ДЕНЯ";
   let ogTag = "OPEN PAGES";
   let ogUrl = url.toString();
 
