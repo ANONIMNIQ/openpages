@@ -296,9 +296,9 @@ const Index = () => {
           {!selectedTopicId ? (
             <motion.div 
               key="list-view" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -20 }} 
+              initial={{ opacity: 0, x: 40 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -40 }} 
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >
@@ -388,9 +388,9 @@ const Index = () => {
           ) : (
             <motion.div 
               key="detail-view" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -20 }} 
+              initial={{ opacity: 0, x: 40 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -40 }} 
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
             >

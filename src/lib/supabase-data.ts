@@ -128,20 +128,19 @@ export async function fetchPublishedTopicsWithArguments() {
 
   let topics: DbTopic[] = [];
   
-  // Attempt 1: Full fetch
+  // Fetch topics ordered ONLY by sort_order as requested
   const fullSelect = "id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at";
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=${fullSelect}&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
+    `${supabaseUrl}/rest/v1/topics?select=${fullSelect}&published=eq.true&order=sort_order.asc.nullslast`,
     { headers: getSupabaseHeaders(), cache: "no-store" }
   );
 
   if (response.ok) {
     topics = await response.json();
   } else {
-    // Attempt 2: Essential columns fallback
     const essentialSelect = "id,title,description,content_type,content_data,published,created_at";
     const fallback = await fetch(
-      `${supabaseUrl}/rest/v1/topics?select=${essentialSelect}&published=eq.true&order=created_at.desc`,
+      `${supabaseUrl}/rest/v1/topics?select=${essentialSelect}&published=eq.true&order=sort_order.asc.nullslast`,
       { headers: getSupabaseHeaders(), cache: "no-store" }
     );
     if (fallback.ok) {
