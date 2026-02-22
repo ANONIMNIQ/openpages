@@ -138,40 +138,50 @@ const toVoteOptions = (topic: DbTopic, votesByOption: Record<string, number>) =>
   return [];
 };
 
-const extractSupabaseError = async (response: Response) => {
-  try {
-    const payload = (await response.json()) as { message?: string; error?: string; hint?: string };
-    return payload.message || payload.error || payload.hint || `HTTP ${response.status}`;
-  } catch {
-    return `HTTP ${response.status}`;
-  }
-};
-
 export async function fetchPublishedTopicsWithArguments() {
   if (!isSupabaseConfigured()) return null;
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) return null;
 
-  let topicsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
-    { headers: getSupabaseHeaders(), cache: "no-store" }
-  );
-  
-  if (!topicsResponse.ok) throw new Error(`Failed to load topics (${topicsResponse.status})`);
-  const topics = (await topicsResponse.json()) as DbTopic[];
+  let topics: DbTopic[] = [];
+  try {
+    // Try extended fetch first
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/topics?select=id,title,description,custom_tag,content_type,content_data,sort_order,published,is_featured,created_at&published=eq.true&order=sort_order.asc.nullslast,created_at.desc`,
+      { headers: getSupabaseHeaders(), cache: "no-store" }
+    );
+    if (response.ok) {
+      topics = (await response.json()) as DbTopic[];
+    } else {
+      // Fallback to basic fetch if columns are missing
+      const fallback = await fetch(
+        `${supabaseUrl}/rest/v1/topics?select=id,title,description,published,created_at&published=eq.true&order=created_at.desc`,
+        { headers: getSupabaseHeaders(), cache: "no-store" }
+      );
+      if (fallback.ok) {
+        topics = (await fallback.json()) as DbTopic[];
+      }
+    }
+  } catch (e) {
+    console.error("Topics fetch failed", e);
+    return null;
+  }
 
-  const argumentsResponse = await fetch(
-    `${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`,
-    { headers: getSupabaseHeaders(), cache: "no-store" }
-  );
-  if (!argumentsResponse.ok) throw new Error(`Failed to load arguments (${argumentsResponse.status})`);
-  const args = (await argumentsResponse.json()) as DbArgument[];
+  if (topics.length === 0) return [];
 
-  const votesResponse = await fetch(`${supabaseUrl}/rest/v1/content_votes?select=topic_id,option_id`, {
-    headers: getSupabaseHeaders(),
-    cache: "no-store",
-  });
-  const votes = votesResponse.ok ? ((await votesResponse.json()) as DbVoteRow[]) : [];
+  const [argsRes, votesRes] = await Promise.all([
+    fetch(`${supabaseUrl}/rest/v1/arguments?select=id,topic_id,side,author,text,created_at&order=created_at.desc`, {
+      headers: getSupabaseHeaders(),
+      cache: "no-store",
+    }),
+    fetch(`${supabaseUrl}/rest/v1/content_votes?select=topic_id,option_id`, {
+      headers: getSupabaseHeaders(),
+      cache: "no-store",
+    }),
+  ]);
+
+  const args = argsRes.ok ? ((await argsRes.json()) as DbArgument[]) : [];
+  const votes = votesRes.ok ? ((await votesRes.json()) as DbVoteRow[]) : [];
 
   const byTopic = args.reduce<Record<string, DbArgument[]>>((acc, arg) => {
     if (!acc[arg.topic_id]) acc[arg.topic_id] = [];
@@ -190,11 +200,10 @@ export async function fetchPublishedTopicsWithArguments() {
     const pro = topicArgs.filter((arg) => arg.side === "pro");
     const con = topicArgs.filter((arg) => arg.side === "con");
     const contentType = topic.content_type ?? "debate";
-    const voteOptions = toVoteOptions(topic, votesByTopic[topic.id] ?? {});
+    const voteOptions = toVoteOptions(topic, votesByTopic[topic.id] ?? []);
     const totalVotes = voteOptions.reduce((sum, option) => sum + option.votes, 0);
     const parsedTag = parseStoredTag(topic.custom_tag);
     
-    // Logic for tag display
     let tag = parsedTag.label ?? null;
     if (contentType === "poll") tag = "АНКЕТА";
     if (contentType === "vs") tag = "VS";
@@ -209,15 +218,9 @@ export async function fetchPublishedTopicsWithArguments() {
       tagIcon,
       contentType,
       contentData: topic.content_data ?? null,
-      pollAllowMultiple:
-        contentType === "poll"
-          ? Boolean((topic.content_data as { allowMultiple?: boolean } | null)?.allowMultiple)
-          : false,
-      isClosed:
-        contentType === "poll"
-          ? Boolean((topic.content_data as { isClosed?: boolean } | null)?.isClosed)
-          : false,
-      isFeatured: topic.is_featured ?? false,
+      pollAllowMultiple: Boolean((topic.content_data as any)?.allowMultiple),
+      isClosed: Boolean((topic.content_data as any)?.isClosed),
+      isFeatured: Boolean(topic.is_featured),
       argumentsCount: topicArgs.length,
       pro,
       con,
@@ -232,30 +235,24 @@ export async function fetchPublicMenuFilters() {
   const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) return null;
 
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/menu_filters?select=id,label,filter_type,filter_value,sort_order,active&active=eq.true&order=sort_order.asc.nullslast,created_at.asc`,
-    { headers: getSupabaseHeaders() }
-  );
-
-  if (!response.ok) return null;
-
-  const rows = (await response.json()) as Array<{
-    id: string;
-    label: string;
-    filter_type: "content_type" | "tag";
-    filter_value: string;
-    sort_order?: number | null;
-    active?: boolean;
-  }>;
-
-  return rows.map((row) => ({
-    id: row.id,
-    label: row.label,
-    filterType: row.filter_type,
-    filterValue: row.filter_value,
-    sortOrder: row.sort_order ?? null,
-    active: row.active ?? true,
-  })) satisfies PublicMenuFilter[];
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/menu_filters?select=id,label,filter_type,filter_value,sort_order,active&active=eq.true&order=sort_order.asc.nullslast,created_at.asc`,
+      { headers: getSupabaseHeaders() }
+    );
+    if (!response.ok) return [];
+    const rows = await response.json();
+    return rows.map((row: any) => ({
+      id: row.id,
+      label: row.label,
+      filterType: row.filter_type,
+      filterValue: row.filter_value,
+      sortOrder: row.sort_order ?? null,
+      active: row.active ?? true,
+    })) satisfies PublicMenuFilter[];
+  } catch {
+    return [];
+  }
 }
 
 export async function createPublicArgument(input: {
@@ -282,8 +279,7 @@ export async function createPublicArgument(input: {
   });
 
   if (!response.ok) throw new Error(`Failed to create argument (${response.status})`);
-
-  const rows = (await response.json()) as DbArgument[];
+  const rows = await response.json();
   return rows[0] ?? null;
 }
 
@@ -308,8 +304,7 @@ export async function voteOnContent(input: { topicId: string; optionId: string; 
   });
 
   if (!response.ok) throw new Error(`Failed to vote (${response.status})`);
-
-  return (await response.json()) as Array<{ topic_id: string; option_id: string; voter_key: string }>;
+  return response.json();
 }
 
 export async function unvoteOnContent(input: { topicId: string; optionId: string; allowMultiple?: boolean }) {
@@ -321,37 +316,25 @@ export async function unvoteOnContent(input: { topicId: string; optionId: string
     ? [`${baseVoterKey}:${input.optionId}`, `${baseVoterKey}:single`, baseVoterKey]
     : [`${baseVoterKey}:single`, baseVoterKey];
 
-  const existingKeys: string[] = [];
   for (const key of candidateKeys) {
-    const probeResponse = await fetch(
+    const probe = await fetch(
       `${supabaseUrl}/rest/v1/content_votes?select=voter_key&topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}&limit=1`,
       { headers: getSupabaseHeaders(), cache: "no-store" }
     );
-    if (!probeResponse.ok) throw new Error(`Failed to verify vote before removal (${probeResponse.status})`);
-    const rows = (await probeResponse.json()) as Array<{ voter_key: string }>;
-    if (rows.length > 0) existingKeys.push(key);
-  }
-
-  if (existingKeys.length === 0) return false;
-
-  const optionIdOnUnvote = `__unvoted__${Date.now()}`;
-  for (const key of existingKeys) {
-    const updateResponse = await fetch(
-      `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}`,
-      {
-        method: "PATCH",
-        headers: {
-          ...getSupabaseHeaders(),
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({ option_id: optionIdOnUnvote }),
+    if (probe.ok) {
+      const rows = await probe.json();
+      if (rows.length > 0) {
+        const del = await fetch(
+          `${supabaseUrl}/rest/v1/content_votes?topic_id=eq.${encodeURIComponent(input.topicId)}&option_id=eq.${encodeURIComponent(input.optionId)}&voter_key=eq.${encodeURIComponent(key)}`,
+          {
+            method: "PATCH",
+            headers: { ...getSupabaseHeaders(), Prefer: "return=representation" },
+            body: JSON.stringify({ option_id: `__unvoted__${Date.now()}` }),
+          }
+        );
+        if (del.ok) return true;
       }
-    );
-    if (!updateResponse.ok) throw new Error(`Failed to remove vote (${updateResponse.status})`);
-    const updated = (await updateResponse.json()) as Array<{ topic_id: string }>;
-    if (updated.length === 0) continue;
-    return true;
+    }
   }
-
   return false;
 }
