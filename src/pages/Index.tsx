@@ -6,12 +6,49 @@ import TopicCard from '@/components/TopicCard';
 import TopicCardSkeleton from '@/components/TopicCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2 } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Menu, X, Pencil, Share2, Check } from 'lucide-react';
 import { createPublicArgument, fetchPublicMenuFilters, fetchPublishedTopicsWithArguments, unvoteOnContent, voteOnContent, type PublicMenuFilter, type PublishedTopic } from '@/lib/supabase-data';
 import { buildTopicPath, parseTopicIdFromRef } from '@/lib/topic-links';
 import { showError, showSuccess } from '@/utils/toast';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const BallotAnimation = ({ color }: { color: string }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+  >
+    {/* Урната (слота) */}
+    <div className="relative w-16 h-16">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="absolute bottom-0 left-0 right-0 h-2 bg-black/10 rounded-full"
+      />
+      {/* Бюлетината */}
+      <motion.div
+        initial={{ y: -40, opacity: 0, rotate: -5 }}
+        animate={{ y: 10, opacity: [0, 1, 1, 0], rotate: 0 }}
+        transition={{ duration: 0.8, ease: "circIn" }}
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-10 bg-white border-2 rounded-sm shadow-sm flex items-center justify-center"
+        style={{ borderColor: color }}
+      >
+        <div className="w-4 h-0.5 bg-gray-100 mb-1" />
+        <div className="w-4 h-0.5 bg-gray-100" />
+      </motion.div>
+      {/* Ефект на потъване */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [0, 1.5, 2], opacity: [0, 0.5, 0] }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-4 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+    </div>
+  </motion.div>
+);
 
 const Index = () => {
   const navigate = useNavigate();
@@ -36,7 +73,6 @@ const Index = () => {
   const [isDetailOpening, setIsDetailOpening] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
   const [voteFx, setVoteFx] = useState<{ topicId: string; optionId: string; type: 'poll' | 'vs'; token: number } | null>(null);
-  const [explodedPollOptionId, setExplodedPollOptionId] = useState<string | null>(null);
   const [pollPieTooltip, setPollPieTooltip] = useState<{ x: number; y: number; label: string; percent: number; color: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuFilters, setMenuFilters] = useState<PublicMenuFilter[]>([]);
@@ -54,7 +90,6 @@ const Index = () => {
   
   const mainRef = useRef<HTMLElement | null>(null);
   const pollPieWrapRef = useRef<HTMLDivElement | null>(null);
-  const topicsDataSignatureRef = useRef<string>('');
 
   const selectedTopic = topicsData.find(t => t.id === selectedTopicId);
   const filteredTopics = (() => {
@@ -191,6 +226,7 @@ const Index = () => {
       
       if (!isToggleOff) {
         setVoteFx({ topicId: selectedTopic.id, optionId, type: selectedTopic.contentType, token: Date.now() });
+        setTimeout(() => setVoteFx(null), 1500);
       }
     } catch (error) {
       console.warn('Vote failed', error);
@@ -225,7 +261,6 @@ const Index = () => {
         ]);
         if (!canceled && remoteTopics) {
           setTopicsData(remoteTopics);
-          topicsDataSignatureRef.current = JSON.stringify(remoteTopics);
         }
         if (!canceled && remoteMenuFilters) {
           setMenuFilters(remoteMenuFilters);
@@ -405,7 +440,6 @@ const Index = () => {
                   const isTall = index % 6 === 4;
                   const gridClasses = isFeatured ? 'md:col-span-2' : isTall ? 'md:row-span-2' : '';
                   
-                  // Изчисляване на метрики за визуализация
                   const metric = (() => {
                     if (topic.contentType === 'debate') {
                       const proCount = topic.pro.length;
@@ -537,7 +571,6 @@ const Index = () => {
                     </div>
                   ) : selectedTopic?.contentType === 'poll' ? (
                     <div className="space-y-8">
-                      {/* Графика за анкета */}
                       {((votedOptionIdsByTopic[selectedTopic.id] ?? []).length > 0 || selectedTopic.isClosed) && (
                         <div className="relative rounded-2xl border border-gray-100 bg-[#fafafa] p-6">
                           <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Резултати</div>
@@ -584,9 +617,9 @@ const Index = () => {
                             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {selectedTopic.voteOptions.map((opt, idx) => (
                                 <div key={opt.id} className="flex items-center gap-2 text-[11px] font-bold">
-                                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5] }} />
+                                  <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5] }} />
                                   <span className="truncate">{opt.label}</span>
-                                  <span className="ml-auto text-gray-400">{Math.round(selectedTopic.totalVotes > 0 ? (opt.votes / selectedTopic.totalVotes) * 100 : 0)}%</span>
+                                  <span className="ml-auto text-gray-400 shrink-0">{Math.round(selectedTopic.totalVotes > 0 ? (opt.votes / selectedTopic.totalVotes) * 100 : 0)}%</span>
                                 </div>
                               ))}
                             </div>
@@ -599,20 +632,25 @@ const Index = () => {
                           const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
                           const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
                           const color = opt.color || ['#111827', '#16a34a', '#e11d48', '#2563eb', '#d97706'][idx % 5];
+                          const isCelebrating = voteFx?.optionId === opt.id;
                           
                           return (
                             <button
                               key={opt.id}
                               onClick={() => handleVote(opt.id)}
                               disabled={isVoting || selectedTopic.isClosed}
-                              className={`relative w-full p-4 border rounded-xl text-left transition-all overflow-hidden ${isSelected ? 'border-black bg-black/5' : 'hover:border-black'}`}
+                              className={`relative w-full p-5 border rounded-2xl text-left transition-all overflow-hidden hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 ${isSelected ? 'border-black bg-black/5' : 'border-gray-100'}`}
                             >
                               <div className="relative z-10 flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-4 w-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: color }}>
-                                    {isSelected && <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />}
+                                <div className="flex items-center gap-4">
+                                  <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0" style={{ borderColor: color }}>
+                                    {isSelected && (
+                                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                        <Check size={12} strokeWidth={4} style={{ color }} />
+                                      </motion.div>
+                                    )}
                                   </div>
-                                  <span className="font-bold">{opt.label}</span>
+                                  <span className="font-bold text-sm">{opt.label}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                   {hasVoted && <span className="text-xs font-black">{percent}%</span>}
@@ -627,6 +665,9 @@ const Index = () => {
                                   style={{ backgroundColor: color }}
                                 />
                               )}
+                              <AnimatePresence>
+                                {isCelebrating && <BallotAnimation color={color} />}
+                              </AnimatePresence>
                             </button>
                           );
                         })}
@@ -638,6 +679,7 @@ const Index = () => {
                         const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
                         const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
                         const isOptionCelebrating = voteFx?.optionId === opt.id;
+                        const color = idx === 0 ? '#10b981' : '#f43f5e';
 
                         return (
                           <motion.button
@@ -645,7 +687,7 @@ const Index = () => {
                             onClick={() => handleVote(opt.id)}
                             disabled={isVoting || selectedTopic.isClosed}
                             whileHover={{ y: -4 }}
-                            className={`relative rounded-2xl border p-6 text-left transition-all min-h-[28rem] flex flex-col ${isSelected ? 'border-black ring-2 ring-black/10' : 'border-gray-100'}`}
+                            className={`relative rounded-2xl border p-6 text-left transition-all min-h-[28rem] flex flex-col hover:shadow-2xl hover:shadow-black/5 ${isSelected ? 'border-black ring-2 ring-black/10' : 'border-gray-100'}`}
                           >
                             {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-xl mb-6" />}
                             <h3 className="text-xl font-black mb-2">{opt.label}</h3>
@@ -659,19 +701,22 @@ const Index = () => {
                             </div>
                             <AnimatePresence>
                               {isOptionCelebrating && (
-                                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                  {Array.from({ length: 12 }).map((_, i) => (
-                                    <motion.span
-                                      key={i}
-                                      initial={{ opacity: 0, scale: 0, y: 0 }}
-                                      animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0.5], y: -100, x: (i - 6) * 20 }}
-                                      transition={{ duration: 1, delay: i * 0.05 }}
-                                      className="text-2xl absolute"
-                                    >
-                                      {['🔥', '✨', '👏', '🎉'][i % 4]}
-                                    </motion.span>
-                                  ))}
-                                </div>
+                                <>
+                                  <BallotAnimation color={color} />
+                                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                      <motion.span
+                                        key={i}
+                                        initial={{ opacity: 0, scale: 0, y: 0 }}
+                                        animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0.5], y: -100, x: (i - 6) * 20 }}
+                                        transition={{ duration: 1, delay: i * 0.05 }}
+                                        className="text-2xl absolute"
+                                      >
+                                        {['🔥', '✨', '👏', '🎉'][i % 4]}
+                                      </motion.span>
+                                    ))}
+                                  </div>
+                                </>
                               )}
                             </AnimatePresence>
                           </motion.button>
