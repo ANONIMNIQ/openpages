@@ -294,7 +294,14 @@ const Index = () => {
       <main ref={mainRef} className="flex-1 max-w-2xl border-r border-gray-100 h-screen overflow-y-auto relative">
         <AnimatePresence mode="wait">
           {!selectedTopicId ? (
-            <motion.div key="list-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16">
+            <motion.div 
+              key="list-view" 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }} 
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-[46rem] mx-auto px-8 md:px-12 py-16"
+            >
               <header className="mb-8">
                 <div className="flex justify-between items-start">
                   <div>
@@ -509,7 +516,7 @@ const Index = () => {
                     </div>
                   ) : selectedTopic.contentType === 'vs' ? (
                     <div className="space-y-8">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
                         ИЗБЕРИ ЕДИН ОТГОВОР
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
