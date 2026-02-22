@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useMemo, useState } from "react";
 import {
   adminSessionStorageKey,
@@ -99,7 +101,7 @@ const TAG_ICONS = [
 const splitTag = (raw?: string | null): { icon: string; label: string } => {
   if (!raw) return { icon: "", label: "" };
   const idx = raw.indexOf(TAG_DIVIDER);
-  if (idx <= 0) return { icon: "", label: raw };
+  if (idx === -1) return { icon: "", label: raw };
   return {
     icon: raw.slice(0, idx).trim(),
     label: raw.slice(idx + TAG_DIVIDER.length).trim(),
@@ -200,7 +202,7 @@ const Admin = () => {
       Array.from(
         new Set(
           topics
-            .map((topic) => (topic.custom_tag ?? "").trim())
+            .map((topic) => splitTag(topic.custom_tag).label.trim())
             .filter((tag) => tag.length > 0)
         )
       ),
@@ -313,7 +315,7 @@ const Admin = () => {
         accessToken: session.accessToken,
         title,
         description,
-        customTag: contentType === "debate" ? buildTag(customTagIcon, customTag) : undefined,
+        customTag: buildTag(customTagIcon, customTag),
         contentType,
         contentData: payloadContentData,
         proArguments: contentType === "debate" ? proArguments : [],
@@ -477,8 +479,6 @@ const Admin = () => {
       setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
       setEditPollAllowMultiple(false);
       setEditPollIsClosed(false);
-      setEditCustomTag("");
-      setEditCustomTagIcon("");
     } else {
       setEditPollOptions([nextPollOption(0), nextPollOption(1)]);
       setEditPollAllowMultiple(false);
@@ -487,10 +487,6 @@ const Admin = () => {
       setEditVsRightName("");
       setEditVsLeftImage("");
       setEditVsRightImage("");
-      if (type !== "debate") {
-        setEditCustomTag("");
-        setEditCustomTagIcon("");
-      }
     }
   };
 
@@ -528,7 +524,7 @@ const Admin = () => {
       await updateTopic(session.accessToken, topicId, {
         title: editTitle,
         description: editDescription,
-        customTag: editContentType === "debate" ? buildTag(editCustomTagIcon, editCustomTag) : undefined,
+        customTag: buildTag(editCustomTagIcon, editCustomTag),
         contentType: editContentType,
         contentData: getEditContentData(),
         sortOrder: targetTopic?.sort_order ?? null,
@@ -963,29 +959,27 @@ const Admin = () => {
                       <option value="poll">Анкета</option>
                       <option value="vs">VS</option>
                     </select>
-                    {editContentType === "debate" ? (
-                      <div className="grid grid-cols-[auto_1fr] gap-2">
-                        <select
-                          value={editCustomTagIcon}
-                          onChange={(e) => setEditCustomTagIcon(e.target.value)}
-                          className="h-10 rounded-lg border border-gray-200 px-2 bg-white text-lg"
-                          aria-label="Икона за таг"
-                        >
-                          <option value="">◯</option>
-                          {TAG_ICONS.map((icon) => (
-                            <option key={`edit-tag-icon-${icon}`} value={icon}>
-                              {icon}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          value={editCustomTag}
-                          onChange={(e) => setEditCustomTag(e.target.value)}
-                          placeholder="Къстъм таг (по избор)"
-                          className="w-full h-10 rounded-lg border border-gray-200 px-3"
-                        />
-                      </div>
-                    ) : null}
+                    <div className="grid grid-cols-[auto_1fr] gap-2">
+                      <select
+                        value={editCustomTagIcon}
+                        onChange={(e) => setEditCustomTagIcon(e.target.value)}
+                        className="h-10 rounded-lg border border-gray-200 px-2 bg-white text-lg"
+                        aria-label="Икона за таг"
+                      >
+                        <option value="">◯</option>
+                        {TAG_ICONS.map((icon) => (
+                          <option key={`edit-tag-icon-${icon}`} value={icon}>
+                            {icon}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={editCustomTag}
+                        onChange={(e) => setEditCustomTag(e.target.value)}
+                        placeholder="Къстъм таг (по избор)"
+                        className="w-full h-10 rounded-lg border border-gray-200 px-3"
+                      />
+                    </div>
                     {editContentType === "poll" ? (
                       <div className="space-y-2">
                         <div className="flex flex-wrap gap-4">
@@ -1097,24 +1091,25 @@ const Admin = () => {
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Заглавие" className="w-full h-11 rounded-xl border border-gray-200 px-4" required />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Описание" className="w-full min-h-24 rounded-xl border border-gray-200 px-4 py-3" required />
 
+            <div className="grid grid-cols-[auto_1fr] gap-2">
+              <select
+                value={customTagIcon}
+                onChange={(e) => setCustomTagIcon(e.target.value)}
+                className="h-11 rounded-xl border border-gray-200 px-2 bg-white text-lg"
+                aria-label="Икона за таг"
+              >
+                <option value="">◯</option>
+                {TAG_ICONS.map((icon) => (
+                  <option key={`tag-icon-${icon}`} value={icon}>
+                    {icon}
+                  </option>
+                ))}
+              </select>
+              <input value={customTag} onChange={(e) => setCustomTag(e.target.value)} placeholder="Къстъм таг (по избор)" className="w-full h-11 rounded-xl border border-gray-200 px-4" />
+            </div>
+
             {contentType === "debate" ? (
               <>
-                <div className="grid grid-cols-[auto_1fr] gap-2">
-                  <select
-                    value={customTagIcon}
-                    onChange={(e) => setCustomTagIcon(e.target.value)}
-                    className="h-11 rounded-xl border border-gray-200 px-2 bg-white text-lg"
-                    aria-label="Икона за таг"
-                  >
-                    <option value="">◯</option>
-                    {TAG_ICONS.map((icon) => (
-                      <option key={`tag-icon-${icon}`} value={icon}>
-                        {icon}
-                      </option>
-                    ))}
-                  </select>
-                  <input value={customTag} onChange={(e) => setCustomTag(e.target.value)} placeholder="Къстъм таг (по избор)" className="w-full h-11 rounded-xl border border-gray-200 px-4" />
-                </div>
                 <textarea value={proText} onChange={(e) => setProText(e.target.value)} placeholder="Аргументи ЗА (по един на ред)" className="w-full min-h-24 rounded-xl border border-gray-200 px-4 py-3" />
                 <textarea value={conText} onChange={(e) => setConText(e.target.value)} placeholder="Аргументи ПРОТИВ (по един на ред)" className="w-full min-h-24 rounded-xl border border-gray-200 px-4 py-3" />
               </>

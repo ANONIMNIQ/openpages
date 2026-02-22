@@ -69,10 +69,10 @@ const parseStoredTag = (raw?: string | null): { label: string | null; icon: stri
   if (!raw) return { label: null, icon: null };
   const divider = "::";
   const dividerIndex = raw.indexOf(divider);
-  if (dividerIndex <= 0) return { label: raw, icon: null };
+  if (dividerIndex === -1) return { label: raw, icon: null };
   const icon = raw.slice(0, dividerIndex).trim();
   const label = raw.slice(dividerIndex + divider.length).trim();
-  if (!label) return { label: raw, icon: null };
+  if (!label) return { label: icon || raw, icon: icon ? null : null };
   return { label, icon: icon || null };
 };
 
@@ -191,17 +191,20 @@ export async function fetchPublishedTopicsWithArguments() {
     const voteOptions = toVoteOptions(topic, votesByTopic[topic.id] ?? {});
     const parsedTag = parseStoredTag(topic.custom_tag);
     
-    let tag = parsedTag.label ?? null;
-    if (contentType === "poll") tag = "АНКЕТА";
-    else if (contentType === "vs") tag = "VS";
-    else if (!tag) tag = "ТЕЗА";
+    // PRIORITY: Custom Tag > Content Type Label > Default
+    let tag = parsedTag.label;
+    if (!tag) {
+      if (contentType === "poll") tag = "АНКЕТА";
+      else if (contentType === "vs") tag = "VS";
+      else tag = "ТЕЗА";
+    }
     
     return {
       id: topic.id,
       title: topic.title,
       description: topic.description,
       tag,
-      tagIcon: contentType === "debate" ? parsedTag.icon : null,
+      tagIcon: parsedTag.icon,
       customTagLabel: parsedTag.label,
       contentType,
       contentData: topic.content_data ?? null,
