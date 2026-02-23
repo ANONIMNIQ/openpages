@@ -180,17 +180,10 @@ const Index = () => {
   
   const isDetailContentLoading = !selectedTopic && !!selectedTopicId;
 
-  // Optimized Scroll Control
+  // Optimized Scroll Control - Nuled exactly when the view changes
   useEffect(() => {
     if (!mainRef.current) return;
-    
-    // Slight delay to allow the exit animation to start smoothly
-    // before jumping the scroll container to the top
-    const timer = setTimeout(() => {
-      mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-    }, 100);
-
-    return () => clearTimeout(timer);
+    mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
   }, [selectedTopicId]);
 
   const handleOpenTopic = (topicId: string) => {
@@ -351,7 +344,7 @@ const Index = () => {
         ref={mainRef} 
         className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm scroll-smooth"
       >
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="wait" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
               key="list-view" 
