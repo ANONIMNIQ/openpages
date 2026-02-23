@@ -15,6 +15,28 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+// Minimalist Center Loader for transitions
+const CenterLoader = () => (
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-12 h-[2px] bg-gray-100 rounded-full overflow-hidden">
+        <motion.div 
+          className="h-full bg-black"
+          animate={{ 
+            x: ["-100%", "100%"],
+          }}
+          transition={{ 
+            repeat: Infinity, 
+            duration: 1, 
+            ease: "easeInOut" 
+          }}
+        />
+      </div>
+      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">Зареждане</span>
+    </div>
+  </div>
+);
+
 // 3D Tilt Card for VS mode
 const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; isSelected?: boolean }) => {
   const x = useMotionValue(0);
@@ -345,6 +367,7 @@ const Index = () => {
         ref={mainRef} 
         className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm"
       >
+        <CenterLoader />
         <AnimatePresence mode="wait" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
@@ -353,7 +376,7 @@ const Index = () => {
               animate={{ x: 0, opacity: 1 }} 
               exit={{ x: "-100%", opacity: 0 }} 
               transition={slideTransition}
-              className="w-full"
+              className="w-full bg-white"
             >
               <div className="px-8 md:px-12 py-16">
                 <header className="mb-8">
@@ -466,7 +489,7 @@ const Index = () => {
               animate={{ x: 0, opacity: 1 }} 
               exit={{ x: "100%", opacity: 0 }} 
               transition={slideTransition}
-              className="w-full"
+              className="w-full bg-white"
             >
               <div className="px-8 md:px-12 py-16">
                 <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
