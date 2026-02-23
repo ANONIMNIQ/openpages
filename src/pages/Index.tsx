@@ -180,20 +180,11 @@ const Index = () => {
   
   const isDetailContentLoading = !selectedTopic && !!selectedTopicId;
 
-  // Optimized Scroll Control - Nuled exactly when the view changes
+  // Optimized Scroll Control - Instant scroll during the white screen phase
   useEffect(() => {
     if (!mainRef.current) return;
-    
-    if (selectedTopicId) {
-      // Entering a topic: Wait for the list to exit (white screen phase)
-      const timer = setTimeout(() => {
-        mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-      }, 400);
-      return () => clearTimeout(timer);
-    } else {
-      // Exiting to list: Reset scroll immediately
-      mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-    }
+    // behavior: 'auto' ensures it's instant and doesn't fight with animations
+    mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
   }, [selectedTopicId]);
 
   const handleOpenTopic = (topicId: string) => {
@@ -352,9 +343,9 @@ const Index = () => {
     <div className="min-h-screen bg-[#F2F2F2] flex font-sans selection:bg-black selection:text-white">
       <main 
         ref={mainRef} 
-        className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm scroll-smooth"
+        className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm"
       >
-        <AnimatePresence mode="popLayout" initial={false}>
+        <AnimatePresence mode="wait" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
               key="list-view" 
@@ -474,7 +465,7 @@ const Index = () => {
               initial={{ x: "100%", opacity: 0 }} 
               animate={{ x: 0, opacity: 1 }} 
               exit={{ x: "100%", opacity: 0 }} 
-              transition={{ ...slideTransition, delay: 0.4 }}
+              transition={slideTransition}
               className="w-full"
             >
               <div className="px-8 md:px-12 py-16">
@@ -508,7 +499,7 @@ const Index = () => {
                 </header>
 
                 {!isDetailContentLoading && selectedTopic && (
-                  <div className="perspective-1000">
+                  <div>
                     {selectedTopic.contentType === 'debate' ? (
                       <div className="space-y-12">
                         <CardStack 
