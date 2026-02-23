@@ -16,25 +16,34 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Minimalist Center Loader for transitions
-const CenterLoader = () => (
-  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-12 h-[2px] bg-gray-100 rounded-full overflow-hidden">
-        <motion.div 
-          className="h-full bg-black"
-          animate={{ 
-            x: ["-100%", "100%"],
-          }}
-          transition={{ 
-            repeat: Infinity, 
-            duration: 1, 
-            ease: "easeInOut" 
-          }}
-        />
-      </div>
-      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">Зареждане</span>
-    </div>
-  </div>
+const CenterLoader = ({ visible }: { visible: boolean }) => (
+  <AnimatePresence>
+    {visible && (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-[2px] bg-gray-100 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-black"
+              animate={{ 
+                x: ["-100%", "100%"],
+              }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: 1, 
+                ease: "easeInOut" 
+              }}
+            />
+          </div>
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300">Зареждане</span>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
 );
 
 // 3D Tilt Card for VS mode
@@ -174,6 +183,7 @@ const Index = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuFilters, setMenuFilters] = useState<PublicMenuFilter[]>([]);
   const [activeMenuFilterId, setActiveMenuFilterId] = useState<string>('all');
+  const [isNavigating, setIsNavigating] = useState(false);
   const [votedOptionIdsByTopic, setVotedOptionIdsByTopic] = useState<Record<string, string[]>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -202,11 +212,17 @@ const Index = () => {
   
   const isDetailContentLoading = !selectedTopic && !!selectedTopicId;
 
-  // Optimized Scroll Control - Instant scroll during the white screen phase
+  // Optimized Scroll Control & Navigation State
   useEffect(() => {
     if (!mainRef.current) return;
+    
+    setIsNavigating(true);
     // behavior: 'auto' ensures it's instant and doesn't fight with animations
     mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
+    
+    // Hide loader after transition is likely complete
+    const timer = setTimeout(() => setIsNavigating(false), 1000);
+    return () => clearTimeout(timer);
   }, [selectedTopicId]);
 
   const handleOpenTopic = (topicId: string) => {
@@ -367,7 +383,7 @@ const Index = () => {
         ref={mainRef} 
         className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm"
       >
-        <CenterLoader />
+        <CenterLoader visible={isNavigating} />
         <AnimatePresence mode="wait" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
@@ -376,7 +392,7 @@ const Index = () => {
               animate={{ x: 0, opacity: 1 }} 
               exit={{ x: "-100%", opacity: 0 }} 
               transition={slideTransition}
-              className="w-full bg-white"
+              className="relative z-10 w-full bg-white min-h-full"
             >
               <div className="px-8 md:px-12 py-16">
                 <header className="mb-8">
@@ -489,7 +505,7 @@ const Index = () => {
               animate={{ x: 0, opacity: 1 }} 
               exit={{ x: "100%", opacity: 0 }} 
               transition={slideTransition}
-              className="w-full bg-white"
+              className="relative z-10 w-full bg-white min-h-full"
             >
               <div className="px-8 md:px-12 py-16">
                 <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
