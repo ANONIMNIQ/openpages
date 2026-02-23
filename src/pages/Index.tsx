@@ -55,8 +55,9 @@ const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React
   const mouseXSpring = useSpring(x, { stiffness: 400, damping: 35 });
   const mouseYSpring = useSpring(y, { stiffness: 400, damping: 35 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["12deg", "-12deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-12deg", "12deg"]);
+  // Increased tilt to 15deg for better visibility of the frame movement
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["15deg", "-15deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-15deg", "15deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -85,12 +86,13 @@ const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React
         rotateY,
         transformStyle: "preserve-3d",
       }}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={`relative rounded-3xl border p-6 text-left min-h-[28rem] flex flex-col bg-white shadow-sm cursor-pointer ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100 hover:shadow-2xl'}`}
     >
-      <div style={{ transform: "translateZ(50px)" }} className="h-full flex flex-col">
+      {/* Removed translateZ to make the card feel like one solid piece */}
+      <div className="h-full flex flex-col">
         {children}
       </div>
     </motion.div>
@@ -675,7 +677,7 @@ const Index = () => {
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
                           ИЗБЕРИ ЕДИН ОТГОВОР
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ perspective: "1200px" }}>
                           {selectedTopic.voteOptions.map((opt, idx) => {
                             const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
                             const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
