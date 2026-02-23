@@ -183,7 +183,17 @@ const Index = () => {
   // Optimized Scroll Control - Nuled exactly when the view changes
   useEffect(() => {
     if (!mainRef.current) return;
-    mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
+    
+    if (selectedTopicId) {
+      // Entering a topic: Wait for the list to exit (white screen phase)
+      const timer = setTimeout(() => {
+        mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+      }, 400);
+      return () => clearTimeout(timer);
+    } else {
+      // Exiting to list: Reset scroll immediately
+      mainRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    }
   }, [selectedTopicId]);
 
   const handleOpenTopic = (topicId: string) => {
@@ -344,7 +354,7 @@ const Index = () => {
         ref={mainRef} 
         className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm scroll-smooth"
       >
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
               key="list-view" 
@@ -464,7 +474,7 @@ const Index = () => {
               initial={{ x: "100%", opacity: 0 }} 
               animate={{ x: 0, opacity: 1 }} 
               exit={{ x: "100%", opacity: 0 }} 
-              transition={slideTransition}
+              transition={{ ...slideTransition, delay: 0.4 }}
               className="w-full"
             >
               <div className="px-8 md:px-12 py-16">
