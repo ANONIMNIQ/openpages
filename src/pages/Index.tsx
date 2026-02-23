@@ -89,9 +89,8 @@ const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`relative rounded-3xl border p-6 text-left min-h-[28rem] flex flex-col bg-white shadow-sm cursor-pointer ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100 hover:shadow-2xl'}`}
+      className={`relative rounded-3xl border p-6 text-left min-h-[28rem] flex flex-col bg-white cursor-pointer transition-shadow duration-300 shadow-sm hover:shadow-2xl ${isSelected ? 'border-black ring-4 ring-black/5 shadow-md' : 'border-gray-100'}`}
     >
-      {/* Removed translateZ to make the card feel like one solid piece */}
       <div className="h-full flex flex-col">
         {children}
       </div>
