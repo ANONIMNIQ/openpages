@@ -51,11 +51,12 @@ const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
+  // Faster spring settings for snappier hover
+  const mouseXSpring = useSpring(x, { stiffness: 400, damping: 35 });
+  const mouseYSpring = useSpring(y, { stiffness: 400, damping: 35 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["12deg", "-12deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-12deg", "12deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -84,8 +85,9 @@ const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React
         rotateY,
         transformStyle: "preserve-3d",
       }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={`relative rounded-3xl border p-6 text-left transition-all min-h-[28rem] flex flex-col bg-white shadow-sm cursor-pointer ${isSelected ? 'border-black ring-4 ring-black/5' : 'border-gray-100 hover:shadow-2xl'}`}
     >
       <div style={{ transform: "translateZ(50px)" }} className="h-full flex flex-col">
@@ -678,27 +680,49 @@ const Index = () => {
                             const isSelected = (votedOptionIdsByTopic[selectedTopic.id] ?? []).includes(opt.id);
                             const percent = selectedTopic.totalVotes > 0 ? Math.round((opt.votes / selectedTopic.totalVotes) * 100) : 0;
                             return (
-                              <TiltCard key={opt.id} onClick={() => handleVote(opt.id)} isSelected={isSelected}>
-                                <div className="relative mb-6">
-                                  {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl shadow-lg" />}
-                                  {isSelected && <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/80 text-white flex items-center justify-center z-10"><Check size={18} strokeWidth={3} /></div>}
-                                </div>
-                                <h3 className="text-xl font-black mb-1">{opt.label}</h3>
-                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4">
-                                  {isSelected ? (
-                                    <span className="text-black flex items-center gap-1">
-                                      <Check size={10} strokeWidth={4} /> ТВОЯТ ГЛАС
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400">ГЛАСУВАЙ</span>
-                                  )}
-                                </div>
-                                <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
-                                <div className="mt-auto h-2 rounded-full bg-gray-100 overflow-hidden">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                                </div>
-                                <AnimatePresence>{voteFx?.optionId === opt.id && <EmojiBurst token={voteFx.token} />}</AnimatePresence>
-                              </TiltCard>
+                              <motion.div
+                                key={opt.id}
+                                initial={{ 
+                                  x: idx === 0 ? "25%" : "-25%", 
+                                  rotate: idx === 0 ? -8 : 8,
+                                  opacity: 0,
+                                  scale: 0.9
+                                }}
+                                animate={{ 
+                                  x: 0, 
+                                  rotate: 0,
+                                  opacity: 1,
+                                  scale: 1
+                                }}
+                                transition={{ 
+                                  type: "spring", 
+                                  stiffness: 180, 
+                                  damping: 22,
+                                  delay: 0.1 + idx * 0.05
+                                }}
+                              >
+                                <TiltCard onClick={() => handleVote(opt.id)} isSelected={isSelected}>
+                                  <div className="relative mb-6">
+                                    {opt.image && <img src={opt.image} alt={opt.label} className="w-full h-72 object-cover rounded-2xl shadow-lg" />}
+                                    {isSelected && <div className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/80 text-white flex items-center justify-center z-10"><Check size={18} strokeWidth={3} /></div>}
+                                  </div>
+                                  <h3 className="text-xl font-black mb-1">{opt.label}</h3>
+                                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4">
+                                    {isSelected ? (
+                                      <span className="text-black flex items-center gap-1">
+                                        <Check size={10} strokeWidth={4} /> ТВОЯТ ГЛАС
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">ГЛАСУВАЙ</span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs font-bold text-gray-400 mb-4">{opt.votes} гласа</p>
+                                  <div className="mt-auto h-2 rounded-full bg-gray-100 overflow-hidden">
+                                    <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={`h-full ${idx === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                  </div>
+                                  <AnimatePresence>{voteFx?.optionId === opt.id && <EmojiBurst token={voteFx.token} />}</AnimatePresence>
+                                </TiltCard>
+                              </motion.div>
                             );
                           })}
                         </div>
