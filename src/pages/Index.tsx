@@ -211,8 +211,8 @@ const Index = () => {
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
   const featuredTopics = topicsData.filter(t => t.isFeatured);
   
-  // Improved loading state for detail view
-  const isDetailContentLoading = isTopicsLoading && !!selectedTopicId;
+  // Robust loading state: if we have an ID but no data yet, we are loading.
+  const isDetailContentLoading = !!selectedTopicId && !selectedTopic;
 
   useEffect(() => {
     if (!mainRef.current) return;
@@ -505,10 +505,6 @@ const Index = () => {
               className="relative z-10 w-full bg-white min-h-full"
             >
               <div className="px-8 md:px-12 py-16">
-                <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
-                  <ArrowLeft size={14} /> Обратно към списъка
-                </motion.button>
-
                 {isDetailContentLoading ? (
                   <div className="space-y-12">
                     <div className="space-y-6">
@@ -535,6 +531,10 @@ const Index = () => {
                   </div>
                 ) : selectedTopic ? (
                   <>
+                    <motion.button onClick={handleBackToList} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-12">
+                      <ArrowLeft size={14} /> Обратно към списъка
+                    </motion.button>
+
                     <header className="mb-12">
                       <div className="flex items-center gap-3 mb-8">
                         {selectedTopic.isClosed ? (
