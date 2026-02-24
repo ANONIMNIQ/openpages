@@ -23,7 +23,7 @@ const CenterLoader = ({ visible }: { visible: boolean }) => (
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+        className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 bg-white/20 backdrop-blur-[1px]"
       >
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-[2px] bg-gray-100 rounded-full overflow-hidden">
@@ -51,11 +51,9 @@ const TiltCard = ({ children, onClick, disabled, isSelected }: { children: React
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // Faster spring settings for snappier hover
   const mouseXSpring = useSpring(x, { stiffness: 400, damping: 35 });
   const mouseYSpring = useSpring(y, { stiffness: 400, damping: 35 });
 
-  // Increased tilt to 15deg for better visibility of the frame movement
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["15deg", "-15deg"]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-15deg", "15deg"]);
 
@@ -213,18 +211,14 @@ const Index = () => {
   const hasMoreTopics = filteredTopics.length > topicsVisibleCount;
   const featuredTopics = topicsData.filter(t => t.isFeatured);
   
-  const isDetailContentLoading = !selectedTopic && !!selectedTopicId;
+  // Improved loading state for detail view
+  const isDetailContentLoading = isTopicsLoading && !!selectedTopicId;
 
-  // Optimized Scroll Control & Navigation State
   useEffect(() => {
     if (!mainRef.current) return;
-    
     setIsNavigating(true);
-    // behavior: 'auto' ensures it's instant and doesn't fight with animations
     mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
-    
-    // Hide loader after transition is likely complete
-    const timer = setTimeout(() => setIsNavigating(false), 1000);
+    const timer = setTimeout(() => setIsNavigating(false), 800);
     return () => clearTimeout(timer);
   }, [selectedTopicId]);
 
@@ -386,7 +380,7 @@ const Index = () => {
         ref={mainRef} 
         className="w-full max-w-2xl bg-white h-screen overflow-y-auto relative overflow-x-hidden border-r border-gray-100 shadow-sm"
       >
-        <CenterLoader visible={isNavigating} />
+        <CenterLoader visible={isNavigating && !isDetailContentLoading} />
         <AnimatePresence mode="wait" initial={false}>
           {!selectedTopicId ? (
             <motion.div 
@@ -537,7 +531,7 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                ) : (
+                ) : selectedTopic ? (
                   <>
                     <header className="mb-12">
                       <div className="flex items-center gap-3 mb-8">
@@ -748,6 +742,8 @@ const Index = () => {
                       ) : null}
                     </div>
                   </>
+                ) : (
+                  <div className="py-20 text-center text-gray-400">Темата не е намерена.</div>
                 )}
                 <div className="mt-32">
                   <MadeWithDyad />
