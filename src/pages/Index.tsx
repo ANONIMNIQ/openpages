@@ -524,8 +524,10 @@ const Index = () => {
                       <div className="space-y-4">
                         <Skeleton className="h-40 w-full rounded-2xl" />
                         <Skeleton className="h-40 w-full rounded-2xl" />
+                        <Skeleton className="h-40 w-full rounded-2xl" />
                       </div>
                       <div className="space-y-4">
+                        <Skeleton className="h-40 w-full rounded-2xl" />
                         <Skeleton className="h-40 w-full rounded-2xl" />
                         <Skeleton className="h-40 w-full rounded-2xl" />
                       </div>
@@ -745,9 +747,13 @@ const Index = () => {
                 ) : (
                   <div className="py-20 text-center text-gray-400">Темата не е намерена.</div>
                 )}
-                <div className="mt-32">
-                  <MadeWithDyad />
-                </div>
+                
+                {/* Footer only visible when not loading detail content */}
+                {!isDetailContentLoading && (
+                  <div className="mt-32">
+                    <MadeWithDyad />
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
