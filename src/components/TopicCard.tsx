@@ -103,7 +103,7 @@ const TopicCard: React.FC<TopicCardProps> = ({
       >
         <div className="flex-1">
           {renderBadge(true)}
-          <h2 className="text-[15px] font-black leading-tight mb-4 line-clamp-4 min-h-[4.2rem]">
+          <h2 className="text-[15px] font-black leading-tight mb-4 line-clamp-4 min-h-[5rem]">
             <span className={animatedUnderlineClass}>
               {title}
             </span>
