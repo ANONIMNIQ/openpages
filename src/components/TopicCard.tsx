@@ -68,6 +68,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
 
   const isBoxed = isCompact && !isTall;
 
+  // Animated underline style
+  const animatedUnderlineClass = "bg-left-bottom bg-gradient-to-r from-black to-black bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-[background-size] duration-500 ease-out pb-1";
+
   const renderBadge = (compact: boolean) => {
     if (!tag && !isClosed) return null;
     
@@ -100,16 +103,10 @@ const TopicCard: React.FC<TopicCardProps> = ({
       >
         <div className="flex-1">
           {renderBadge(true)}
-          <h2 className="text-[14px] font-black leading-tight mb-4 line-clamp-4 min-h-[4.2rem]">
-            <motion.span 
-              initial={{ backgroundSize: "0% 2px" }}
-              whileInView={{ backgroundSize: "100% 2px" }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-              className="inline bg-left-bottom bg-gradient-to-r from-black to-black bg-no-repeat pb-1"
-            >
+          <h2 className="text-[15px] font-black leading-tight mb-4 line-clamp-4 min-h-[4.2rem]">
+            <span className={animatedUnderlineClass}>
               {title}
-            </motion.span>
+            </span>
           </h2>
         </div>
         <div className="mt-auto pt-4">
@@ -151,15 +148,9 @@ const TopicCard: React.FC<TopicCardProps> = ({
       <div className="flex-1">
         {renderBadge(false)}
         <h2 className={`${isTall ? 'text-lg' : 'text-2xl'} font-black leading-tight mb-4`}>
-          <motion.span 
-            initial={{ backgroundSize: "0% 2px" }}
-            whileInView={{ backgroundSize: "100% 2px" }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-            className="inline bg-left-bottom bg-gradient-to-r from-black to-black bg-no-repeat pb-1"
-          >
+          <span className={animatedUnderlineClass}>
             {title}
-          </motion.span>
+          </span>
         </h2>
         <p className={`${isTall ? 'text-xs line-clamp-3' : 'text-sm line-clamp-4'} text-gray-500 mb-6 max-w-2xl leading-relaxed`}>
           {description}
